@@ -1,6 +1,9 @@
 # Despliegue con Docker Compose y Cloudflare Tunnel
 
-Esta configuracion no publica puertos del servidor. El trafico externo entra por Cloudflare Tunnel y llega al servicio interno `app:3000`.
+Esta configuracion soporta dos modos:
+
+- Tunnel dedicado dentro del compose: Cloudflare llega a `app:3000`.
+- Tunnel global existente en el servidor: Cloudflare llega a `localhost:8041`, publicado solo en `127.0.0.1`.
 
 ## Requisitos del servidor
 
@@ -44,6 +47,30 @@ docker compose up -d --build
 docker compose ps
 docker compose logs -f app
 ```
+
+## Instalacion usando el tunnel global existente
+
+Este es el modo recomendado para el NAS actual, donde ya existe un `cloudflared` global.
+
+```bash
+git clone git@github-hwhub:toriz90/hwhub.git hwhub-app
+cd hwhub-app
+cp .env.example .env
+nano .env
+docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build
+docker compose -f compose.yaml -f compose.cloudflare.yaml ps
+```
+
+Configura el Public Hostname en Cloudflare asi:
+
+```txt
+Subdomain: hwhub
+Domain: victortoriz.cc
+Path: vacio
+Service: http://localhost:8041
+```
+
+El puerto queda ligado a `127.0.0.1`, no a `0.0.0.0`, por lo que no se publica hacia la red.
 
 ## Verificacion
 
