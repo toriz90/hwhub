@@ -351,6 +351,19 @@ textarea:disabled {
   color: var(--ink);
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(180px, 1.2fr) auto;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.filters button {
+  padding: 0.72rem 0.8rem;
+  background: #edf1f5;
+  color: var(--ink);
+}
+
 .conversation-detail {
   min-height: 420px;
 }
@@ -517,7 +530,8 @@ textarea {
   .workspace,
   .grid-two,
   .flow,
-  .editor {
+  .editor,
+  .filters {
     grid-template-columns: 1fr;
   }
 }

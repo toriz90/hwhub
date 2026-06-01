@@ -82,6 +82,28 @@
               </div>
               <span id="live-pill">SSE conectado</span>
             </header>
+            <div class="filters">
+              <select id="conversation-status-filter">
+                <option value="">Todos los estados</option>
+                <option value="bot_active">Bot activo</option>
+                <option value="waiting_for_agent">Esperando agente</option>
+                <option value="agent_active">Agente activo</option>
+                <option value="paused">Pausadas</option>
+                <option value="closed">Cerradas</option>
+              </select>
+              <select id="conversation-channel-filter">
+                <option value="">Todos los canales</option>
+                <option value="whatsapp_cloud">WhatsApp oficial</option>
+                <option value="web_widget">Widget web</option>
+                <option value="woocommerce">WooCommerce</option>
+                <option value="official_site">Pagina oficial</option>
+                <option value="evolution_api">Evolution API</option>
+                <option value="telnyx">Telnyx</option>
+                <option value="plivo">Plivo</option>
+              </select>
+              <input id="conversation-search" placeholder="Buscar cliente o mensaje">
+              <button id="clear-conversation-filters" type="button">Limpiar</button>
+            </div>
             <div id="conversation-list" class="list"></div>
           </div>
 

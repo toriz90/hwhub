@@ -1,7 +1,22 @@
 import { $, $$, api, esc, state, statusLabel } from "./shared.js";
 
+const filters = {
+  status: "",
+  channel: "",
+  search: ""
+};
+
 export function renderConversations(appState) {
-  $("#conversation-list").innerHTML = appState.conversations
+  const conversations = appState.conversations.filter((item) => {
+    const haystack = `${item.customer || ""} ${item.lastMessage || ""} ${item.intent || ""}`.toLowerCase();
+    return (
+      (!filters.status || item.status === filters.status) &&
+      (!filters.channel || item.channel === filters.channel) &&
+      (!filters.search || haystack.includes(filters.search.toLowerCase()))
+    );
+  });
+
+  $("#conversation-list").innerHTML = conversations
     .map((item) => {
       const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
       return `
@@ -16,11 +31,35 @@ export function renderConversations(appState) {
         </article>
       `;
     })
-    .join("");
+    .join("") || `<article class="item"><p class="meta">No hay conversaciones con esos filtros.</p></article>`;
 
   for (const button of $$("[data-open-conversation]")) {
     button.onclick = () => openConversation(button.dataset.openConversation);
   }
+}
+
+export function bindConversationFilters(render) {
+  $("#conversation-status-filter").addEventListener("change", (event) => {
+    filters.status = event.target.value;
+    render();
+  });
+  $("#conversation-channel-filter").addEventListener("change", (event) => {
+    filters.channel = event.target.value;
+    render();
+  });
+  $("#conversation-search").addEventListener("input", (event) => {
+    filters.search = event.target.value;
+    render();
+  });
+  $("#clear-conversation-filters").addEventListener("click", () => {
+    filters.status = "";
+    filters.channel = "";
+    filters.search = "";
+    $("#conversation-status-filter").value = "";
+    $("#conversation-channel-filter").value = "";
+    $("#conversation-search").value = "";
+    render();
+  });
 }
 
 export async function openConversation(id) {

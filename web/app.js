@@ -1,6 +1,6 @@
 import { $, $$, loadBootstrap, state } from "./modules/shared.js";
 import { renderDashboard } from "./modules/dashboard.js";
-import { bindConversationActions, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
+import { bindConversationActions, bindConversationFilters, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
 import { bindEditors, renderAdminCollections, renderFaqs } from "./modules/admin-crud.js";
 import { bindIntegrations, renderIntegrations } from "./modules/integrations.js";
 import { bindRoleLab, renderRoleMatrix } from "./modules/roles.js";
@@ -126,6 +126,7 @@ bindNavigation();
 bindRoleSwitch();
 bindEditors(refresh);
 bindConversationActions(refresh);
+bindConversationFilters(render);
 bindIntegrations(refresh);
 bindRoleLab(() => state.data);
 render();
