@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createDataStore } from "./database.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -9,6 +10,7 @@ const publicDir = join(root, "web");
 const port = Number(process.env.PORT || 3000);
 
 const clients = new Set();
+let store;
 
 const state = {
   branches: [
@@ -202,16 +204,16 @@ function detectMarketplace(text = "", channel = "web_widget") {
   return null;
 }
 
-function findAgent(requiredSkill) {
-  return state.agents
+function findAgent(requiredSkill, currentState) {
+  return currentState.agents
     .filter((agent) => agent.online && agent.activeConversations < agent.maxConversations)
     .find((agent) => agent.skills.includes(requiredSkill) || agent.skills.includes("atc"));
 }
 
-function routeMessage({ text, channel }) {
+function routeMessage({ text, channel, currentState }) {
   const intent = detectIntent(text);
   const marketplace = detectMarketplace(text, channel);
-  const rule = state.routingRules
+  const rule = currentState.routingRules
     .filter((item) => item.intent === intent)
     .sort((a, b) => a.priority - b.priority)[0];
 
@@ -220,7 +222,7 @@ function routeMessage({ text, channel }) {
       intent,
       marketplace,
       status: "bot_active",
-      reply: answerFromFaq(text),
+      reply: answerFromFaq(text, currentState),
       assignedAgent: null
     };
   }
@@ -236,7 +238,7 @@ function routeMessage({ text, channel }) {
   }
 
   const skill = intent === "marketplace_support" ? marketplace : rule.requiredSkill;
-  const assignedAgent = findAgent(skill);
+  const assignedAgent = findAgent(skill, currentState);
   if (assignedAgent) {
     return {
       intent,
@@ -247,7 +249,7 @@ function routeMessage({ text, channel }) {
     };
   }
 
-  const contact = state.branches.find((branch) => branch.services.includes(rule.requiredSkill)) || state.branches[1];
+  const contact = currentState.branches.find((branch) => branch.services.includes(rule.requiredSkill)) || currentState.branches[1];
   return {
     intent,
     marketplace,
@@ -257,9 +259,9 @@ function routeMessage({ text, channel }) {
   };
 }
 
-function answerFromFaq(text) {
+function answerFromFaq(text, currentState) {
   const value = text.toLowerCase();
-  const faq = state.faqs.find((item) => item.tags.some((tag) => value.includes(tag))) || state.faqs[0];
+  const faq = currentState.faqs.find((item) => item.tags.some((tag) => value.includes(tag))) || currentState.faqs[0];
   return faq.shortAnswer;
 }
 
@@ -309,7 +311,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/bootstrap") {
-    sendJson(res, state);
+    sendJson(res, await store.bootstrap());
     return;
   }
 
@@ -317,6 +319,7 @@ const server = createServer(async (req, res) => {
     sendJson(res, {
       ok: true,
       service: "hwhub",
+      storage: store.mode,
       uptime: Math.round(process.uptime()),
       timestamp: new Date().toISOString()
     });
@@ -326,7 +329,8 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const body = await readBody(req);
     const channel = body.channel || "web_widget";
-    const routed = routeMessage({ text: body.message || "", channel });
+    const currentState = await store.bootstrap();
+    const routed = routeMessage({ text: body.message || "", channel, currentState });
     const conversation = {
       id: `conv-${Date.now()}`,
       channel,
@@ -337,10 +341,10 @@ const server = createServer(async (req, res) => {
       assignedAgentId: routed.assignedAgent?.id || null,
       lastMessage: body.message || ""
     };
-    state.conversations.unshift(conversation);
-    emit("conversation.created", conversation);
+    const savedConversation = await store.createConversation(conversation);
+    emit("conversation.created", savedConversation);
     sendJson(res, {
-      conversation,
+      conversation: savedConversation,
       reply: routed.reply,
       assignedAgent: routed.assignedAgent
     });
@@ -350,7 +354,8 @@ const server = createServer(async (req, res) => {
   if (url.pathname.startsWith("/api/conversations/") && req.method === "POST") {
     const id = url.pathname.split("/")[3];
     const action = url.pathname.split("/")[4];
-    const conversation = state.conversations.find((item) => item.id === id);
+    const currentState = await store.bootstrap();
+    const conversation = currentState.conversations.find((item) => item.id === id);
     if (!conversation) {
       sendJson(res, { error: "Conversation not found" }, 404);
       return;
@@ -366,14 +371,39 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname.startsWith("/api/")) {
     const key = url.pathname.replace("/api/", "");
-    if (Object.hasOwn(state, key)) {
-      sendJson(res, state[key]);
+    const [collection, id] = key.split("/");
+    const allowed = ["faqs", "branches", "agents", "routingRules"];
+    if (allowed.includes(collection) && req.method === "GET") {
+      sendJson(res, await store.collection(collection));
+      return;
+    }
+    if (allowed.includes(collection) && req.method === "POST" && !id) {
+      const item = await store.create(collection, await readBody(req));
+      emit(`${collection}.created`, item);
+      sendJson(res, item, 201);
+      return;
+    }
+    if (allowed.includes(collection) && req.method === "PUT" && id) {
+      const item = await store.update(collection, id, await readBody(req));
+      if (!item) {
+        sendJson(res, { error: "Not found" }, 404);
+        return;
+      }
+      emit(`${collection}.updated`, item);
+      sendJson(res, item);
+      return;
+    }
+    if (allowed.includes(collection) && req.method === "DELETE" && id) {
+      const ok = await store.remove(collection, id);
+      sendJson(res, { ok });
       return;
     }
   }
 
   await serveStatic(req, res);
 });
+
+store = await createDataStore(state);
 
 server.listen(port, () => {
   console.log(`HWHub listo en http://localhost:${port}`);

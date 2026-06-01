@@ -274,6 +274,52 @@ h2 {
   align-items: end;
 }
 
+.editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.editor input[name="question"],
+.editor input[name="shortAnswer"],
+.editor input[name="longAnswer"],
+.editor input[name="fallbackMessage"],
+.editor input[name="services"],
+.editor input[name="wholesaleContact"] {
+  grid-column: 1 / -1;
+}
+
+.editor button {
+  justify-self: start;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.check input {
+  width: auto;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.row-actions button {
+  padding: 0.45rem 0.6rem;
+  background: #edf1f5;
+  color: var(--ink);
+}
+
 label {
   display: grid;
   gap: 0.35rem;
@@ -380,7 +426,8 @@ select {
   .metrics,
   .workspace,
   .grid-two,
-  .flow {
+  .flow,
+  .editor {
     grid-template-columns: 1fr;
   }
 }

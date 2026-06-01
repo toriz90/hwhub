@@ -112,6 +112,15 @@
               <h2>Agentes activos</h2>
             </div>
           </header>
+          <form class="editor" data-editor="agents">
+            <input type="hidden" name="id">
+            <input name="name" placeholder="Nombre">
+            <input name="role" placeholder="Rol o equipo">
+            <input name="skills" placeholder="Skills separados por coma">
+            <input name="channels" placeholder="Canales separados por coma">
+            <label class="check"><input type="checkbox" name="online"> Activo</label>
+            <button>Guardar agente</button>
+          </form>
           <div id="agents-list" class="cards"></div>
         </div>
 
@@ -122,6 +131,17 @@
               <h2>Canalizacion</h2>
             </div>
           </header>
+          <form class="editor" data-editor="routingRules">
+            <input type="hidden" name="id">
+            <input name="name" placeholder="Nombre de regla">
+            <input name="intent" placeholder="Intencion">
+            <input name="requiredSkill" placeholder="Skill requerido">
+            <input name="channel" placeholder="Canal opcional">
+            <input name="priority" type="number" placeholder="Prioridad">
+            <label class="check"><input type="checkbox" name="botAllowed"> Bot permitido</label>
+            <input name="fallbackMessage" placeholder="Mensaje fallback">
+            <button>Guardar regla</button>
+          </form>
           <div id="routing-list" class="rules"></div>
         </div>
       </section>
@@ -134,6 +154,16 @@
               <h2>Preguntas frecuentes</h2>
             </div>
           </header>
+          <form class="editor" data-editor="faqs">
+            <input type="hidden" name="id">
+            <input name="question" placeholder="Pregunta">
+            <input name="shortAnswer" placeholder="Respuesta corta">
+            <input name="longAnswer" placeholder="Respuesta larga">
+            <input name="category" placeholder="Categoria">
+            <input name="tags" placeholder="Tags separados por coma">
+            <label class="check"><input type="checkbox" name="published" checked> Publicada</label>
+            <button>Guardar FAQ</button>
+          </form>
           <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
           <div id="faq-list" class="faq-list"></div>
         </div>
@@ -145,6 +175,18 @@
               <h2>Sucursales y contactos</h2>
             </div>
           </header>
+          <form class="editor" data-editor="branches">
+            <input type="hidden" name="id">
+            <input name="name" placeholder="Nombre">
+            <input name="city" placeholder="Ciudad">
+            <input name="phone" placeholder="Telefono">
+            <input name="whatsapp" placeholder="WhatsApp">
+            <input name="address" placeholder="Direccion">
+            <input name="hours" placeholder="Horario">
+            <input name="services" placeholder="Servicios separados por coma">
+            <input name="wholesaleContact" placeholder="Contacto mayorista">
+            <button>Guardar sucursal</button>
+          </form>
           <div id="branches-list" class="cards"></div>
         </div>
       </section>
