@@ -177,7 +177,13 @@ async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
   if (!chunks.length) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    const error = new Error("Invalid JSON body");
+    error.statusCode = 400;
+    throw error;
+  }
 }
 
 function emit(event, payload) {
@@ -285,17 +291,18 @@ async function serveStatic(req, res) {
 }
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type"
-    });
-    res.end();
-    return;
-  }
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET,POST,OPTIONS",
+        "access-control-allow-headers": "content-type"
+      });
+      res.end();
+      return;
+    }
 
   if (url.pathname === "/api/events") {
     res.writeHead(200, {
@@ -400,7 +407,10 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  await serveStatic(req, res);
+    await serveStatic(req, res);
+  } catch (error) {
+    sendJson(res, { error: error.message || "Server error" }, error.statusCode || 500);
+  }
 });
 
 store = await createDataStore(state);
