@@ -16,14 +16,15 @@
         </div>
       </div>
       <nav>
-        <a href="#dashboard" class="active">Dashboard</a>
-        <a href="#chatbot">Chatbot</a>
-        <a href="#agents">Agentes</a>
-        <a href="#knowledge">FAQs</a>
-        <a href="#directory">Directorio</a>
-        <a href="#routing">Ruteo</a>
-        <a href="#integrations">APIs</a>
-        <a href="#roles">Roles</a>
+        <a href="#dashboard" class="active" data-view-link="dashboard">Dashboard</a>
+        <a href="#conversations" data-view-link="conversations">Conversaciones</a>
+        <a href="#chatbot" data-view-link="chatbot">Chatbot</a>
+        <a href="#agents" data-view-link="agents">Agentes</a>
+        <a href="#knowledge" data-view-link="knowledge">FAQs</a>
+        <a href="#directory" data-view-link="directory">Directorio</a>
+        <a href="#routing" data-view-link="routing">Ruteo</a>
+        <a href="#integrations" data-view-link="integrations">APIs</a>
+        <a href="#roles" data-view-link="roles">Roles</a>
       </nav>
     </aside>
 
@@ -39,249 +40,273 @@
         </div>
       </section>
 
-      <section id="dashboard" class="metrics">
-        <article>
-          <span>Conversaciones</span>
-          <strong id="metric-conversations">0</strong>
-        </article>
-        <article>
-          <span>Agentes activos</span>
-          <strong id="metric-agents">0</strong>
-        </article>
-        <article>
-          <span>FAQs publicadas</span>
-          <strong id="metric-faqs">0</strong>
-        </article>
-        <article>
-          <span>Alertas</span>
-          <strong id="metric-alerts">0</strong>
-        </article>
-      </section>
+      <div class="view active" data-view="dashboard">
+        <section id="dashboard" class="metrics">
+          <article>
+            <span>Conversaciones</span>
+            <strong id="metric-conversations">0</strong>
+          </article>
+          <article>
+            <span>Agentes activos</span>
+            <strong id="metric-agents">0</strong>
+          </article>
+          <article>
+            <span>FAQs publicadas</span>
+            <strong id="metric-faqs">0</strong>
+          </article>
+          <article>
+            <span>Alertas</span>
+            <strong id="metric-alerts">0</strong>
+          </article>
+        </section>
+      </div>
 
-      <section class="workspace">
-        <div class="panel conversations">
-          <header>
-            <div>
-              <p class="eyebrow">Bandeja</p>
-              <h2>Conversaciones</h2>
-            </div>
-            <span id="live-pill">SSE conectado</span>
-          </header>
-          <div id="conversation-list" class="list"></div>
-        </div>
-
-        <div class="panel" id="chatbot">
-          <header>
-            <div>
-              <p class="eyebrow">Workflow editable</p>
-              <h2>Motor chatbot</h2>
-            </div>
-          </header>
-          <div class="flow">
-            <div>Mensaje entrante</div>
-            <div>Detectar canal e intencion</div>
-            <div>Consultar FAQs, directorio, agenda o WooCommerce</div>
-            <div>Responder con IA o canalizar a agente</div>
-            <div>Pausar, tomar, transferir o cerrar</div>
+      <div class="view" data-view="conversations">
+        <section class="workspace">
+          <div class="panel conversations" id="conversations">
+            <header>
+              <div>
+                <p class="eyebrow">Bandeja</p>
+                <h2>Conversaciones</h2>
+              </div>
+              <span id="live-pill">SSE conectado</span>
+            </header>
+            <div id="conversation-list" class="list"></div>
           </div>
-          <form id="chat-form" class="chat-test">
-            <label>
-              Canal
-              <select id="channel">
-                <option value="web_widget">Widget web</option>
-                <option value="woocommerce">WooCommerce</option>
-                <option value="whatsapp_cloud">WhatsApp oficial</option>
+
+          <div class="panel conversation-detail">
+            <header>
+              <div>
+                <p class="eyebrow">Atencion</p>
+                <h2>Detalle de conversacion</h2>
+              </div>
+              <span id="conversation-status" class="status">Sin seleccion</span>
+            </header>
+            <div id="conversation-detail" class="detail-empty">Selecciona una conversacion para ver mensajes y acciones.</div>
+            <div class="conversation-actions">
+              <button data-conversation-action="take">Tomar</button>
+              <button data-conversation-action="pause">Pausar</button>
+              <button data-conversation-action="bot">Bot</button>
+              <button data-conversation-action="close">Cerrar</button>
+            </div>
+            <form id="agent-reply-form" class="reply-form">
+              <input id="agent-reply" placeholder="Respuesta del agente">
+              <button>Enviar</button>
+            </form>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="chatbot">
+        <section class="workspace single">
+          <div class="panel" id="chatbot">
+            <header>
+              <div>
+                <p class="eyebrow">Workflow editable</p>
+                <h2>Motor chatbot</h2>
+              </div>
+            </header>
+            <div class="flow">
+              <div>Mensaje entrante</div>
+              <div>Detectar canal e intencion</div>
+              <div>Consultar FAQs, directorio, agenda o WooCommerce</div>
+              <div>Responder con IA o canalizar a agente</div>
+              <div>Pausar, tomar, transferir o cerrar</div>
+            </div>
+            <form id="chat-form" class="chat-test">
+              <label>
+                Canal
+                <select id="channel">
+                  <option value="web_widget">Widget web</option>
+                  <option value="woocommerce">WooCommerce</option>
+                  <option value="whatsapp_cloud">WhatsApp oficial</option>
+                  <option value="evolution_api">Evolution API</option>
+                  <option value="telnyx">Telnyx</option>
+                  <option value="plivo">Plivo</option>
+                </select>
+              </label>
+              <label>
+                Mensaje de prueba
+                <input id="message" value="Compre por MercadoLibre y necesito ayuda">
+              </label>
+              <button>Probar ruteo</button>
+            </form>
+            <div id="chat-result" class="result"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="agents">
+        <section class="workspace single">
+          <div class="panel" id="agents">
+            <header>
+              <div>
+                <p class="eyebrow">Multiagente</p>
+                <h2>Agentes activos</h2>
+              </div>
+            </header>
+            <form class="editor" data-editor="agents">
+              <input type="hidden" name="id">
+              <input name="name" placeholder="Nombre">
+              <input name="role" placeholder="Rol o equipo">
+              <input name="skills" placeholder="Skills separados por coma">
+              <input name="channels" placeholder="Canales separados por coma">
+              <label class="check"><input type="checkbox" name="online"> Activo</label>
+              <button>Guardar agente</button>
+            </form>
+            <div id="agents-list" class="cards"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="knowledge">
+        <section class="workspace single">
+          <div class="panel" id="knowledge">
+            <header>
+              <div>
+                <p class="eyebrow">Base de conocimiento</p>
+                <h2>Preguntas frecuentes</h2>
+              </div>
+            </header>
+            <form class="editor" data-editor="faqs">
+              <input type="hidden" name="id">
+              <input name="question" placeholder="Pregunta">
+              <input name="shortAnswer" placeholder="Respuesta corta">
+              <input name="longAnswer" placeholder="Respuesta larga">
+              <input name="category" placeholder="Categoria">
+              <input name="tags" placeholder="Tags separados por coma">
+              <label class="check"><input type="checkbox" name="published" checked> Publicada</label>
+              <button>Guardar FAQ</button>
+            </form>
+            <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
+            <div id="faq-list" class="faq-list"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="directory">
+        <section class="workspace single">
+          <div class="panel" id="directory">
+            <header>
+              <div>
+                <p class="eyebrow">Directorio</p>
+                <h2>Sucursales y contactos</h2>
+              </div>
+            </header>
+            <form class="editor" data-editor="branches">
+              <input type="hidden" name="id">
+              <input name="name" placeholder="Nombre">
+              <input name="city" placeholder="Ciudad">
+              <input name="phone" placeholder="Telefono">
+              <input name="whatsapp" placeholder="WhatsApp">
+              <input name="address" placeholder="Direccion">
+              <input name="hours" placeholder="Horario">
+              <input name="services" placeholder="Servicios separados por coma">
+              <input name="wholesaleContact" placeholder="Contacto mayorista">
+              <button>Guardar sucursal</button>
+            </form>
+            <div id="branches-list" class="cards"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="routing">
+        <section class="workspace single">
+          <div class="panel" id="routing">
+            <header>
+              <div>
+                <p class="eyebrow">Reglas modificables</p>
+                <h2>Canalizacion</h2>
+              </div>
+            </header>
+            <form class="editor" data-editor="routingRules">
+              <input type="hidden" name="id">
+              <input name="name" placeholder="Nombre de regla">
+              <input name="intent" placeholder="Intencion">
+              <input name="requiredSkill" placeholder="Skill requerido">
+              <input name="channel" placeholder="Canal opcional">
+              <input name="priority" type="number" placeholder="Prioridad">
+              <label class="check"><input type="checkbox" name="botAllowed"> Bot permitido</label>
+              <input name="fallbackMessage" placeholder="Mensaje fallback">
+              <button>Guardar regla</button>
+            </form>
+            <div id="routing-list" class="rules"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="integrations">
+        <section class="workspace single">
+          <div class="panel" id="integrations">
+            <header>
+              <div>
+                <p class="eyebrow">Credenciales</p>
+                <h2>APIs e integraciones</h2>
+              </div>
+            </header>
+            <form id="integration-form" class="editor">
+              <input type="hidden" name="id">
+              <select name="provider">
+                <option value="openai">OpenAI</option>
+                <option value="claude">Claude</option>
+                <option value="whatsapp_cloud">WhatsApp Cloud</option>
                 <option value="evolution_api">Evolution API</option>
                 <option value="telnyx">Telnyx</option>
                 <option value="plivo">Plivo</option>
+                <option value="woocommerce">WooCommerce</option>
+                <option value="easyappointments">Easy!Appointments</option>
               </select>
-            </label>
-            <label>
-              Mensaje de prueba
-              <input id="message" value="Compre por MercadoLibre y necesito ayuda">
-            </label>
-            <button>Probar ruteo</button>
-          </form>
-          <div id="chat-result" class="result"></div>
-        </div>
-      </section>
-
-      <section class="grid-two">
-        <div class="panel" id="roles">
-          <header>
-            <div>
-              <p class="eyebrow">Pruebas internas</p>
-              <h2>Roles y permisos</h2>
-            </div>
-          </header>
-          <form id="role-test-form" class="editor">
-            <select name="role">
-              <option value="admin">Admin</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="agent">Agente ATC</option>
-              <option value="marketplace">Agente marketplace</option>
-              <option value="wholesale">Mayoristas</option>
-              <option value="viewer">Solo lectura</option>
-            </select>
-            <select name="channel">
-              <option value="whatsapp_cloud">WhatsApp oficial</option>
-              <option value="web_widget">Widget web</option>
-              <option value="woocommerce">WooCommerce</option>
-              <option value="evolution_api">Evolution API</option>
-            </select>
-            <input name="message" value="Necesito ayuda con mi compra de Amazon">
-            <button>Probar rol</button>
-          </form>
-          <div id="role-test-result" class="cards"></div>
-        </div>
-
-        <div class="panel">
-          <header>
-            <div>
-              <p class="eyebrow">Matriz</p>
-              <h2>Capacidades por rol</h2>
-            </div>
-          </header>
-          <div id="role-matrix" class="cards"></div>
-        </div>
-      </section>
-
-      <section class="workspace">
-        <div class="panel conversation-detail">
-          <header>
-            <div>
-              <p class="eyebrow">Atencion</p>
-              <h2>Detalle de conversacion</h2>
-            </div>
-            <span id="conversation-status" class="status">Sin seleccion</span>
-          </header>
-          <div id="conversation-detail" class="detail-empty">Selecciona una conversacion para ver mensajes y acciones.</div>
-          <div class="conversation-actions">
-            <button data-conversation-action="take">Tomar</button>
-            <button data-conversation-action="pause">Pausar</button>
-            <button data-conversation-action="bot">Bot</button>
-            <button data-conversation-action="close">Cerrar</button>
+              <input name="name" placeholder="Nombre visible">
+              <textarea name="config" placeholder='{"apiKey":"...", "url":"..."}'></textarea>
+              <label class="check"><input type="checkbox" name="active" checked> Activa</label>
+              <button>Guardar API</button>
+            </form>
+            <div id="integrations-list" class="cards"></div>
           </div>
-          <form id="agent-reply-form" class="reply-form">
-            <input id="agent-reply" placeholder="Respuesta del agente">
-            <button>Enviar</button>
-          </form>
-        </div>
+        </section>
+      </div>
 
-        <div class="panel" id="integrations">
-          <header>
-            <div>
-              <p class="eyebrow">Credenciales</p>
-              <h2>APIs e integraciones</h2>
-            </div>
-          </header>
-          <form id="integration-form" class="editor">
-            <input type="hidden" name="id">
-            <select name="provider">
-              <option value="openai">OpenAI</option>
-              <option value="claude">Claude</option>
-              <option value="whatsapp_cloud">WhatsApp Cloud</option>
-              <option value="evolution_api">Evolution API</option>
-              <option value="telnyx">Telnyx</option>
-              <option value="plivo">Plivo</option>
-              <option value="woocommerce">WooCommerce</option>
-              <option value="easyappointments">Easy!Appointments</option>
-            </select>
-            <input name="name" placeholder="Nombre visible">
-            <textarea name="config" placeholder='{"apiKey":"...", "url":"..."}'></textarea>
-            <label class="check"><input type="checkbox" name="active" checked> Activa</label>
-            <button>Guardar API</button>
-          </form>
-          <div id="integrations-list" class="cards"></div>
-        </div>
-      </section>
+      <div class="view" data-view="roles">
+        <section class="grid-two">
+          <div class="panel" id="roles">
+            <header>
+              <div>
+                <p class="eyebrow">Pruebas internas</p>
+                <h2>Roles y permisos</h2>
+              </div>
+            </header>
+            <form id="role-test-form" class="editor">
+              <select name="role">
+                <option value="admin">Admin</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="agent">Agente ATC</option>
+                <option value="marketplace">Agente marketplace</option>
+                <option value="wholesale">Mayoristas</option>
+                <option value="viewer">Solo lectura</option>
+              </select>
+              <select name="channel">
+                <option value="whatsapp_cloud">WhatsApp oficial</option>
+                <option value="web_widget">Widget web</option>
+                <option value="woocommerce">WooCommerce</option>
+                <option value="evolution_api">Evolution API</option>
+              </select>
+              <input name="message" value="Necesito ayuda con mi compra de Amazon">
+              <button>Probar rol</button>
+            </form>
+            <div id="role-test-result" class="cards"></div>
+          </div>
 
-      <section class="grid-two">
-        <div class="panel" id="agents">
-          <header>
-            <div>
-              <p class="eyebrow">Multiagente</p>
-              <h2>Agentes activos</h2>
-            </div>
-          </header>
-          <form class="editor" data-editor="agents">
-            <input type="hidden" name="id">
-            <input name="name" placeholder="Nombre">
-            <input name="role" placeholder="Rol o equipo">
-            <input name="skills" placeholder="Skills separados por coma">
-            <input name="channels" placeholder="Canales separados por coma">
-            <label class="check"><input type="checkbox" name="online"> Activo</label>
-            <button>Guardar agente</button>
-          </form>
-          <div id="agents-list" class="cards"></div>
-        </div>
-
-        <div class="panel" id="routing">
-          <header>
-            <div>
-              <p class="eyebrow">Reglas modificables</p>
-              <h2>Canalizacion</h2>
-            </div>
-          </header>
-          <form class="editor" data-editor="routingRules">
-            <input type="hidden" name="id">
-            <input name="name" placeholder="Nombre de regla">
-            <input name="intent" placeholder="Intencion">
-            <input name="requiredSkill" placeholder="Skill requerido">
-            <input name="channel" placeholder="Canal opcional">
-            <input name="priority" type="number" placeholder="Prioridad">
-            <label class="check"><input type="checkbox" name="botAllowed"> Bot permitido</label>
-            <input name="fallbackMessage" placeholder="Mensaje fallback">
-            <button>Guardar regla</button>
-          </form>
-          <div id="routing-list" class="rules"></div>
-        </div>
-      </section>
-
-      <section class="grid-two">
-        <div class="panel" id="knowledge">
-          <header>
-            <div>
-              <p class="eyebrow">Base de conocimiento</p>
-              <h2>Preguntas frecuentes</h2>
-            </div>
-          </header>
-          <form class="editor" data-editor="faqs">
-            <input type="hidden" name="id">
-            <input name="question" placeholder="Pregunta">
-            <input name="shortAnswer" placeholder="Respuesta corta">
-            <input name="longAnswer" placeholder="Respuesta larga">
-            <input name="category" placeholder="Categoria">
-            <input name="tags" placeholder="Tags separados por coma">
-            <label class="check"><input type="checkbox" name="published" checked> Publicada</label>
-            <button>Guardar FAQ</button>
-          </form>
-          <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
-          <div id="faq-list" class="faq-list"></div>
-        </div>
-
-        <div class="panel" id="directory">
-          <header>
-            <div>
-              <p class="eyebrow">Directorio</p>
-              <h2>Sucursales y contactos</h2>
-            </div>
-          </header>
-          <form class="editor" data-editor="branches">
-            <input type="hidden" name="id">
-            <input name="name" placeholder="Nombre">
-            <input name="city" placeholder="Ciudad">
-            <input name="phone" placeholder="Telefono">
-            <input name="whatsapp" placeholder="WhatsApp">
-            <input name="address" placeholder="Direccion">
-            <input name="hours" placeholder="Horario">
-            <input name="services" placeholder="Servicios separados por coma">
-            <input name="wholesaleContact" placeholder="Contacto mayorista">
-            <button>Guardar sucursal</button>
-          </form>
-          <div id="branches-list" class="cards"></div>
-        </div>
-      </section>
+          <div class="panel">
+            <header>
+              <div>
+                <p class="eyebrow">Matriz</p>
+                <h2>Capacidades por rol</h2>
+              </div>
+            </header>
+            <div id="role-matrix" class="cards"></div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <script src="/app.js" type="module"></script>

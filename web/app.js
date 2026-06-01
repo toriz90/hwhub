@@ -1,4 +1,4 @@
-import { $, loadBootstrap, state } from "./modules/shared.js";
+import { $, $$, loadBootstrap, state } from "./modules/shared.js";
 import { renderDashboard } from "./modules/dashboard.js";
 import { bindConversationActions, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
 import { bindEditors, renderAdminCollections, renderFaqs } from "./modules/admin-crud.js";
@@ -16,6 +16,24 @@ function render() {
   renderAdminCollections(state.data);
   renderIntegrations(state.data.integrations || []);
   renderRoleMatrix();
+}
+
+function showView(view) {
+  const selected = view || "dashboard";
+  for (const section of $$("[data-view]")) {
+    section.classList.toggle("active", section.dataset.view === selected);
+  }
+  for (const link of $$("[data-view-link]")) {
+    link.classList.toggle("active", link.dataset.viewLink === selected);
+  }
+}
+
+function bindNavigation() {
+  for (const link of $$("[data-view-link]")) {
+    link.addEventListener("click", () => showView(link.dataset.viewLink));
+  }
+  const initial = window.location.hash.replace("#", "") || "dashboard";
+  showView(initial);
 }
 
 $("#chat-form").addEventListener("submit", async (event) => {
@@ -57,6 +75,7 @@ events.addEventListener("message.created", async (event) => {
 });
 
 await loadBootstrap();
+bindNavigation();
 bindEditors(refresh);
 bindConversationActions(refresh);
 bindIntegrations(refresh);
