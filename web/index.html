@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HWHub</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">HW</span>
+        <div>
+          <strong>HWHub</strong>
+          <small>Atencion + IA</small>
+        </div>
+      </div>
+      <nav>
+        <a href="#dashboard" class="active">Dashboard</a>
+        <a href="#chatbot">Chatbot</a>
+        <a href="#agents">Agentes</a>
+        <a href="#knowledge">FAQs</a>
+        <a href="#directory">Directorio</a>
+        <a href="#routing">Ruteo</a>
+      </nav>
+    </aside>
+
+    <main>
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Operaciones en tiempo real</p>
+          <h1>Hub multicanal para ventas, citas y soporte</h1>
+        </div>
+        <div class="top-actions">
+          <button id="simulate-whatsapp">Simular WhatsApp</button>
+          <button id="simulate-marketplace">Simular marketplace</button>
+        </div>
+      </section>
+
+      <section id="dashboard" class="metrics">
+        <article>
+          <span>Conversaciones</span>
+          <strong id="metric-conversations">0</strong>
+        </article>
+        <article>
+          <span>Agentes activos</span>
+          <strong id="metric-agents">0</strong>
+        </article>
+        <article>
+          <span>FAQs publicadas</span>
+          <strong id="metric-faqs">0</strong>
+        </article>
+        <article>
+          <span>Alertas</span>
+          <strong id="metric-alerts">0</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="panel conversations">
+          <header>
+            <div>
+              <p class="eyebrow">Bandeja</p>
+              <h2>Conversaciones</h2>
+            </div>
+            <span id="live-pill">SSE conectado</span>
+          </header>
+          <div id="conversation-list" class="list"></div>
+        </div>
+
+        <div class="panel" id="chatbot">
+          <header>
+            <div>
+              <p class="eyebrow">Workflow editable</p>
+              <h2>Motor chatbot</h2>
+            </div>
+          </header>
+          <div class="flow">
+            <div>Mensaje entrante</div>
+            <div>Detectar canal e intencion</div>
+            <div>Consultar FAQs, directorio, agenda o WooCommerce</div>
+            <div>Responder con IA o canalizar a agente</div>
+            <div>Pausar, tomar, transferir o cerrar</div>
+          </div>
+          <form id="chat-form" class="chat-test">
+            <label>
+              Canal
+              <select id="channel">
+                <option value="web_widget">Widget web</option>
+                <option value="woocommerce">WooCommerce</option>
+                <option value="whatsapp_cloud">WhatsApp oficial</option>
+                <option value="evolution_api">Evolution API</option>
+                <option value="telnyx">Telnyx</option>
+                <option value="plivo">Plivo</option>
+              </select>
+            </label>
+            <label>
+              Mensaje de prueba
+              <input id="message" value="Compre por MercadoLibre y necesito ayuda">
+            </label>
+            <button>Probar ruteo</button>
+          </form>
+          <div id="chat-result" class="result"></div>
+        </div>
+      </section>
+
+      <section class="grid-two">
+        <div class="panel" id="agents">
+          <header>
+            <div>
+              <p class="eyebrow">Multiagente</p>
+              <h2>Agentes activos</h2>
+            </div>
+          </header>
+          <div id="agents-list" class="cards"></div>
+        </div>
+
+        <div class="panel" id="routing">
+          <header>
+            <div>
+              <p class="eyebrow">Reglas modificables</p>
+              <h2>Canalizacion</h2>
+            </div>
+          </header>
+          <div id="routing-list" class="rules"></div>
+        </div>
+      </section>
+
+      <section class="grid-two">
+        <div class="panel" id="knowledge">
+          <header>
+            <div>
+              <p class="eyebrow">Base de conocimiento</p>
+              <h2>Preguntas frecuentes</h2>
+            </div>
+          </header>
+          <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
+          <div id="faq-list" class="faq-list"></div>
+        </div>
+
+        <div class="panel" id="directory">
+          <header>
+            <div>
+              <p class="eyebrow">Directorio</p>
+              <h2>Sucursales y contactos</h2>
+            </div>
+          </header>
+          <div id="branches-list" class="cards"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+    <script src="/widget.js" data-channel="official_site"></script>
+  </body>
+</html>
