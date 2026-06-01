@@ -47,7 +47,7 @@ export function bindConversationActions(refresh) {
   for (const button of $$("[data-conversation-action]")) {
     button.addEventListener("click", async () => {
       if (!state.selectedConversationId) return;
-      await fetch(`/api/conversations/${state.selectedConversationId}/${button.dataset.conversationAction}`, { method: "POST" });
+      await api(`/api/conversations/${state.selectedConversationId}/${button.dataset.conversationAction}`, { method: "POST" });
       await refresh();
       await openConversation(state.selectedConversationId);
     });

@@ -1,7 +1,8 @@
 export const state = {
   data: null,
   alerts: 0,
-  selectedConversationId: null
+  selectedConversationId: null,
+  role: localStorage.getItem("hwhub.role") || "admin"
 };
 
 export const $ = (selector) => document.querySelector(selector);
@@ -37,7 +38,11 @@ export function formPayload(form) {
 
 export async function api(path, options = {}) {
   const response = await fetch(path, {
-    headers: options.body ? { "content-type": "application/json", ...(options.headers || {}) } : options.headers,
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      "x-hwhub-role": state.role,
+      ...(options.headers || {})
+    },
     ...options
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);

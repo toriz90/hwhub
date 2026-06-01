@@ -109,7 +109,7 @@ function bindRowActions(appState) {
   }
   for (const button of $$("[data-delete]")) {
     button.onclick = async () => {
-      await fetch(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
+      await api(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
       window.dispatchEvent(new CustomEvent("hwhub:refresh"));
     };
   }

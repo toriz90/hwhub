@@ -173,6 +173,31 @@ function sendJson(res, data, status = 200) {
   res.end(JSON.stringify(data));
 }
 
+const rolePermissions = {
+  admin: ["*"],
+  supervisor: ["conversation:write", "faqs:write", "branches:write", "agents:write", "routingRules:write"],
+  agent: ["conversation:write"],
+  marketplace: ["conversation:write"],
+  wholesale: ["conversation:write"],
+  viewer: []
+};
+
+function roleFrom(req) {
+  return req.headers["x-hwhub-role"] || "admin";
+}
+
+function can(req, permission) {
+  const permissions = rolePermissions[roleFrom(req)] || rolePermissions.viewer;
+  return permissions.includes("*") || permissions.includes(permission);
+}
+
+function requirePermission(req, permission) {
+  if (can(req, permission)) return;
+  const error = new Error("Role does not have permission for this action");
+  error.statusCode = 403;
+  throw error;
+}
+
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -359,6 +384,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname.match(/^\/api\/conversations\/[^/]+\/(pause|take|bot|close)$/) && req.method === "POST") {
+    requirePermission(req, "conversation:write");
     const id = url.pathname.split("/")[3];
     const action = url.pathname.split("/")[4];
     const currentState = await store.bootstrap();
@@ -399,6 +425,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname.match(/^\/api\/conversations\/[^/]+\/messages$/) && req.method === "POST") {
+    requirePermission(req, "conversation:write");
     const id = url.pathname.split("/")[3];
     const body = await readBody(req);
     const message = await store.addMessage(id, {
@@ -417,6 +444,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/integrations" && req.method === "POST") {
+    requirePermission(req, "integrations:write");
     const integration = await store.saveIntegration(await readBody(req));
     emit("integrations.updated", integration);
     sendJson(res, integration, 201);
@@ -432,12 +460,14 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (allowed.includes(collection) && req.method === "POST" && !id) {
+      requirePermission(req, `${collection}:write`);
       const item = await store.create(collection, await readBody(req));
       emit(`${collection}.created`, item);
       sendJson(res, item, 201);
       return;
     }
     if (allowed.includes(collection) && req.method === "PUT" && id) {
+      requirePermission(req, `${collection}:write`);
       const item = await store.update(collection, id, await readBody(req));
       if (!item) {
         sendJson(res, { error: "Not found" }, 404);
@@ -448,6 +478,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (allowed.includes(collection) && req.method === "DELETE" && id) {
+      requirePermission(req, `${collection}:write`);
       const ok = await store.remove(collection, id);
       sendJson(res, { ok });
       return;
