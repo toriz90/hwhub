@@ -92,6 +92,28 @@ function conversationFromRow(row) {
   };
 }
 
+function messageFromRow(row) {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderType: row.sender_type,
+    senderId: row.sender_id,
+    body: row.body,
+    createdAt: row.created_at
+  };
+}
+
+function integrationFromRow(row) {
+  const config = row.encrypted_config || {};
+  return {
+    id: row.id,
+    provider: row.provider,
+    name: row.name,
+    active: row.is_active,
+    config: maskConfig(config)
+  };
+}
+
 async function seedDatabase(pool, defaults) {
   const { rows } = await pool.query(`
     select
@@ -175,7 +197,7 @@ function createMemoryStore(state) {
   return {
     mode: "memory",
     async bootstrap() {
-      return state;
+      return { ...state, integrations: state.integrations || [] };
     },
     async collection(name) {
       return state[name] || [];
@@ -198,8 +220,58 @@ function createMemoryStore(state) {
       return true;
     },
     async createConversation(conversation) {
+      state.messages ||= [];
       state.conversations.unshift(conversation);
+      state.messages.push({
+        id: `messages-${Date.now()}`,
+        conversationId: conversation.id,
+        senderType: "customer",
+        senderId: null,
+        body: conversation.lastMessage,
+        createdAt: new Date().toISOString()
+      });
       return conversation;
+    },
+    async messages(conversationId) {
+      return state.messages?.filter((item) => item.conversationId === conversationId) || [];
+    },
+    async addMessage(conversationId, payload) {
+      state.messages ||= [];
+      const message = {
+        id: `messages-${Date.now()}`,
+        conversationId,
+        senderType: payload.senderType || "agent",
+        senderId: payload.senderId || null,
+        body: payload.body || "",
+        createdAt: new Date().toISOString()
+      };
+      state.messages.push(message);
+      const conversation = state.conversations.find((item) => item.id === conversationId);
+      if (conversation) conversation.lastMessage = message.body;
+      return message;
+    },
+    async updateConversationStatus(id, status) {
+      const conversation = state.conversations.find((item) => item.id === id);
+      if (!conversation) return null;
+      conversation.status = status;
+      return conversation;
+    },
+    async integrations() {
+      return state.integrations || [];
+    },
+    async saveIntegration(payload) {
+      state.integrations ||= [];
+      const item = {
+        id: payload.id || `integrations-${Date.now()}`,
+        provider: payload.provider,
+        name: payload.name,
+        active: Boolean(payload.active),
+        config: payload.config || {}
+      };
+      const index = state.integrations.findIndex((entry) => entry.id === item.id);
+      if (index >= 0) state.integrations[index] = item;
+      else state.integrations.unshift(item);
+      return { ...item, config: maskConfig(item.config) };
     }
   };
 }
@@ -208,14 +280,15 @@ function createPostgresStore(pool, fallbackState) {
   return {
     mode: "postgres",
     async bootstrap() {
-      const [branches, agents, faqs, routingRules, conversations] = await Promise.all([
+      const [branches, agents, faqs, routingRules, conversations, integrations] = await Promise.all([
         this.collection("branches"),
         this.collection("agents"),
         this.collection("faqs"),
         this.collection("routingRules"),
-        this.collection("conversations")
+        this.collection("conversations"),
+        this.integrations()
       ]);
-      return { branches, agents, faqs, routingRules, conversations };
+      return { branches, agents, faqs, routingRules, conversations, integrations };
     },
     async collection(name) {
       if (name === "branches") {
@@ -295,6 +368,54 @@ function createPostgresStore(pool, fallbackState) {
         [rows[0].id, conversation.lastMessage]
       );
       return conversationFromRow({ ...rows[0], last_message: conversation.lastMessage });
+    },
+    async messages(conversationId) {
+      const { rows } = await pool.query(
+        "select * from messages where conversation_id = $1 order by created_at asc",
+        [conversationId]
+      );
+      return rows.map(messageFromRow);
+    },
+    async addMessage(conversationId, payload) {
+      const { rows } = await pool.query(
+        `insert into messages (conversation_id, sender_type, sender_id, body)
+         values ($1, $2, $3, $4) returning *`,
+        [conversationId, payload.senderType || "agent", isUuid(payload.senderId) ? payload.senderId : null, payload.body || ""]
+      );
+      await pool.query("update conversations set updated_at = now(), metadata = metadata || $2 where id = $1", [
+        conversationId,
+        { lastMessage: payload.body || "" }
+      ]);
+      return messageFromRow(rows[0]);
+    },
+    async updateConversationStatus(id, status) {
+      const { rows } = await pool.query(
+        "update conversations set status = $2, updated_at = now() where id = $1 returning *",
+        [id, status]
+      );
+      return rows[0] ? conversationFromRow(rows[0]) : null;
+    },
+    async integrations() {
+      const { rows } = await pool.query("select * from integration_accounts order by created_at desc");
+      return rows.map(integrationFromRow);
+    },
+    async saveIntegration(payload) {
+      const config = parseConfig(payload.config);
+      const active = Boolean(payload.active ?? true);
+      if (payload.id) {
+        const { rows } = await pool.query(
+          `update integration_accounts set provider=$2, name=$3, encrypted_config=$4, is_active=$5
+           where id=$1 returning *`,
+          [payload.id, payload.provider, payload.name, config, active]
+        );
+        return rows[0] ? integrationFromRow(rows[0]) : null;
+      }
+      const { rows } = await pool.query(
+        `insert into integration_accounts (provider, name, encrypted_config, is_active)
+         values ($1, $2, $3, $4) returning *`,
+        [payload.provider, payload.name, config, active]
+      );
+      return integrationFromRow(rows[0]);
     }
   };
 }
@@ -432,4 +553,25 @@ async function updateRoutingRule(pool, id, payload) {
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || "");
+}
+
+function parseConfig(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return { value };
+  }
+}
+
+function maskConfig(config) {
+  return Object.fromEntries(
+    Object.entries(config || {}).map(([key, value]) => {
+      if (!value) return [key, ""];
+      const text = String(value);
+      if (text.length <= 8) return [key, "********"];
+      return [key, `${text.slice(0, 4)}...${text.slice(-4)}`];
+    })
+  );
 }

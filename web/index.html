@@ -22,6 +22,7 @@
         <a href="#knowledge">FAQs</a>
         <a href="#directory">Directorio</a>
         <a href="#routing">Ruteo</a>
+        <a href="#integrations">APIs</a>
       </nav>
     </aside>
 
@@ -101,6 +102,56 @@
             <button>Probar ruteo</button>
           </form>
           <div id="chat-result" class="result"></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel conversation-detail">
+          <header>
+            <div>
+              <p class="eyebrow">Atencion</p>
+              <h2>Detalle de conversacion</h2>
+            </div>
+            <span id="conversation-status" class="status">Sin seleccion</span>
+          </header>
+          <div id="conversation-detail" class="detail-empty">Selecciona una conversacion para ver mensajes y acciones.</div>
+          <div class="conversation-actions">
+            <button data-conversation-action="take">Tomar</button>
+            <button data-conversation-action="pause">Pausar</button>
+            <button data-conversation-action="bot">Bot</button>
+            <button data-conversation-action="close">Cerrar</button>
+          </div>
+          <form id="agent-reply-form" class="reply-form">
+            <input id="agent-reply" placeholder="Respuesta del agente">
+            <button>Enviar</button>
+          </form>
+        </div>
+
+        <div class="panel" id="integrations">
+          <header>
+            <div>
+              <p class="eyebrow">Credenciales</p>
+              <h2>APIs e integraciones</h2>
+            </div>
+          </header>
+          <form id="integration-form" class="editor">
+            <input type="hidden" name="id">
+            <select name="provider">
+              <option value="openai">OpenAI</option>
+              <option value="claude">Claude</option>
+              <option value="whatsapp_cloud">WhatsApp Cloud</option>
+              <option value="evolution_api">Evolution API</option>
+              <option value="telnyx">Telnyx</option>
+              <option value="plivo">Plivo</option>
+              <option value="woocommerce">WooCommerce</option>
+              <option value="easyappointments">Easy!Appointments</option>
+            </select>
+            <input name="name" placeholder="Nombre visible">
+            <textarea name="config" placeholder='{"apiKey":"...", "url":"..."}'></textarea>
+            <label class="check"><input type="checkbox" name="active" checked> Activa</label>
+            <button>Guardar API</button>
+          </form>
+          <div id="integrations-list" class="cards"></div>
         </div>
       </section>
 

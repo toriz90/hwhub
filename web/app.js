@@ -1,5 +1,6 @@
 let appState = null;
 let alerts = 0;
+let selectedConversationId = null;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -42,6 +43,9 @@ function render() {
           <p>${esc(item.lastMessage)}</p>
           <p class="meta">${esc(item.channel)} - ${esc(item.intent || "sin intencion")} - ${agent ? esc(agent.name) : "sin agente"}</p>
           <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
+          <div class="row-actions">
+            <button data-open-conversation="${esc(item.id)}">Abrir</button>
+          </div>
         </article>
       `;
     })
@@ -93,7 +97,9 @@ function render() {
     `)
     .join("");
 
+  renderIntegrations();
   bindRowActions();
+  bindConversationButtons();
 }
 
 function renderFaqs(query = "") {
@@ -129,6 +135,27 @@ async function refresh() {
   const response = await fetch("/api/bootstrap");
   appState = await response.json();
   render();
+}
+
+async function openConversation(id) {
+  selectedConversationId = id;
+  const response = await fetch(`/api/conversations/${id}`);
+  const data = await response.json();
+  $("#conversation-status").textContent = statusLabel(data.conversation.status);
+  $("#conversation-status").className = `status ${data.conversation.status}`;
+  $("#conversation-detail").className = "";
+  $("#conversation-detail").innerHTML = `
+    <div class="message-list">
+      ${data.messages
+        .map((message) => `
+          <div class="message ${esc(message.senderType)}">
+            <p>${esc(message.body)}</p>
+            <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleString()}</small>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
 }
 
 async function sendChat(message, channel = "web_widget") {
@@ -207,6 +234,42 @@ function bindRowActions() {
   }
 }
 
+function bindConversationButtons() {
+  for (const button of $$("[data-open-conversation]")) {
+    button.onclick = () => openConversation(button.dataset.openConversation);
+  }
+}
+
+function renderIntegrations() {
+  $("#integrations-list").innerHTML = (appState.integrations || [])
+    .map((item) => `
+      <article class="card">
+        <strong>${esc(item.name)}</strong>
+        <p class="meta">${esc(item.provider)} - ${item.active ? "activa" : "inactiva"}</p>
+        ${Object.entries(item.config || {})
+          .map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`)
+          .join("")}
+        <div class="row-actions">
+          <button data-edit-integration="${esc(item.id)}">Editar</button>
+        </div>
+      </article>
+    `)
+    .join("");
+
+  for (const button of $$("[data-edit-integration]")) {
+    button.onclick = () => {
+      const item = appState.integrations.find((entry) => entry.id === button.dataset.editIntegration);
+      if (!item) return;
+      const form = $("#integration-form");
+      form.elements.id.value = item.id;
+      form.elements.provider.value = item.provider;
+      form.elements.name.value = item.name;
+      form.elements.active.checked = item.active;
+      form.elements.config.value = JSON.stringify(item.config || {}, null, 2);
+    };
+  }
+}
+
 $("#chat-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   await sendChat($("#message").value, $("#channel").value);
@@ -226,6 +289,57 @@ $("#simulate-marketplace").addEventListener("click", () => {
 
 $("#faq-search").addEventListener("input", (event) => renderFaqs(event.target.value));
 
+for (const button of $$("[data-conversation-action]")) {
+  button.addEventListener("click", async () => {
+    if (!selectedConversationId) return;
+    const action = button.dataset.conversationAction;
+    const response = await fetch(`/api/conversations/${selectedConversationId}/${action}`, { method: "POST" });
+    if (response.ok) {
+      await refresh();
+      await openConversation(selectedConversationId);
+    }
+  });
+}
+
+$("#agent-reply-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedConversationId) return;
+  const input = $("#agent-reply");
+  const body = input.value.trim();
+  if (!body) return;
+  await fetch(`/api/conversations/${selectedConversationId}/messages`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ senderType: "agent", body })
+  });
+  input.value = "";
+  await refresh();
+  await openConversation(selectedConversationId);
+});
+
+$("#integration-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = formPayload(form);
+  try {
+    payload.config = payload.config ? JSON.parse(payload.config) : {};
+  } catch {
+    alert("La configuracion debe ser JSON valido.");
+    return;
+  }
+  const response = await fetch("/api/integrations", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    alert("No se pudo guardar la integracion.");
+    return;
+  }
+  form.reset();
+  await refresh();
+});
+
 const events = new EventSource("/api/events");
 events.addEventListener("conversation.created", (event) => {
   alerts += 1;
@@ -237,6 +351,10 @@ events.addEventListener("conversation.updated", (event) => {
   const next = JSON.parse(event.data);
   appState.conversations = appState.conversations.map((item) => (item.id === next.id ? next : item));
   render();
+});
+events.addEventListener("message.created", async (event) => {
+  const message = JSON.parse(event.data);
+  if (message.conversationId === selectedConversationId) await openConversation(selectedConversationId);
 });
 
 bindEditors();

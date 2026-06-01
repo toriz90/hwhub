@@ -30,7 +30,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -290,7 +291,8 @@ h2 {
 .editor input[name="longAnswer"],
 .editor input[name="fallbackMessage"],
 .editor input[name="services"],
-.editor input[name="wholesaleContact"] {
+.editor input[name="wholesaleContact"],
+.editor textarea {
   grid-column: 1 / -1;
 }
 
@@ -320,6 +322,59 @@ h2 {
   color: var(--ink);
 }
 
+.conversation-detail {
+  min-height: 420px;
+}
+
+.detail-empty {
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.message-list {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 330px;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.message {
+  max-width: 82%;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  background: #eef4f8;
+}
+
+.message.agent,
+.message.bot {
+  margin-left: auto;
+  background: #e8f7f3;
+}
+
+.message small {
+  display: block;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.conversation-actions,
+.reply-form {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.conversation-actions button {
+  padding: 0.55rem 0.7rem;
+}
+
+.reply-form input {
+  flex: 1;
+}
+
 label {
   display: grid;
   gap: 0.35rem;
@@ -328,13 +383,19 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 0.72rem 0.8rem;
   color: var(--ink);
   background: var(--white);
+}
+
+textarea {
+  min-height: 92px;
+  resize: vertical;
 }
 
 .result {

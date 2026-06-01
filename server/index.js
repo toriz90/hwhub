@@ -358,7 +358,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname.startsWith("/api/conversations/") && req.method === "POST") {
+  if (url.pathname.match(/^\/api\/conversations\/[^/]+\/(pause|take|bot|close)$/) && req.method === "POST") {
     const id = url.pathname.split("/")[3];
     const action = url.pathname.split("/")[4];
     const currentState = await store.bootstrap();
@@ -367,12 +367,59 @@ const server = createServer(async (req, res) => {
       sendJson(res, { error: "Conversation not found" }, 404);
       return;
     }
-    if (action === "pause") conversation.status = "paused";
-    if (action === "take") conversation.status = "agent_active";
-    if (action === "bot") conversation.status = "bot_active";
-    if (action === "close") conversation.status = "closed";
-    emit("conversation.updated", conversation);
-    sendJson(res, conversation);
+    const nextStatus = {
+      pause: "paused",
+      take: "agent_active",
+      bot: "bot_active",
+      close: "closed"
+    }[action];
+    if (!nextStatus) {
+      sendJson(res, { error: "Unsupported conversation action" }, 400);
+      return;
+    }
+    const updated = await store.updateConversationStatus(id, nextStatus);
+    emit("conversation.updated", updated);
+    sendJson(res, updated);
+    return;
+  }
+
+  if (url.pathname.match(/^\/api\/conversations\/[^/]+$/) && req.method === "GET") {
+    const id = url.pathname.split("/")[3];
+    const currentState = await store.bootstrap();
+    const conversation = currentState.conversations.find((item) => item.id === id);
+    if (!conversation) {
+      sendJson(res, { error: "Conversation not found" }, 404);
+      return;
+    }
+    sendJson(res, {
+      conversation,
+      messages: await store.messages(id)
+    });
+    return;
+  }
+
+  if (url.pathname.match(/^\/api\/conversations\/[^/]+\/messages$/) && req.method === "POST") {
+    const id = url.pathname.split("/")[3];
+    const body = await readBody(req);
+    const message = await store.addMessage(id, {
+      senderType: body.senderType || "agent",
+      senderId: body.senderId || null,
+      body: body.body || ""
+    });
+    emit("message.created", message);
+    sendJson(res, message, 201);
+    return;
+  }
+
+  if (url.pathname === "/api/integrations" && req.method === "GET") {
+    sendJson(res, await store.integrations());
+    return;
+  }
+
+  if (url.pathname === "/api/integrations" && req.method === "POST") {
+    const integration = await store.saveIntegration(await readBody(req));
+    emit("integrations.updated", integration);
+    sendJson(res, integration, 201);
     return;
   }
 
