@@ -492,7 +492,7 @@ function createMemoryStore(state) {
       if (index >= 0) {
         const previous = state.integrations[index];
         item.id = state.integrations[index].id;
-        item.config = Object.keys(config).length ? config : state.integrations[index].config;
+        item.config = Object.keys(config).length ? { ...state.integrations[index].config, ...config } : state.integrations[index].config;
         item.lastCheckedAt = previous.lastCheckedAt || null;
         item.lastCheckStatus = previous.lastCheckStatus || null;
         item.lastCheckMessage = previous.lastCheckMessage || null;
@@ -756,7 +756,7 @@ function createPostgresStore(pool, fallbackState) {
           `update integration_accounts
            set provider=$2,
                name=$3,
-               encrypted_config=case when $4::jsonb = '{}'::jsonb then encrypted_config else $4::jsonb end,
+               encrypted_config=case when $4::jsonb = '{}'::jsonb then encrypted_config else encrypted_config || $4::jsonb end,
                is_active=$5
            where id=$1 returning *`,
           [payload.id, payload.provider, payload.name, config, active]
@@ -770,7 +770,7 @@ function createPostgresStore(pool, fallbackState) {
       if (existing.rows[0]) {
         const { rows } = await pool.query(
           `update integration_accounts
-           set encrypted_config=case when $2::jsonb = '{}'::jsonb then encrypted_config else $2::jsonb end,
+           set encrypted_config=case when $2::jsonb = '{}'::jsonb then encrypted_config else encrypted_config || $2::jsonb end,
                is_active=$3
            where id=$1 returning *`,
           [existing.rows[0].id, config, active]

@@ -712,6 +712,25 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/integrations/test" && req.method === "POST") {
+    requirePermission(req, "integrations:write");
+    const body = await readBody(req);
+    let config = body.config || {};
+    try {
+      config = typeof config === "string" ? JSON.parse(config || "{}") : config;
+    } catch {
+      sendJson(res, { error: "Integration config must be valid JSON" }, 400);
+      return;
+    }
+    const result = await testIntegrationConnection({
+      provider: body.provider,
+      name: body.name || "Prueba temporal",
+      config
+    });
+    sendJson(res, result);
+    return;
+  }
+
   if (url.pathname.match(/^\/api\/integrations\/[^/]+\/test$/) && req.method === "POST") {
     requirePermission(req, "integrations:write");
     const id = url.pathname.split("/")[3];

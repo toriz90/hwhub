@@ -36,40 +36,81 @@ const roleCatalog = {
   viewer: ["ver bandeja", "ver FAQs", "ver directorio"]
 };
 
-const integrationTemplates = {
-  openai: {
+const integrationDefinitions = [
+  {
+    provider: "openai",
     name: "OpenAI produccion",
-    config: { apiKey: "sk-...", model: "gpt-4.1-mini", useForChat: true }
+    fields: [
+      { key: "apiKey", label: "API key", type: "password", required: true, placeholder: "sk-..." },
+      { key: "model", label: "Modelo", type: "text", required: true, value: "gpt-4.1-mini" },
+      { key: "useForChat", label: "Usar en chatbot", type: "checkbox", value: true }
+    ]
   },
-  claude: {
+  {
+    provider: "claude",
     name: "Claude produccion",
-    config: { apiKey: "sk-ant-...", model: "claude-sonnet-4-20250514", useForChat: true }
+    fields: [
+      { key: "apiKey", label: "API key", type: "password", required: true, placeholder: "sk-ant-..." },
+      { key: "model", label: "Modelo", type: "text", required: true, value: "claude-sonnet-4-20250514" },
+      { key: "useForChat", label: "Usar en chatbot", type: "checkbox", value: true }
+    ]
   },
-  whatsapp_cloud: {
+  {
+    provider: "whatsapp_cloud",
     name: "WhatsApp oficial",
-    config: { token: "EA...", phoneNumberId: "...", businessAccountId: "...", graphVersion: "v20.0" }
+    fields: [
+      { key: "token", label: "Access token", type: "password", required: true, placeholder: "EA..." },
+      { key: "phoneNumberId", label: "Phone number ID", type: "text", required: true },
+      { key: "businessAccountId", label: "Business account ID", type: "text" },
+      { key: "graphVersion", label: "Graph version", type: "text", required: true, value: "v20.0" }
+    ]
   },
-  evolution_api: {
+  {
+    provider: "evolution_api",
     name: "Evolution API",
-    config: { baseUrl: "https://evolution.tudominio.com", apiKey: "...", instanceName: "whalehub", testPath: "/instance/fetchInstances" }
+    fields: [
+      { key: "baseUrl", label: "Base URL", type: "url", required: true, placeholder: "https://evolution.tudominio.com" },
+      { key: "apiKey", label: "API key", type: "password", required: true },
+      { key: "instanceName", label: "Instancia", type: "text", required: true, value: "whalehub" },
+      { key: "testPath", label: "Ruta de prueba", type: "text", required: true, value: "/instance/fetchInstances" }
+    ]
   },
-  telnyx: {
+  {
+    provider: "telnyx",
     name: "Telnyx WhatsApp/SMS",
-    config: { apiKey: "KEY...", messagingProfileId: "..." }
+    fields: [
+      { key: "apiKey", label: "API key", type: "password", required: true, placeholder: "KEY..." },
+      { key: "messagingProfileId", label: "Messaging profile ID", type: "text" }
+    ]
   },
-  plivo: {
+  {
+    provider: "plivo",
     name: "Plivo WhatsApp/SMS",
-    config: { authId: "...", authToken: "...", phoneNumber: "..." }
+    fields: [
+      { key: "authId", label: "Auth ID", type: "text", required: true },
+      { key: "authToken", label: "Auth token", type: "password", required: true },
+      { key: "phoneNumber", label: "Numero", type: "text" }
+    ]
   },
-  woocommerce: {
+  {
+    provider: "woocommerce",
     name: "WooCommerce tienda oficial",
-    config: { baseUrl: "https://tutienda.com", consumerKey: "ck_...", consumerSecret: "cs_..." }
+    fields: [
+      { key: "baseUrl", label: "URL de tienda", type: "url", required: true, placeholder: "https://tutienda.com" },
+      { key: "consumerKey", label: "Consumer key", type: "password", required: true, placeholder: "ck_..." },
+      { key: "consumerSecret", label: "Consumer secret", type: "password", required: true, placeholder: "cs_..." }
+    ]
   },
-  easyappointments: {
+  {
+    provider: "easyappointments",
     name: "Easy!Appointments agenda",
-    config: { baseUrl: "https://agenda.tudominio.com", apiKey: "...", testPath: "/index.php/api/v1/services" }
+    fields: [
+      { key: "baseUrl", label: "URL de agenda", type: "url", required: true, placeholder: "https://agenda.tudominio.com" },
+      { key: "apiKey", label: "API key/token", type: "password" },
+      { key: "testPath", label: "Ruta de prueba", type: "text", required: true, value: "/index.php/api/v1/services" }
+    ]
   }
-};
+];
 
 function esc(value) {
   return String(value ?? "")
@@ -100,11 +141,65 @@ function formatDateTime(value) {
 }
 
 function integrationTemplate(provider) {
-  return integrationTemplates[provider] || integrationTemplates.openai;
+  return integrationDefinitions.find((item) => item.provider === provider) || integrationDefinitions[0];
 }
 
-function prettyJson(value) {
-  return JSON.stringify(value, null, 2);
+function definitionDefaults(definition) {
+  return Object.fromEntries(definition.fields.map((field) => [field.key, field.value ?? ""]));
+}
+
+function renderIntegrationFields(provider, values = {}, keepSecrets = false) {
+  const definition = integrationTemplate(provider);
+  $("#integration-fields").innerHTML = definition.fields
+    .map((field) => {
+      const value = values[field.key] ?? field.value ?? "";
+      const required = field.required ? "required" : "";
+      if (field.type === "checkbox") {
+        return `
+          <label class="check integration-field">
+            <input type="checkbox" data-config-field="${esc(field.key)}" ${value ? "checked" : ""}>
+            ${esc(field.label)}
+          </label>
+        `;
+      }
+      return `
+        <label class="integration-field">
+          ${esc(field.label)}${field.required ? " *" : ""}
+          <input
+            type="${esc(field.type || "text")}"
+            data-config-field="${esc(field.key)}"
+            value="${keepSecrets && field.type === "password" ? "" : esc(value)}"
+            placeholder="${esc(keepSecrets && field.type === "password" ? "Deja vacio para conservar el secreto guardado" : field.placeholder || field.value || "")}"
+            ${required}>
+        </label>
+      `;
+    })
+    .join("");
+  $("#integration-form").dataset.configTested = "false";
+  $("#save-integration").disabled = true;
+}
+
+function readIntegrationConfig({ allowBlankSecrets = false } = {}) {
+  const form = $("#integration-form");
+  const definition = integrationTemplate(form.elements.provider.value);
+  const config = {};
+  const errors = [];
+  for (const field of definition.fields) {
+    const input = form.querySelector(`[data-config-field="${field.key}"]`);
+    if (!input) continue;
+    const value = field.type === "checkbox" ? input.checked : input.value.trim();
+    const isBlankSecret = allowBlankSecrets && field.type === "password" && !value && form.elements.id.value;
+    if (field.required && !value && !isBlankSecret) errors.push(`${field.label} es obligatorio.`);
+    if (field.type === "url" && value && !/^https?:\/\//i.test(value)) errors.push(`${field.label} debe iniciar con http:// o https://.`);
+    if (value || field.type === "checkbox") config[field.key] = value;
+  }
+  return { config, errors };
+}
+
+function syncIntegrationConfig({ allowBlankSecrets = false } = {}) {
+  const { config, errors } = readIntegrationConfig({ allowBlankSecrets });
+  $("#integration-form").elements.config.value = Object.keys(config).length ? JSON.stringify(config) : "";
+  return { config, errors };
 }
 
 function formPayload(form) {
@@ -357,9 +452,11 @@ function renderIntegrations() {
       form.elements.provider.value = item.provider;
       form.elements.name.value = item.name;
       form.elements.config.value = "";
-      form.elements.config.placeholder = `Deja vacio para conservar el secreto guardado.\nPlantilla:\n${prettyJson(integrationTemplate(item.provider).config)}`;
+      renderIntegrationFields(item.provider, definitionDefaults(integrationTemplate(item.provider)), true);
       form.elements.active.checked = Boolean(item.active);
-      $("#integration-status").textContent = "Editando API existente. Deja config vacia para conservar el token.";
+      form.dataset.configTested = "true";
+      $("#save-integration").disabled = false;
+      $("#integration-status").textContent = "Editando API existente. Los secretos vacios se conservan; si cambias credenciales, prueba antes de guardar.";
       form.scrollIntoView({ behavior: "smooth", block: "center" });
     };
   }
@@ -536,16 +633,53 @@ function bindStaticEvents() {
   });
   const integrationProvider = $("#integration-form").elements.provider;
   integrationProvider.addEventListener("change", () => {
-    const template = integrationTemplate(integrationProvider.value);
-    $("#integration-form").elements.config.placeholder = prettyJson(template.config);
-  });
-  $("#load-integration-template").addEventListener("click", () => {
+    const definition = integrationTemplate(integrationProvider.value);
     const form = $("#integration-form");
-    const template = integrationTemplate(form.elements.provider.value);
-    if (!form.elements.name.value) form.elements.name.value = template.name;
-    form.elements.config.value = prettyJson(template.config);
-    $("#integration-status").textContent = "Plantilla cargada. Reemplaza los valores antes de guardar.";
+    if (!form.elements.name.value) form.elements.name.value = definition.name;
+    renderIntegrationFields(integrationProvider.value, definitionDefaults(definition));
+    $("#integration-status").textContent = "Completa los campos y prueba la conexion antes de guardar.";
   });
+  $("#integration-fields").addEventListener("input", () => {
+    $("#integration-form").dataset.configTested = "false";
+    $("#save-integration").disabled = true;
+    $("#integration-status").textContent = "Cambios pendientes. Prueba la conexion antes de guardar.";
+  });
+  $("#integration-fields").addEventListener("change", () => {
+    $("#integration-form").dataset.configTested = "false";
+    $("#save-integration").disabled = true;
+  });
+  $("#test-integration-draft").addEventListener("click", async () => {
+    const form = $("#integration-form");
+    const status = $("#integration-status");
+    const button = $("#test-integration-draft");
+    const { config, errors } = syncIntegrationConfig();
+    if (errors.length) {
+      status.textContent = errors.join(" ");
+      return;
+    }
+    button.disabled = true;
+    status.textContent = "Probando conexion...";
+    try {
+      const result = await api("/api/integrations/test", {
+        method: "POST",
+        body: JSON.stringify({
+          provider: form.elements.provider.value,
+          name: form.elements.name.value || integrationTemplate(form.elements.provider.value).name,
+          config
+        })
+      });
+      form.dataset.configTested = result.ok ? "true" : "false";
+      $("#save-integration").disabled = !result.ok;
+      status.textContent = result.message || "Prueba finalizada.";
+    } catch (error) {
+      form.dataset.configTested = "false";
+      $("#save-integration").disabled = true;
+      status.textContent = error.message || "No se pudo probar la conexion.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+  renderIntegrationFields(integrationProvider.value, definitionDefaults(integrationTemplate(integrationProvider.value)));
   bindEditors();
   bindConversationActions();
   bindConversationFilters();
@@ -798,9 +932,18 @@ function bindIntegrations() {
   $("#integration-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const button = form.querySelector("button");
+    const button = $("#save-integration");
     const status = $("#integration-status");
     if (form.dataset.saving === "true") return;
+    const { errors } = syncIntegrationConfig({ allowBlankSecrets: true });
+    if (errors.length) {
+      status.textContent = errors.join(" ");
+      return;
+    }
+    if (form.dataset.configTested !== "true") {
+      status.textContent = "Primero prueba la conexion correctamente antes de guardar.";
+      return;
+    }
     form.dataset.saving = "true";
     button.disabled = true;
     status.textContent = "Guardando...";
@@ -811,14 +954,14 @@ function bindIntegrations() {
         body: JSON.stringify(payload)
       });
       form.reset();
-      form.elements.config.placeholder = '{"apiKey":"...", "model":"gpt-4.1-mini", "useForChat":true}';
+      renderIntegrationFields(form.elements.provider.value, definitionDefaults(integrationTemplate(form.elements.provider.value)));
       status.textContent = "API guardada correctamente.";
       await refresh();
     } catch (error) {
       status.textContent = error.message || "No se pudo guardar la API.";
     } finally {
       form.dataset.saving = "false";
-      button.disabled = false;
+      button.disabled = form.dataset.configTested !== "true";
     }
   });
 }
