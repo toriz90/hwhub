@@ -447,7 +447,13 @@ function createMemoryStore(state) {
       return conversation;
     },
     async integrations() {
-      return state.integrations || [];
+      const seen = new Set();
+      return (state.integrations || []).filter((item) => {
+        const key = `${item.provider}:${String(item.name).toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
     async saveIntegration(payload) {
       state.integrations ||= [];
@@ -696,7 +702,11 @@ function createPostgresStore(pool, fallbackState) {
       return rows[0] ? conversationFromRow(rows[0]) : null;
     },
     async integrations() {
-      const { rows } = await pool.query("select * from integration_accounts order by created_at desc");
+      const { rows } = await pool.query(`
+        select distinct on (provider, lower(name)) *
+        from integration_accounts
+        order by provider, lower(name), created_at desc
+      `);
       return rows.map(integrationFromRow);
     },
     async saveIntegration(payload) {
