@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDataStore } from "./database.js";
+import { generateBotReply } from "./ai.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -449,6 +450,19 @@ const server = createServer(async (req, res) => {
     const channel = body.channel || "web_widget";
     const currentState = await store.bootstrap();
     const routed = routeMessage({ text: body.message || "", channel, currentState });
+    let ai = { provider: "rules", reply: routed.reply, usedContext: null };
+    if (routed.status === "bot_active") {
+      try {
+        ai = await generateBotReply({ text: body.message || "", routed, currentState, store });
+      } catch (error) {
+        ai = {
+          provider: "fallback",
+          reply: routed.reply || answerFromFaq(body.message || "", currentState),
+          error: error.message,
+          usedContext: null
+        };
+      }
+    }
     const conversation = {
       id: `conv-${Date.now()}`,
       channel,
@@ -457,14 +471,29 @@ const server = createServer(async (req, res) => {
       intent: routed.intent,
       marketplace: routed.marketplace,
       assignedAgentId: routed.assignedAgent?.id || null,
-      lastMessage: body.message || ""
+      lastMessage: body.message || "",
+      aiProvider: ai.provider
     };
     const savedConversation = await store.createConversation(conversation);
+    if (routed.status === "bot_active" && ai.reply) {
+      await store.addMessage(savedConversation.id, {
+        senderType: "bot",
+        senderId: null,
+        body: ai.reply,
+        metadata: { provider: ai.provider, model: ai.model, usedContext: ai.usedContext, error: ai.error || null }
+      });
+    }
     emit("conversation.created", savedConversation);
     sendJson(res, {
       conversation: savedConversation,
-      reply: routed.reply,
-      assignedAgent: routed.assignedAgent
+      reply: ai.reply,
+      assignedAgent: routed.assignedAgent,
+      ai: {
+        provider: ai.provider,
+        model: ai.model || null,
+        usedContext: ai.usedContext || null,
+        error: ai.error || null
+      }
     });
     return;
   }

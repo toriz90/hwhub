@@ -23,6 +23,7 @@ http://localhost:3000
 - Eventos en tiempo real con Server-Sent Events para alertas del backoffice.
 - Flujo de chatbot configurable desde datos del backend.
 - Preparacion para OpenAI o Claude como motor IA.
+- Motor IA controlado por contexto de FAQs, directorio y reglas de ruteo. Por defecto usa `AI_PROVIDER=mock`; para IA real usa `AI_PROVIDER=openai` o `AI_PROVIDER=claude` con tokens por `.env`, o guarda una API activa `openai`/`claude` desde la pantalla APIs.
 - Preparacion para PostgreSQL con full-text search, trigramas, pgvector y reglas de ruteo.
 - Preparacion para WooCommerce, Easy!Appointments, WhatsApp Cloud API, Evolution API, Telnyx y Plivo.
 
@@ -50,4 +51,4 @@ En desarrollo:
 4. Agregar conectores Evolution API, Telnyx y Plivo.
 5. Conectar WooCommerce para pedidos y estados.
 6. Conectar Easy!Appointments para disponibilidad y citas.
-7. Agregar proveedor IA real: OpenAI o Claude.
+7. Afinar prompts, pruebas y limites del proveedor IA real.

@@ -613,6 +613,7 @@ async function sendChat(message, channel = "web_widget") {
   $("#chat-result").innerHTML = `
     <strong>Respuesta:</strong> ${esc(data.reply)}
     <p class="meta">Estado: ${statusLabel(data.conversation.status)} - Agente: ${data.assignedAgent?.name || "sin asignar"}</p>
+    <p class="meta">IA: ${esc(data.ai?.provider || "rules")}${data.ai?.model ? ` - ${esc(data.ai.model)}` : ""}</p>
   `;
   return data;
 }

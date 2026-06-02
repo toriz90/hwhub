@@ -197,6 +197,7 @@ function messageFromRow(row) {
     senderType: row.sender_type,
     senderId: row.sender_id,
     body: row.body,
+    metadata: row.metadata || {},
     createdAt: row.created_at
   };
 }
@@ -413,6 +414,7 @@ function createMemoryStore(state) {
         senderType: payload.senderType || "agent",
         senderId: payload.senderId || null,
         body: payload.body || "",
+        metadata: payload.metadata || {},
         createdAt: new Date().toISOString()
       };
       state.messages.push(message);
@@ -460,6 +462,10 @@ function createMemoryStore(state) {
       if (index >= 0) state.integrations[index] = item;
       else state.integrations.unshift(item);
       return { ...item, config: maskConfig(item.config) };
+    },
+    async integrationConfig(provider) {
+      const item = (state.integrations || []).find((entry) => entry.provider === provider && entry.active !== false);
+      return item?.config || null;
     },
     async authenticate(email, password) {
       const user = state.users.find((item) => item.email === String(email || "").toLowerCase() && item.isActive);
@@ -640,9 +646,15 @@ function createPostgresStore(pool, fallbackState) {
     },
     async addMessage(conversationId, payload) {
       const { rows } = await pool.query(
-        `insert into messages (conversation_id, sender_type, sender_id, body)
-         values ($1, $2, $3, $4) returning *`,
-        [conversationId, payload.senderType || "agent", isUuid(payload.senderId) ? payload.senderId : null, payload.body || ""]
+        `insert into messages (conversation_id, sender_type, sender_id, body, metadata)
+         values ($1, $2, $3, $4, $5) returning *`,
+        [
+          conversationId,
+          payload.senderType || "agent",
+          isUuid(payload.senderId) ? payload.senderId : null,
+          payload.body || "",
+          payload.metadata || {}
+        ]
       );
       await pool.query("update conversations set updated_at = now(), metadata = metadata || $2 where id = $1", [
         conversationId,
@@ -695,6 +707,13 @@ function createPostgresStore(pool, fallbackState) {
         [payload.provider, payload.name, config, active]
       );
       return integrationFromRow(rows[0]);
+    },
+    async integrationConfig(provider) {
+      const { rows } = await pool.query(
+        "select encrypted_config from integration_accounts where provider = $1 and is_active = true order by created_at desc limit 1",
+        [provider]
+      );
+      return rows[0]?.encrypted_config || null;
     },
     async authenticate(email, password) {
       const { rows } = await pool.query("select * from users where lower(email) = lower($1) and is_active = true", [
