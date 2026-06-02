@@ -2,7 +2,3 @@ services:
   app:
     ports:
       - "127.0.0.1:${APP_HOST_PORT:-8041}:3000"
-
-  tunnel:
-    profiles:
-      - standalone-tunnel
