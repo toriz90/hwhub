@@ -495,6 +495,13 @@ const server = createServer(async (req, res) => {
       return;
     }
     const updated = await store.updateConversationStatus(id, nextStatus);
+    await store.addEvent(id, {
+      eventType: `conversation.${action}`,
+      actorType: "user",
+      actorId: req.user.id,
+      body: `${req.user.name} ejecuto accion: ${action}`,
+      metadata: { action, status: nextStatus, userEmail: req.user.email }
+    });
     emit("conversation.updated", updated);
     sendJson(res, updated);
     return;
@@ -510,7 +517,8 @@ const server = createServer(async (req, res) => {
     }
     sendJson(res, {
       conversation,
-      messages: await store.messages(id)
+      messages: await store.messages(id),
+      events: await store.events(id)
     });
     return;
   }
@@ -521,8 +529,15 @@ const server = createServer(async (req, res) => {
     const body = await readBody(req);
     const message = await store.addMessage(id, {
       senderType: body.senderType || "agent",
-      senderId: body.senderId || null,
+      senderId: body.senderId || req.user.agentId || null,
       body: body.body || ""
+    });
+    await store.addEvent(id, {
+      eventType: "conversation.agent_reply",
+      actorType: "user",
+      actorId: req.user.id,
+      body: `${req.user.name} respondio al cliente`,
+      metadata: { userEmail: req.user.email }
     });
     emit("message.created", message);
     sendJson(res, message, 201);

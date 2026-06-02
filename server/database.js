@@ -57,6 +57,22 @@ function sessionExpiry() {
 
 async function ensureAuthSchema(pool) {
   await pool.query(`
+    create table if not exists conversation_events (
+      id uuid primary key default gen_random_uuid(),
+      conversation_id uuid not null references conversations(id) on delete cascade,
+      event_type text not null,
+      actor_type text not null default 'system',
+      actor_id uuid,
+      body text not null,
+      metadata jsonb not null default '{}',
+      created_at timestamptz not null default now()
+    )
+  `);
+  await pool.query(`
+    create index if not exists conversation_events_conversation_idx
+    on conversation_events (conversation_id, created_at desc)
+  `);
+  await pool.query(`
     create table if not exists users (
       id uuid primary key default gen_random_uuid(),
       name text not null,
@@ -160,6 +176,19 @@ function messageFromRow(row) {
     senderType: row.sender_type,
     senderId: row.sender_id,
     body: row.body,
+    createdAt: row.created_at
+  };
+}
+
+function eventFromRow(row) {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    eventType: row.event_type,
+    actorType: row.actor_type,
+    actorId: row.actor_id,
+    body: row.body,
+    metadata: row.metadata || {},
     createdAt: row.created_at
   };
 }
@@ -304,6 +333,7 @@ function createMemoryStore(state) {
     },
     async createConversation(conversation) {
       state.messages ||= [];
+      state.conversationEvents ||= [];
       state.conversations.unshift(conversation);
       state.messages.push({
         id: `messages-${Date.now()}`,
@@ -313,10 +343,40 @@ function createMemoryStore(state) {
         body: conversation.lastMessage,
         createdAt: new Date().toISOString()
       });
+      state.conversationEvents.push({
+        id: `event-${Date.now()}`,
+        conversationId: conversation.id,
+        eventType: "conversation.created",
+        actorType: "system",
+        actorId: null,
+        body: `Conversacion creada en ${conversation.channel}`,
+        metadata: { intent: conversation.intent, marketplace: conversation.marketplace, status: conversation.status },
+        createdAt: new Date().toISOString()
+      });
       return conversation;
     },
     async messages(conversationId) {
       return state.messages?.filter((item) => item.conversationId === conversationId) || [];
+    },
+    async events(conversationId) {
+      return (state.conversationEvents || [])
+        .filter((item) => item.conversationId === conversationId)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    },
+    async addEvent(conversationId, payload) {
+      state.conversationEvents ||= [];
+      const event = {
+        id: `event-${Date.now()}`,
+        conversationId,
+        eventType: payload.eventType || "system.note",
+        actorType: payload.actorType || "system",
+        actorId: payload.actorId || null,
+        body: payload.body || "",
+        metadata: payload.metadata || {},
+        createdAt: new Date().toISOString()
+      };
+      state.conversationEvents.push(event);
+      return event;
     },
     async addMessage(conversationId, payload) {
       state.messages ||= [];
@@ -331,12 +391,26 @@ function createMemoryStore(state) {
       state.messages.push(message);
       const conversation = state.conversations.find((item) => item.id === conversationId);
       if (conversation) conversation.lastMessage = message.body;
+      await this.addEvent(conversationId, {
+        eventType: "message.created",
+        actorType: payload.senderType || "agent",
+        actorId: payload.senderId || null,
+        body: `Mensaje ${payload.senderType || "agent"} agregado`,
+        metadata: { preview: message.body.slice(0, 120) }
+      });
       return message;
     },
     async updateConversationStatus(id, status) {
       const conversation = state.conversations.find((item) => item.id === id);
       if (!conversation) return null;
+      const previousStatus = conversation.status;
       conversation.status = status;
+      await this.addEvent(id, {
+        eventType: "conversation.status_changed",
+        actorType: "system",
+        body: `Estado cambiado de ${previousStatus} a ${status}`,
+        metadata: { previousStatus, status }
+      });
       return conversation;
     },
     async integrations() {
@@ -508,6 +582,12 @@ function createPostgresStore(pool, fallbackState) {
          values ($1, 'customer', $2)`,
         [rows[0].id, conversation.lastMessage]
       );
+      await addConversationEvent(pool, rows[0].id, {
+        eventType: "conversation.created",
+        actorType: "system",
+        body: `Conversacion creada en ${conversation.channel}`,
+        metadata: { intent: conversation.intent, marketplace: conversation.marketplace, status: conversation.status }
+      });
       return conversationFromRow({ ...rows[0], last_message: conversation.lastMessage });
     },
     async messages(conversationId) {
@@ -516,6 +596,16 @@ function createPostgresStore(pool, fallbackState) {
         [conversationId]
       );
       return rows.map(messageFromRow);
+    },
+    async events(conversationId) {
+      const { rows } = await pool.query(
+        "select * from conversation_events where conversation_id = $1 order by created_at asc",
+        [conversationId]
+      );
+      return rows.map(eventFromRow);
+    },
+    async addEvent(conversationId, payload) {
+      return addConversationEvent(pool, conversationId, payload);
     },
     async addMessage(conversationId, payload) {
       const { rows } = await pool.query(
@@ -527,13 +617,30 @@ function createPostgresStore(pool, fallbackState) {
         conversationId,
         { lastMessage: payload.body || "" }
       ]);
+      await addConversationEvent(pool, conversationId, {
+        eventType: "message.created",
+        actorType: payload.senderType || "agent",
+        actorId: payload.senderId || null,
+        body: `Mensaje ${payload.senderType || "agent"} agregado`,
+        metadata: { preview: (payload.body || "").slice(0, 120) }
+      });
       return messageFromRow(rows[0]);
     },
     async updateConversationStatus(id, status) {
+      const previous = await pool.query("select status from conversations where id = $1", [id]);
+      const previousStatus = previous.rows[0]?.status || null;
       const { rows } = await pool.query(
         "update conversations set status = $2, updated_at = now() where id = $1 returning *",
         [id, status]
       );
+      if (rows[0]) {
+        await addConversationEvent(pool, id, {
+          eventType: "conversation.status_changed",
+          actorType: "system",
+          body: `Estado cambiado de ${previousStatus || "sin estado"} a ${status}`,
+          metadata: { previousStatus, status }
+        });
+      }
       return rows[0] ? conversationFromRow(rows[0]) : null;
     },
     async integrations() {
@@ -778,6 +885,22 @@ async function updateRoutingRule(pool, id, payload) {
     [id, item.name, item.priority, item.channel, item.marketplace, item.intent, item.requiredSkill, item.botAllowed, item.fallbackMessage]
   );
   return rows[0] ? ruleFromRow(rows[0]) : null;
+}
+
+async function addConversationEvent(pool, conversationId, payload) {
+  const { rows } = await pool.query(
+    `insert into conversation_events (conversation_id, event_type, actor_type, actor_id, body, metadata)
+     values ($1, $2, $3, $4, $5, $6) returning *`,
+    [
+      conversationId,
+      payload.eventType || "system.note",
+      payload.actorType || "system",
+      isUuid(payload.actorId) ? payload.actorId : null,
+      payload.body || "",
+      payload.metadata || {}
+    ]
+  );
+  return eventFromRow(rows[0]);
 }
 
 function isUuid(value) {

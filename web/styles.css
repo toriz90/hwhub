@@ -480,6 +480,26 @@ textarea:disabled {
   margin-top: 0.25rem;
 }
 
+.timeline {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.timeline h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.timeline-event {
+  border-left: 3px solid var(--teal);
+  padding: 0.45rem 0.7rem;
+  background: #fbfcfd;
+  border-radius: 0 7px 7px 0;
+}
+
 .conversation-actions,
 .reply-form {
   display: flex;

@@ -115,6 +115,19 @@ CREATE TABLE messages (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE conversation_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  event_type text NOT NULL,
+  actor_type text NOT NULL DEFAULT 'system',
+  actor_id uuid,
+  body text NOT NULL,
+  metadata jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX conversation_events_conversation_idx ON conversation_events (conversation_id, created_at DESC);
+
 CREATE TABLE integration_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   provider text NOT NULL,

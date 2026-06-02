@@ -508,6 +508,17 @@ async function openConversation(id) {
         `)
         .join("")}
     </div>
+    <div class="timeline">
+      <h3>Historial</h3>
+      ${(data.events || [])
+        .map((event) => `
+          <article class="timeline-event">
+            <strong>${esc(event.body)}</strong>
+            <p class="meta">${esc(event.eventType)} - ${esc(event.actorType)} - ${new Date(event.createdAt).toLocaleString()}</p>
+          </article>
+        `)
+        .join("") || `<article class="timeline-event"><p class="meta">Sin eventos registrados.</p></article>`}
+    </div>
   `;
 }
 
