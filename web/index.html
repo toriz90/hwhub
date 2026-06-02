@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260602-integration-tests">
+    <link rel="stylesheet" href="/styles.css?v=20260602-chat-api-templates">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -351,7 +351,10 @@
               <input name="name" placeholder="Nombre visible">
               <textarea name="config" placeholder='{"apiKey":"...", "model":"gpt-4.1-mini", "useForChat":true}'></textarea>
               <label class="check"><input type="checkbox" name="active" checked> Activa</label>
-              <button>Guardar API</button>
+              <div class="form-actions">
+                <button type="button" id="load-integration-template">Cargar plantilla</button>
+                <button>Guardar API</button>
+              </div>
               <p id="integration-status" class="form-note"></p>
             </form>
             <div id="integrations-list" class="cards"></div>
@@ -444,7 +447,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260602-integration-tests"></script>
+    <script src="/app.js?v=20260602-chat-api-templates"></script>
     <script src="/widget.js?v=20260602-auth" data-channel="official_site"></script>
   </body>
 </html>

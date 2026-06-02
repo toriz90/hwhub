@@ -432,6 +432,12 @@ textarea:disabled {
   justify-self: start;
 }
 
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .check {
   display: flex;
   align-items: center;

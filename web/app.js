@@ -36,6 +36,41 @@ const roleCatalog = {
   viewer: ["ver bandeja", "ver FAQs", "ver directorio"]
 };
 
+const integrationTemplates = {
+  openai: {
+    name: "OpenAI produccion",
+    config: { apiKey: "sk-...", model: "gpt-4.1-mini", useForChat: true }
+  },
+  claude: {
+    name: "Claude produccion",
+    config: { apiKey: "sk-ant-...", model: "claude-sonnet-4-20250514", useForChat: true }
+  },
+  whatsapp_cloud: {
+    name: "WhatsApp oficial",
+    config: { token: "EA...", phoneNumberId: "...", businessAccountId: "...", graphVersion: "v20.0" }
+  },
+  evolution_api: {
+    name: "Evolution API",
+    config: { baseUrl: "https://evolution.tudominio.com", apiKey: "...", instanceName: "whalehub", testPath: "/instance/fetchInstances" }
+  },
+  telnyx: {
+    name: "Telnyx WhatsApp/SMS",
+    config: { apiKey: "KEY...", messagingProfileId: "..." }
+  },
+  plivo: {
+    name: "Plivo WhatsApp/SMS",
+    config: { authId: "...", authToken: "...", phoneNumber: "..." }
+  },
+  woocommerce: {
+    name: "WooCommerce tienda oficial",
+    config: { baseUrl: "https://tutienda.com", consumerKey: "ck_...", consumerSecret: "cs_..." }
+  },
+  easyappointments: {
+    name: "Easy!Appointments agenda",
+    config: { baseUrl: "https://agenda.tudominio.com", apiKey: "...", testPath: "/index.php/api/v1/services" }
+  }
+};
+
 function esc(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -62,6 +97,14 @@ function roleCan(permission) {
 function formatDateTime(value) {
   if (!value) return "Sin prueba";
   return new Date(value).toLocaleString();
+}
+
+function integrationTemplate(provider) {
+  return integrationTemplates[provider] || integrationTemplates.openai;
+}
+
+function prettyJson(value) {
+  return JSON.stringify(value, null, 2);
 }
 
 function formPayload(form) {
@@ -314,7 +357,7 @@ function renderIntegrations() {
       form.elements.provider.value = item.provider;
       form.elements.name.value = item.name;
       form.elements.config.value = "";
-      form.elements.config.placeholder = "Deja vacio para conservar el secreto guardado";
+      form.elements.config.placeholder = `Deja vacio para conservar el secreto guardado.\nPlantilla:\n${prettyJson(integrationTemplate(item.provider).config)}`;
       form.elements.active.checked = Boolean(item.active);
       $("#integration-status").textContent = "Editando API existente. Deja config vacia para conservar el token.";
       form.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -490,6 +533,18 @@ function bindStaticEvents() {
     await logout();
     window.location.hash = "#dashboard";
     setAuthenticatedUi(false);
+  });
+  const integrationProvider = $("#integration-form").elements.provider;
+  integrationProvider.addEventListener("change", () => {
+    const template = integrationTemplate(integrationProvider.value);
+    $("#integration-form").elements.config.placeholder = prettyJson(template.config);
+  });
+  $("#load-integration-template").addEventListener("click", () => {
+    const form = $("#integration-form");
+    const template = integrationTemplate(form.elements.provider.value);
+    if (!form.elements.name.value) form.elements.name.value = template.name;
+    form.elements.config.value = prettyJson(template.config);
+    $("#integration-status").textContent = "Plantilla cargada. Reemplaza los valores antes de guardar.";
   });
   bindEditors();
   bindConversationActions();
@@ -676,14 +731,18 @@ function bindConversationActions() {
 }
 
 async function sendChat(message, channel = "web_widget") {
+  $("#chat-result").innerHTML = `<p class="meta">Probando chatbot...</p>`;
   const data = await api("/api/chat", {
     method: "POST",
     body: JSON.stringify({ message, channel, customer: "Cliente demo" })
   });
   $("#chat-result").innerHTML = `
     <strong>Respuesta:</strong> ${esc(data.reply)}
+    <p class="meta">Conversacion: ${esc(data.conversation.id)}</p>
+    <p class="meta">Canal: ${esc(data.conversation.channel)} - Intencion: ${esc(data.conversation.intent)} - Marketplace: ${esc(data.conversation.marketplace)}</p>
     <p class="meta">Estado: ${statusLabel(data.conversation.status)} - Agente: ${data.assignedAgent?.name || "sin asignar"}</p>
     <p class="meta">IA: ${esc(data.ai?.provider || "rules")}${data.ai?.model ? ` - ${esc(data.ai.model)}` : ""}</p>
+    ${data.ai?.error ? `<p class="meta">Error IA: ${esc(data.ai.error)}</p>` : ""}
   `;
   return data;
 }

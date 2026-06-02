@@ -254,7 +254,17 @@ function secretFrom(config = {}) {
 }
 
 function endpointFrom(config = {}) {
-  return config.baseUrl || config.url || config.endpoint || "";
+  return String(config.baseUrl || config.url || config.endpoint || "").replace(/\/+$/, "");
+}
+
+async function readProviderError(response) {
+  try {
+    const text = await response.text();
+    if (!text) return "";
+    return text.slice(0, 140);
+  } catch {
+    return "";
+  }
 }
 
 async function fetchWithTimeout(url, options = {}) {
@@ -300,26 +310,66 @@ async function testIntegrationConnection(integration) {
     if (!endpoint || !config.consumerKey || !config.consumerSecret) {
       return { ok: false, message: "Faltan url, consumerKey o consumerSecret de WooCommerce." };
     }
-    return { ok: true, message: "Configuracion minima de WooCommerce lista para sincronizar." };
+    const auth = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString("base64");
+    const response = await fetchWithTimeout(`${endpoint}/wp-json/wc/v3/products?per_page=1`, {
+      headers: { authorization: `Basic ${auth}` }
+    });
+    if (response.ok) return { ok: true, message: "WooCommerce respondio correctamente." };
+    return { ok: false, message: `WooCommerce rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
   }
 
   if (provider === "easyappointments") {
-    if (!endpointFrom(config)) return { ok: false, message: "Falta url/baseUrl de Easy!Appointments." };
-    return { ok: true, message: "Configuracion minima de Easy!Appointments lista." };
+    const endpoint = endpointFrom(config);
+    if (!endpoint) return { ok: false, message: "Falta url/baseUrl de Easy!Appointments." };
+    const testPath = config.testPath || "/index.php/api/v1/services";
+    const headers = {};
+    if (secret) headers.authorization = `Bearer ${secret}`;
+    const response = await fetchWithTimeout(`${endpoint}${testPath}`, { headers });
+    if (response.ok) return { ok: true, message: "Easy!Appointments respondio correctamente." };
+    return { ok: false, message: `Easy!Appointments rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
   }
 
   if (provider === "whatsapp_cloud") {
     if (!config.phoneNumberId && !config.businessAccountId) {
       return { ok: false, message: "Falta phoneNumberId o businessAccountId de WhatsApp Cloud." };
     }
-    return { ok: true, message: "Configuracion minima de WhatsApp Cloud lista." };
+    const graphVersion = config.graphVersion || "v20.0";
+    const target = config.phoneNumberId || config.businessAccountId;
+    const fields = config.phoneNumberId ? "display_phone_number,verified_name" : "name";
+    const response = await fetchWithTimeout(`https://graph.facebook.com/${graphVersion}/${target}?fields=${fields}`, {
+      headers: { authorization: `Bearer ${secret}` }
+    });
+    if (response.ok) return { ok: true, message: "WhatsApp Cloud respondio correctamente." };
+    return { ok: false, message: `WhatsApp Cloud rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
   }
 
   if (["evolution_api", "telnyx", "plivo"].includes(provider)) {
     if (!endpointFrom(config) && provider === "evolution_api") {
       return { ok: false, message: "Falta endpoint/baseUrl de Evolution API." };
     }
-    return { ok: true, message: "Credenciales minimas detectadas." };
+    if (provider === "evolution_api") {
+      const response = await fetchWithTimeout(`${endpointFrom(config)}${config.testPath || "/instance/fetchInstances"}`, {
+        headers: { apikey: secret, authorization: `Bearer ${secret}` }
+      });
+      if (response.ok) return { ok: true, message: "Evolution API respondio correctamente." };
+      return { ok: false, message: `Evolution API rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
+    }
+    if (provider === "telnyx") {
+      const response = await fetchWithTimeout("https://api.telnyx.com/v2/messaging_profiles?page[size]=1", {
+        headers: { authorization: `Bearer ${secret}` }
+      });
+      if (response.ok) return { ok: true, message: "Telnyx respondio correctamente." };
+      return { ok: false, message: `Telnyx rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
+    }
+    if (provider === "plivo") {
+      if (!config.authId) return { ok: false, message: "Falta authId de Plivo." };
+      const auth = Buffer.from(`${config.authId}:${secret}`).toString("base64");
+      const response = await fetchWithTimeout(`https://api.plivo.com/v1/Account/${config.authId}/`, {
+        headers: { authorization: `Basic ${auth}` }
+      });
+      if (response.ok) return { ok: true, message: "Plivo respondio correctamente." };
+      return { ok: false, message: `Plivo rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
+    }
   }
 
   return { ok: true, message: "Configuracion registrada." };
