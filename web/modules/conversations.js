@@ -27,6 +27,10 @@ export function renderConversations(appState) {
           <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
           <div class="row-actions">
             <button data-open-conversation="${esc(item.id)}">Abrir</button>
+            <button data-quick-conversation-action="take" data-id="${esc(item.id)}">Tomar</button>
+            <button data-quick-conversation-action="pause" data-id="${esc(item.id)}">Pausar</button>
+            <button data-quick-conversation-action="bot" data-id="${esc(item.id)}">Bot</button>
+            <button data-quick-conversation-action="close" data-id="${esc(item.id)}">Cerrar</button>
           </div>
         </article>
       `;
@@ -35,6 +39,13 @@ export function renderConversations(appState) {
 
   for (const button of $$("[data-open-conversation]")) {
     button.onclick = () => openConversation(button.dataset.openConversation);
+  }
+  for (const button of $$("[data-quick-conversation-action]")) {
+    button.onclick = async () => {
+      await api(`/api/conversations/${button.dataset.id}/${button.dataset.quickConversationAction}`, { method: "POST" });
+      window.dispatchEvent(new CustomEvent("hwhub:refresh"));
+      if (state.selectedConversationId === button.dataset.id) await openConversation(button.dataset.id);
+    };
   }
 }
 

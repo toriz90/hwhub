@@ -49,7 +49,7 @@ function applyRoleUi() {
     const collection = button.dataset.delete || button.dataset.edit;
     button.disabled = !roleCan(collection);
   }
-  for (const button of $$("[data-conversation-action]")) button.disabled = !roleCan("conversation");
+  for (const button of $$("[data-conversation-action], [data-quick-conversation-action]")) button.disabled = !roleCan("conversation");
   $("#agent-reply").disabled = !roleCan("conversation");
   $("#agent-reply-form button").disabled = !roleCan("conversation");
   document.body.dataset.role = state.role;
