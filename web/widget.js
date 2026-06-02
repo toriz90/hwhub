@@ -78,13 +78,23 @@
   }
 
   const session = loadSession();
+  let widgetConfig = {
+    title: "Honey Whale",
+    subtitle: "Atencion por chatbot y agentes",
+    welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
+    buttonLabel: "Chat",
+    headerColor: "#111b25",
+    accentColor: "#e84c70",
+    botBubbleColor: "#e8f6f4",
+    userBubbleColor: "#111b25"
+  };
   session.profileComplete = session.profileComplete && isProfileComplete();
 
   const button = document.createElement("button");
   button.className = "hwhub-widget-button";
   button.type = "button";
   button.setAttribute("aria-label", "Abrir chat");
-  button.innerHTML = `<span>Chat</span><strong id="hwhub-widget-badge" hidden>0</strong>`;
+  button.innerHTML = `<span>${esc(widgetConfig.buttonLabel)}</span><strong id="hwhub-widget-badge" hidden>0</strong>`;
 
   const panel = document.createElement("section");
   panel.className = "hwhub-widget-panel";
@@ -92,8 +102,8 @@
   panel.innerHTML = `
     <header>
       <div>
-        <strong>Honey Whale</strong>
-        <p>Atencion por chatbot y agentes</p>
+        <strong id="hwhub-widget-title">${esc(widgetConfig.title)}</strong>
+        <p id="hwhub-widget-subtitle">${esc(widgetConfig.subtitle)}</p>
       </div>
       <button id="hwhub-widget-edit-profile" type="button">Datos</button>
     </header>
@@ -159,8 +169,27 @@
   const sendButton = panel.querySelector("#hwhub-widget-send");
   const editProfile = panel.querySelector("#hwhub-widget-edit-profile");
   const cancelAppointment = panel.querySelector("#hwhub-widget-cancel-appointment");
+  const title = panel.querySelector("#hwhub-widget-title");
+  const subtitle = panel.querySelector("#hwhub-widget-subtitle");
   let appointmentOptions = null;
   let pendingAppointmentMessage = "";
+
+  async function loadWidgetConfig() {
+    try {
+      const response = await fetch(`${api}/api/widget-config`);
+      if (!response.ok) return;
+      widgetConfig = { ...widgetConfig, ...(await response.json()) };
+      button.querySelector("span").textContent = widgetConfig.buttonLabel || "Chat";
+      title.textContent = widgetConfig.title || "Honey Whale";
+      subtitle.textContent = widgetConfig.subtitle || "";
+      panel.style.setProperty("--hwhub-widget-header", widgetConfig.headerColor || "#111b25");
+      panel.style.setProperty("--hwhub-widget-accent", widgetConfig.accentColor || "#e84c70");
+      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f6f4");
+      panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#111b25");
+      button.style.background = widgetConfig.accentColor || "#e84c70";
+      renderMessages();
+    } catch {}
+  }
 
   function fillProfileForm() {
     for (const input of profileForm.querySelectorAll("[data-profile-field]")) {
@@ -179,8 +208,7 @@
   function setScreen(screen) {
     const showChat = screen === "chat" && session.profileComplete;
     const showAppointment = screen === "appointment" && session.profileComplete;
-    profileForm.hidden = showChat;
-    if (showAppointment) profileForm.hidden = true;
+    profileForm.hidden = showChat || showAppointment;
     appointmentForm.hidden = !showAppointment;
     chatScreen.hidden = !showChat;
     editProfile.hidden = !(showChat || showAppointment);
@@ -281,7 +309,7 @@
 
   function renderMessages() {
     const items = session.messages.length ? session.messages : [
-      { senderType: "bot", body: "Hola, completa tus datos y cuentame en que puedo ayudarte.", createdAt: new Date().toISOString() }
+      { senderType: "bot", body: widgetConfig.welcome || "Hola, completa tus datos y cuentame en que puedo ayudarte.", createdAt: new Date().toISOString() }
     ];
     let lastDate = "";
     messages.innerHTML = items.slice(-60).map((message) => {
@@ -453,5 +481,6 @@
   fillProfileForm();
   updateBadge();
   setScreen(session.profileComplete ? "chat" : "profile");
+  loadWidgetConfig();
   saveSession();
 })();

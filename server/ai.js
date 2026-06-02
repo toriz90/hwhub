@@ -65,6 +65,7 @@ function isUsableKey(value) {
 }
 
 function buildContext({ text, routed, currentState }) {
+  const settings = currentState.chatbotSettings || {};
   const normalized = String(text || "").toLowerCase();
   const faqs = currentState.faqs
     .filter((faq) => faq.published !== false)
@@ -100,6 +101,7 @@ function buildContext({ text, routed, currentState }) {
     at: message.createdAt
   }));
   return {
+    temperature: Number(settings.temperature ?? 0.3),
     summary: {
       intent: routed.intent,
       marketplace: routed.marketplace,
@@ -114,7 +116,7 @@ function buildContext({ text, routed, currentState }) {
       connectorErrors: connectorContext.errors?.length || 0
     },
     prompt: [
-      "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes.",
+      settings.prompt || "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes.",
       "Responde en espanol, claro y breve.",
       "Usa solamente la informacion de contexto. Si falta informacion, pide el dato necesario o canaliza a agente.",
       "No inventes telefonos, horarios, estados de pedidos, citas ni politicas.",
@@ -156,6 +158,7 @@ async function callOpenAI(provider, context) {
       model: provider.model,
       instructions: "Responde como agente de soporte de WhaleHub con tono claro, util y prudente.",
       input: context.prompt,
+      temperature: context.temperature ?? 0.3,
       max_output_tokens: 350
     })
   });
@@ -189,6 +192,7 @@ async function callClaude(provider, context) {
     body: JSON.stringify({
       model: provider.model,
       max_tokens: 350,
+      temperature: context.temperature ?? 0.3,
       system: "Responde como agente de soporte de WhaleHub con tono claro, util y prudente.",
       messages: [{ role: "user", content: context.prompt }]
     })

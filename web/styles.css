@@ -48,6 +48,10 @@ button {
   display: none !important;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .login-screen {
   min-height: 100vh;
   display: grid;
@@ -666,7 +670,7 @@ textarea {
 .hwhub-widget-panel header {
   padding: 0.9rem;
   color: var(--white);
-  background: #111b25;
+  background: var(--hwhub-widget-header, #111b25);
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
@@ -790,7 +794,7 @@ textarea {
 .hwhub-widget-message.customer {
   justify-self: end;
   color: var(--white);
-  background: #111b25;
+  background: var(--hwhub-widget-user, #111b25);
 }
 
 .hwhub-widget-message.customer time {
@@ -799,7 +803,12 @@ textarea {
 
 .hwhub-widget-message.bot {
   justify-self: start;
-  background: #e8f6f4;
+  background: var(--hwhub-widget-bot, #e8f6f4);
+}
+
+.hwhub-widget-profile-screen[hidden],
+.hwhub-widget-chat-screen[hidden] {
+  display: none !important;
 }
 
 .hwhub-widget-message.system {

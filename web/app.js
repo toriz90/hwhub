@@ -599,7 +599,20 @@ function render() {
   renderIntegrations();
   renderRoleMatrix();
   renderUsers();
+  renderChatbotSettings();
   applyRoleUi();
+}
+
+function renderChatbotSettings() {
+  const form = $("#chatbot-settings-form");
+  if (!form || !state.data) return;
+  const settings = state.data.settings?.chatbot || {};
+  const widget = settings.widget || {};
+  form.elements.prompt.value = settings.prompt || "";
+  form.elements.temperature.value = settings.temperature ?? 0.3;
+  for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "accentColor", "botBubbleColor", "userBubbleColor"]) {
+    if (form.elements[key]) form.elements[key].value = widget[key] || (form.elements[key].type === "color" ? "#111b25" : "");
+  }
 }
 
 async function refresh() {
@@ -622,6 +635,33 @@ function bindStaticEvents() {
     event.preventDefault();
     await sendChat($("#message").value, $("#channel").value);
     await refresh();
+  });
+  $("#chatbot-settings-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = $("#chatbot-settings-status");
+    const payload = {
+      prompt: form.elements.prompt.value,
+      temperature: Number(form.elements.temperature.value || 0.3),
+      widget: {
+        title: form.elements.title.value,
+        subtitle: form.elements.subtitle.value,
+        buttonLabel: form.elements.buttonLabel.value,
+        welcome: form.elements.welcome.value,
+        headerColor: form.elements.headerColor.value,
+        accentColor: form.elements.accentColor.value,
+        botBubbleColor: form.elements.botBubbleColor.value,
+        userBubbleColor: form.elements.userBubbleColor.value
+      }
+    };
+    status.textContent = "Guardando...";
+    try {
+      await api("/api/settings/chatbot", { method: "POST", body: JSON.stringify(payload) });
+      status.textContent = "Configuracion guardada. Refresca el sitio publico para ver cambios del widget.";
+      await refresh();
+    } catch (error) {
+      status.textContent = error.message || "No se pudo guardar la configuracion.";
+    }
   });
   $("#simulate-whatsapp").addEventListener("click", async () => {
     $("#channel").value = "whatsapp_cloud";

@@ -14,6 +14,29 @@ const port = Number(process.env.PORT || 3000);
 const clients = new Set();
 let store;
 
+const defaultChatbotSettings = {
+  prompt: "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes. Responde claro, breve y con datos verificables.",
+  temperature: 0.3,
+  widget: {
+    title: "Honey Whale",
+    subtitle: "Atencion por chatbot y agentes",
+    welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
+    buttonLabel: "Chat",
+    headerColor: "#111b25",
+    accentColor: "#e84c70",
+    botBubbleColor: "#e8f6f4",
+    userBubbleColor: "#111b25"
+  }
+};
+
+function mergeChatbotSettings(value = {}) {
+  return {
+    ...defaultChatbotSettings,
+    ...(value || {}),
+    widget: { ...defaultChatbotSettings.widget, ...(value?.widget || {}) }
+  };
+}
+
 const state = {
   branches: [
     {
@@ -633,6 +656,38 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/widget-config" && req.method === "GET") {
+    const settings = mergeChatbotSettings(await store.settings?.("chatbot"));
+    sendJson(res, settings.widget);
+    return;
+  }
+
+  if (url.pathname === "/api/settings/chatbot" && req.method === "GET") {
+    if (!req.user) {
+      sendUnauthorized(res);
+      return;
+    }
+    sendJson(res, mergeChatbotSettings(await store.settings?.("chatbot")));
+    return;
+  }
+
+  if (url.pathname === "/api/settings/chatbot" && req.method === "POST") {
+    if (!req.user || !isAdmin(req)) {
+      sendJson(res, { error: "Only admins can manage chatbot settings" }, 403);
+      return;
+    }
+    const body = await readBody(req);
+    const current = mergeChatbotSettings(await store.settings?.("chatbot"));
+    const next = mergeChatbotSettings({
+      ...current,
+      ...body,
+      temperature: Math.max(0, Math.min(1, Number(body.temperature ?? current.temperature))),
+      widget: { ...current.widget, ...(body.widget || {}) }
+    });
+    sendJson(res, await store.saveSettings?.("chatbot", next));
+    return;
+  }
+
   if (url.pathname === "/health") {
     sendJson(res, {
       ok: true,
@@ -670,6 +725,7 @@ const server = createServer(async (req, res) => {
     connectorContext.appointmentState = appointmentState(mergedProfile, body.message || "", history);
     currentState.connectorContext = connectorContext;
     currentState.conversationHistory = history;
+    currentState.chatbotSettings = mergeChatbotSettings(await store.settings?.("chatbot"));
     const routed = routeMessage({ text: body.message || "", channel, currentState });
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
     const missingProfilePrompt = profilePrompt(mergedProfile);

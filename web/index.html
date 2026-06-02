@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260602-appointment-wizard">
+    <link rel="stylesheet" href="/styles.css?v=20260602-chatbot-settings">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -205,6 +205,26 @@
               <div>Responder con IA o canalizar a agente</div>
               <div>Pausar, tomar, transferir o cerrar</div>
             </div>
+            <form id="chatbot-settings-form" class="editor">
+              <label>
+                Prompt general
+                <textarea name="prompt" id="chatbot-prompt"></textarea>
+              </label>
+              <label>
+                Temperatura
+                <input name="temperature" id="chatbot-temperature" type="number" min="0" max="1" step="0.1">
+              </label>
+              <input name="title" placeholder="Titulo del widget">
+              <input name="subtitle" placeholder="Subtitulo del widget">
+              <input name="buttonLabel" placeholder="Texto del boton">
+              <input name="welcome" placeholder="Mensaje inicial">
+              <label>Color cabecera<input name="headerColor" type="color"></label>
+              <label>Color acento<input name="accentColor" type="color"></label>
+              <label>Burbuja bot<input name="botBubbleColor" type="color"></label>
+              <label>Burbuja cliente<input name="userBubbleColor" type="color"></label>
+              <button>Guardar configuracion</button>
+              <p id="chatbot-settings-status" class="form-note"></p>
+            </form>
             <form id="chat-form" class="chat-test">
               <label>
                 Canal
@@ -449,7 +469,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260602-appointment-wizard"></script>
-    <script src="/widget.js?v=20260602-appointment-wizard" data-channel="official_site"></script>
+    <script src="/app.js?v=20260602-chatbot-settings"></script>
+    <script src="/widget.js?v=20260602-chatbot-settings" data-channel="official_site"></script>
   </body>
 </html>

@@ -105,6 +105,13 @@ async function ensureAuthSchema(pool) {
   await pool.query("alter table integration_accounts add column if not exists last_checked_at timestamptz");
   await pool.query("alter table integration_accounts add column if not exists last_check_status text");
   await pool.query("alter table integration_accounts add column if not exists last_check_message text");
+  await pool.query(`
+    create table if not exists app_settings (
+      key text primary key,
+      value jsonb not null default '{}',
+      updated_at timestamptz not null default now()
+    )
+  `);
 }
 
 function csv(value) {
@@ -353,7 +360,8 @@ function createMemoryStore(state) {
       return {
         ...state,
         conversations: state.conversations.map((conversation) => enrichConversation(conversation)),
-        integrations: state.integrations || []
+        integrations: state.integrations || [],
+        settings: state.settings || {}
       };
     },
     async collection(name) {
@@ -546,6 +554,15 @@ function createMemoryStore(state) {
       state.integrations = (state.integrations || []).filter((entry) => entry.id !== id);
       return before !== state.integrations.length;
     },
+    async settings(key) {
+      state.settings ||= {};
+      return state.settings[key] || null;
+    },
+    async saveSettings(key, value) {
+      state.settings ||= {};
+      state.settings[key] = value || {};
+      return state.settings[key];
+    },
     async integrationConfig(provider) {
       const item = (state.integrations || []).find((entry) => entry.provider === provider && entry.active !== false);
       return item?.config || null;
@@ -623,7 +640,7 @@ function createPostgresStore(pool, fallbackState) {
         this.collection("conversations"),
         this.integrations()
       ]);
-      return { branches, agents, faqs, routingRules, conversations, integrations };
+      return { branches, agents, faqs, routingRules, conversations, integrations, settings: { chatbot: await this.settings("chatbot") } };
     },
     async collection(name) {
       if (name === "branches") {
@@ -889,6 +906,20 @@ function createPostgresStore(pool, fallbackState) {
     async deleteIntegration(id) {
       const { rowCount } = await pool.query("delete from integration_accounts where id=$1", [id]);
       return rowCount > 0;
+    },
+    async settings(key) {
+      const { rows } = await pool.query("select value from app_settings where key=$1", [key]);
+      return rows[0]?.value || null;
+    },
+    async saveSettings(key, value) {
+      const { rows } = await pool.query(
+        `insert into app_settings (key, value, updated_at)
+         values ($1, $2, now())
+         on conflict (key) do update set value=excluded.value, updated_at=now()
+         returning value`,
+        [key, value || {}]
+      );
+      return rows[0]?.value || {};
     },
     async integrationConfig(provider) {
       const { rows } = await pool.query(
