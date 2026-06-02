@@ -174,10 +174,13 @@ function conversationFromRow(row) {
     id: row.id,
     channel: row.channel,
     customer: row.customer_name || "Visitante",
+    customerPhone: row.customer_phone || row.customerPhone || null,
     status: row.status,
     intent: row.detected_intent,
     marketplace: row.marketplace,
     assignedAgentId: row.assigned_agent_id,
+    externalConversationId: row.external_conversation_id || row.externalConversationId || null,
+    metadata: row.metadata || {},
     lastMessage: row.last_message || row.metadata?.lastMessage || "",
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -398,6 +401,32 @@ function createMemoryStore(state) {
         createdAt: new Date().toISOString()
       });
       return conversation;
+    },
+    async conversationById(id) {
+      return state.conversations.find((item) => item.id === id) || null;
+    },
+    async activeConversationByExternalId(externalId, channel) {
+      if (!externalId) return null;
+      return state.conversations.find(
+        (item) =>
+          item.externalConversationId === externalId &&
+          item.channel === channel &&
+          item.status !== "closed"
+      ) || null;
+    },
+    async updateConversationContext(id, payload) {
+      const conversation = state.conversations.find((item) => item.id === id);
+      if (!conversation) return null;
+      if (payload.customer) conversation.customer = payload.customer;
+      if (payload.customerPhone) conversation.customerPhone = payload.customerPhone;
+      if (payload.externalConversationId) conversation.externalConversationId = payload.externalConversationId;
+      if (payload.status) conversation.status = payload.status;
+      if (payload.intent) conversation.intent = payload.intent;
+      if (payload.marketplace) conversation.marketplace = payload.marketplace;
+      if (payload.assignedAgentId !== undefined) conversation.assignedAgentId = payload.assignedAgentId;
+      conversation.metadata = { ...(conversation.metadata || {}), ...(payload.metadata || {}) };
+      conversation.updatedAt = new Date().toISOString();
+      return enrichConversation(conversation);
     },
     async messages(conversationId) {
       return state.messages?.filter((item) => item.conversationId === conversationId) || [];
@@ -655,17 +684,19 @@ function createPostgresStore(pool, fallbackState) {
     async createConversation(conversation) {
       const { rows } = await pool.query(
         `insert into conversations
-          (channel, customer_name, status, detected_intent, marketplace, assigned_agent_id, metadata)
-         values ($1, $2, $3, $4, $5, $6, $7)
+          (channel, external_conversation_id, customer_name, customer_phone, status, detected_intent, marketplace, assigned_agent_id, metadata)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          returning *`,
         [
           conversation.channel,
+          conversation.externalConversationId || null,
           conversation.customer,
+          conversation.customerPhone || null,
           conversation.status,
           conversation.intent,
           conversation.marketplace,
           isUuid(conversation.assignedAgentId) ? conversation.assignedAgentId : null,
-          { lastMessage: conversation.lastMessage }
+          { ...(conversation.metadata || {}), lastMessage: conversation.lastMessage }
         ]
       );
       await pool.query(
@@ -680,6 +711,52 @@ function createPostgresStore(pool, fallbackState) {
         metadata: { intent: conversation.intent, marketplace: conversation.marketplace, status: conversation.status }
       });
       return conversationFromRow({ ...rows[0], last_message: conversation.lastMessage });
+    },
+    async conversationById(id) {
+      const { rows } = await pool.query("select * from conversations where id = $1", [id]);
+      return rows[0] ? conversationFromRow(rows[0]) : null;
+    },
+    async activeConversationByExternalId(externalId, channel) {
+      if (!externalId) return null;
+      const { rows } = await pool.query(
+        `select *
+         from conversations
+         where external_conversation_id = $1
+           and channel = $2
+           and status <> 'closed'
+         order by updated_at desc
+         limit 1`,
+        [externalId, channel]
+      );
+      return rows[0] ? conversationFromRow(rows[0]) : null;
+    },
+    async updateConversationContext(id, payload) {
+      const { rows } = await pool.query(
+        `update conversations
+         set customer_name = coalesce($2, customer_name),
+             customer_phone = coalesce($3, customer_phone),
+             external_conversation_id = coalesce($4, external_conversation_id),
+             status = coalesce($5, status),
+             detected_intent = coalesce($6, detected_intent),
+             marketplace = coalesce($7, marketplace),
+             assigned_agent_id = coalesce($8, assigned_agent_id),
+             metadata = metadata || $9,
+             updated_at = now()
+         where id = $1
+         returning *`,
+        [
+          id,
+          payload.customer || null,
+          payload.customerPhone || null,
+          payload.externalConversationId || null,
+          payload.status || null,
+          payload.intent || null,
+          payload.marketplace || null,
+          isUuid(payload.assignedAgentId) ? payload.assignedAgentId : null,
+          payload.metadata || {}
+        ]
+      );
+      return rows[0] ? conversationFromRow(rows[0]) : null;
     },
     async messages(conversationId) {
       const { rows } = await pool.query(

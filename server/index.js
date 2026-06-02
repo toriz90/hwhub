@@ -391,6 +391,37 @@ function detectIntent(text = "") {
   return "faq";
 }
 
+function customerProfileFromBody(body = {}) {
+  const customer = typeof body.customer === "object" ? body.customer : {};
+  const name = body.customerName || customer.name || (typeof body.customer === "string" ? body.customer : "");
+  const phone = body.customerPhone || customer.phone || "";
+  const email = body.customerEmail || customer.email || "";
+  return {
+    name: String(name || "").trim(),
+    phone: String(phone || "").trim(),
+    email: String(email || "").trim(),
+    wooCustomerId: body.wooCustomerId || customer.wooCustomerId || body.customerId || customer.id || null
+  };
+}
+
+function mergeCustomerProfile(conversation, profile) {
+  const current = conversation?.metadata?.customerProfile || {};
+  return {
+    name: profile.name || conversation?.customer || current.name || "",
+    phone: profile.phone || conversation?.customerPhone || current.phone || "",
+    email: profile.email || current.email || "",
+    wooCustomerId: profile.wooCustomerId || current.wooCustomerId || null
+  };
+}
+
+function profilePrompt(profile) {
+  const missing = [];
+  if (!profile.name || profile.name === "Visitante" || profile.name === "Widget") missing.push("tu nombre");
+  if (!profile.phone) missing.push("un telefono o WhatsApp de contacto");
+  if (!missing.length) return null;
+  return `Para darte seguimiento sin perder la conversacion, comparteme ${missing.join(" y ")}. Mientras tanto, dime en que puedo ayudarte.`;
+}
+
 function detectMarketplace(text = "", channel = "web_widget") {
   const value = text.toLowerCase();
   const terms = ["amazon", "mercadolibre", "walmart", "coppel", "elektra", "tiktok", "temu"];
@@ -575,12 +606,25 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const body = await readBody(req);
     const channel = body.channel || "web_widget";
+    const visitorId = body.visitorId || body.externalConversationId || null;
+    const profileInput = customerProfileFromBody(body);
     const currentState = await store.bootstrap();
     const connectorContext = await buildConnectorContext({ text: body.message || "", store });
     currentState.connectorContext = connectorContext;
     const routed = routeMessage({ text: body.message || "", channel, currentState });
+    let savedConversation = body.conversationId ? await store.conversationById?.(body.conversationId) : null;
+    if (!savedConversation && visitorId) savedConversation = await store.activeConversationByExternalId?.(visitorId, channel);
+    const existingConversation = Boolean(savedConversation);
+    const mergedProfile = mergeCustomerProfile(savedConversation, profileInput);
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
-    if (routed.status === "bot_active") {
+    const missingProfilePrompt = profilePrompt(mergedProfile);
+    if (missingProfilePrompt && !existingConversation) {
+      ai = {
+        provider: "profile",
+        reply: missingProfilePrompt,
+        usedContext: { missingProfile: true }
+      };
+    } else if (routed.status === "bot_active") {
       try {
         ai = await generateBotReply({ text: body.message || "", routed, currentState, store });
       } catch (error) {
@@ -592,19 +636,42 @@ const server = createServer(async (req, res) => {
         };
       }
     }
-    const conversation = {
-      id: `conv-${Date.now()}`,
-      channel,
-      customer: body.customer || "Visitante",
-      status: routed.status,
-      intent: routed.intent,
-      marketplace: routed.marketplace,
-      assignedAgentId: routed.assignedAgent?.id || null,
-      lastMessage: body.message || "",
-      aiProvider: ai.provider
-    };
-    const savedConversation = await store.createConversation(conversation);
-    if (routed.status === "bot_active" && ai.reply) {
+    if (!savedConversation) {
+      savedConversation = await store.createConversation({
+        id: `conv-${Date.now()}`,
+        channel,
+        externalConversationId: visitorId,
+        customer: mergedProfile.name || "Visitante",
+        customerPhone: mergedProfile.phone || null,
+        status: routed.status,
+        intent: routed.intent,
+        marketplace: routed.marketplace,
+        assignedAgentId: routed.assignedAgent?.id || null,
+        lastMessage: body.message || "",
+        aiProvider: ai.provider,
+        metadata: { customerProfile: mergedProfile, visitorId, wooCustomerId: mergedProfile.wooCustomerId }
+      });
+      emit("conversation.created", savedConversation);
+    } else {
+      await store.addMessage(savedConversation.id, {
+        senderType: "customer",
+        senderId: null,
+        body: body.message || "",
+        metadata: { visitorId, customerProfile: mergedProfile }
+      });
+      savedConversation = await store.updateConversationContext?.(savedConversation.id, {
+        customer: mergedProfile.name || undefined,
+        customerPhone: mergedProfile.phone || undefined,
+        externalConversationId: visitorId || undefined,
+        status: savedConversation.status === "closed" ? savedConversation.status : routed.status,
+        intent: routed.intent,
+        marketplace: routed.marketplace,
+        assignedAgentId: routed.assignedAgent?.id,
+        metadata: { customerProfile: mergedProfile, visitorId, wooCustomerId: mergedProfile.wooCustomerId }
+      }) || savedConversation;
+      emit("conversation.updated", savedConversation);
+    }
+    if (ai.reply) {
       await store.addMessage(savedConversation.id, {
         senderType: "bot",
         senderId: null,
@@ -612,9 +679,12 @@ const server = createServer(async (req, res) => {
         metadata: { provider: ai.provider, model: ai.model, usedContext: ai.usedContext, error: ai.error || null }
       });
     }
-    emit("conversation.created", savedConversation);
+    const messages = await store.messages(savedConversation.id);
     sendJson(res, {
       conversation: savedConversation,
+      conversationId: savedConversation.id,
+      visitorId,
+      messages,
       reply: ai.reply,
       assignedAgent: routed.assignedAgent,
       ai: {

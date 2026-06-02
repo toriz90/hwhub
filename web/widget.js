@@ -2,6 +2,40 @@
   const currentScript = document.currentScript;
   const api = currentScript?.dataset.hwhubApi || "";
   const channel = currentScript?.dataset.channel || "web_widget";
+  const storageKey = `hwhub-widget:${api || location.origin}:${channel}`;
+
+  function loadSession() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      return {
+        visitorId: saved.visitorId || crypto.randomUUID(),
+        conversationId: saved.conversationId || "",
+        profile: {
+          name: currentScript?.dataset.customerName || saved.profile?.name || "",
+          phone: currentScript?.dataset.customerPhone || saved.profile?.phone || "",
+          email: currentScript?.dataset.customerEmail || saved.profile?.email || "",
+          wooCustomerId: currentScript?.dataset.customerId || saved.profile?.wooCustomerId || ""
+        },
+        messages: saved.messages || []
+      };
+    } catch {
+      return { visitorId: crypto.randomUUID(), conversationId: "", profile: {}, messages: [] };
+    }
+  }
+
+  function saveSession() {
+    localStorage.setItem(storageKey, JSON.stringify(session));
+  }
+
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  const session = loadSession();
 
   const button = document.createElement("button");
   button.className = "hwhub-widget-button";
@@ -18,31 +52,114 @@
       <p>Atencion por chatbot y agentes</p>
     </header>
     <div class="hwhub-widget-body">
-      <p id="hwhub-widget-reply">Hola, puedo ayudarte con pedidos, citas, sucursales, FAQs o canalizarte con un agente.</p>
-      <textarea id="hwhub-widget-message" placeholder="Escribe tu pregunta"></textarea>
-      <button id="hwhub-widget-send" type="button">Enviar</button>
+      <form id="hwhub-widget-profile" class="hwhub-widget-profile">
+        <input id="hwhub-widget-name" placeholder="Nombre" autocomplete="name">
+        <input id="hwhub-widget-phone" placeholder="Telefono o WhatsApp" autocomplete="tel">
+      </form>
+      <div id="hwhub-widget-messages" class="hwhub-widget-messages"></div>
+      <div class="hwhub-widget-compose">
+        <textarea id="hwhub-widget-message" placeholder="Escribe tu pregunta"></textarea>
+        <button id="hwhub-widget-send" type="button">Enviar</button>
+      </div>
     </div>
   `;
 
   document.body.append(panel, button);
 
+  const messages = panel.querySelector("#hwhub-widget-messages");
+  const nameInput = panel.querySelector("#hwhub-widget-name");
+  const phoneInput = panel.querySelector("#hwhub-widget-phone");
+  const textarea = panel.querySelector("#hwhub-widget-message");
+  const sendButton = panel.querySelector("#hwhub-widget-send");
+
+  nameInput.value = session.profile.name || "";
+  phoneInput.value = session.profile.phone || "";
+
+  function renderMessages() {
+    const items = session.messages.length ? session.messages : [
+      { senderType: "bot", body: "Hola, puedo ayudarte con pedidos, citas, productos, sucursales o canalizarte con un agente." }
+    ];
+    messages.innerHTML = items
+      .slice(-30)
+      .map((message) => `
+        <article class="hwhub-widget-message ${esc(message.senderType)}">
+          ${esc(message.body)}
+        </article>
+      `)
+      .join("");
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function syncProfile() {
+    session.profile.name = nameInput.value.trim();
+    session.profile.phone = phoneInput.value.trim();
+    saveSession();
+  }
+
   button.addEventListener("click", () => {
     panel.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      renderMessages();
+      textarea.focus();
+    }
   });
 
-  panel.querySelector("#hwhub-widget-send").addEventListener("click", async () => {
-    const textarea = panel.querySelector("#hwhub-widget-message");
-    const reply = panel.querySelector("#hwhub-widget-reply");
+  nameInput.addEventListener("input", syncProfile);
+  phoneInput.addEventListener("input", syncProfile);
+
+  async function sendMessage() {
     const message = textarea.value.trim();
     if (!message) return;
-    reply.textContent = "Consultando...";
-    const response = await fetch(`${api}/api/chat`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message, channel, customer: "Widget" })
-    });
-    const data = await response.json();
-    reply.textContent = data.reply;
+    syncProfile();
+    session.messages.push({ senderType: "customer", body: message });
     textarea.value = "";
+    renderMessages();
+    sendButton.disabled = true;
+    sendButton.textContent = "Enviando...";
+    try {
+      const response = await fetch(`${api}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message,
+          channel,
+          visitorId: session.visitorId,
+          conversationId: session.conversationId,
+          customer: session.profile,
+          customerName: session.profile.name,
+          customerPhone: session.profile.phone,
+          customerEmail: session.profile.email,
+          wooCustomerId: session.profile.wooCustomerId
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo enviar el mensaje");
+      session.conversationId = data.conversationId || data.conversation?.id || session.conversationId;
+      session.visitorId = data.visitorId || session.visitorId;
+      session.messages = (data.messages || []).map((item) => ({
+        senderType: item.senderType,
+        body: item.body
+      }));
+      saveSession();
+      renderMessages();
+    } catch (error) {
+      session.messages.push({ senderType: "system", body: error.message || "No se pudo contactar al asistente." });
+      renderMessages();
+    } finally {
+      sendButton.disabled = false;
+      sendButton.textContent = "Enviar";
+      saveSession();
+    }
+  }
+
+  sendButton.addEventListener("click", sendMessage);
+  textarea.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
   });
+
+  renderMessages();
+  saveSession();
 })();
