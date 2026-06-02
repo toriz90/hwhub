@@ -451,15 +451,24 @@ function createMemoryStore(state) {
     },
     async saveIntegration(payload) {
       state.integrations ||= [];
+      const config = parseConfig(payload.config);
       const item = {
         id: payload.id || `integrations-${Date.now()}`,
         provider: payload.provider,
         name: payload.name,
         active: Boolean(payload.active),
-        config: payload.config || {}
+        config
       };
-      const index = state.integrations.findIndex((entry) => entry.id === item.id);
-      if (index >= 0) state.integrations[index] = item;
+      const index = state.integrations.findIndex(
+        (entry) =>
+          entry.id === item.id ||
+          (entry.provider === item.provider && String(entry.name).toLowerCase() === String(item.name).toLowerCase())
+      );
+      if (index >= 0) {
+        item.id = state.integrations[index].id;
+        item.config = Object.keys(config).length ? config : state.integrations[index].config;
+        state.integrations[index] = item;
+      }
       else state.integrations.unshift(item);
       return { ...item, config: maskConfig(item.config) };
     },
@@ -695,9 +704,31 @@ function createPostgresStore(pool, fallbackState) {
       const active = Boolean(payload.active ?? true);
       if (payload.id) {
         const { rows } = await pool.query(
-          `update integration_accounts set provider=$2, name=$3, encrypted_config=$4, is_active=$5
+          `update integration_accounts
+           set provider=$2,
+               name=$3,
+               encrypted_config=case when $4::jsonb = '{}'::jsonb then encrypted_config else $4::jsonb end,
+               is_active=$5
            where id=$1 returning *`,
           [payload.id, payload.provider, payload.name, config, active]
+        );
+        return rows[0] ? integrationFromRow(rows[0]) : null;
+      }
+      const existing = await pool.query(
+        "select id from integration_accounts where provider=$1 and lower(name)=lower($2) order by created_at desc limit 1",
+        [payload.provider, payload.name]
+      );
+      if (existing.rows[0]) {
+        const { rows } = await pool.query(
+          `update integration_accounts
+           set encrypted_config=case when $2::jsonb = '{}'::jsonb then encrypted_config else $2::jsonb end,
+               is_active=$3
+           where id=$1 returning *`,
+          [existing.rows[0].id, config, active]
+        );
+        await pool.query(
+          "update integration_accounts set is_active=false where provider=$1 and lower(name)=lower($2) and id <> $3",
+          [payload.provider, payload.name, existing.rows[0].id]
         );
         return rows[0] ? integrationFromRow(rows[0]) : null;
       }
@@ -961,9 +992,17 @@ function parseConfig(value) {
   if (!value) return {};
   if (typeof value === "object") return value;
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      const error = new Error("Integration config must be a JSON object");
+      error.statusCode = 400;
+      throw error;
+    }
+    return parsed;
   } catch {
-    return { value };
+    const error = new Error("Integration config must be valid JSON");
+    error.statusCode = 400;
+    throw error;
   }
 }
 

@@ -81,6 +81,12 @@ button {
   font-size: 0.88rem;
 }
 
+.form-note {
+  min-height: 1.2rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;

@@ -285,9 +285,29 @@ function renderIntegrations() {
         <strong>${esc(item.name)}</strong>
         <p class="meta">${esc(item.provider)} - ${item.active ? "activa" : "inactiva"}</p>
         ${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}
+        <div class="row-actions">
+          <button data-edit-integration="${esc(item.id)}">Editar</button>
+        </div>
       </article>
     `)
     .join("") || `<article class="card"><p class="meta">Sin APIs configuradas.</p></article>`;
+
+  for (const button of $$("[data-edit-integration]")) {
+    button.onclick = () => {
+      const item = integrations.find((entry) => entry.id === button.dataset.editIntegration);
+      if (!item) return;
+      const form = $("#integration-form");
+      form.reset();
+      form.elements.id.value = item.id;
+      form.elements.provider.value = item.provider;
+      form.elements.name.value = item.name;
+      form.elements.config.value = "";
+      form.elements.config.placeholder = "Deja vacio para conservar el secreto guardado";
+      form.elements.active.checked = Boolean(item.active);
+      $("#integration-status").textContent = "Editando API existente. Deja config vacia para conservar el token.";
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+  }
 }
 
 function renderRoleMatrix() {
@@ -668,13 +688,29 @@ function fillForm(collection, item) {
 function bindIntegrations() {
   $("#integration-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const payload = formPayload(event.currentTarget);
-    await api("/api/integrations", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    event.currentTarget.reset();
-    await refresh();
+    const form = event.currentTarget;
+    const button = form.querySelector("button");
+    const status = $("#integration-status");
+    if (form.dataset.saving === "true") return;
+    form.dataset.saving = "true";
+    button.disabled = true;
+    status.textContent = "Guardando...";
+    try {
+      const payload = formPayload(form);
+      await api("/api/integrations", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      form.reset();
+      form.elements.config.placeholder = '{"apiKey":"...", "model":"gpt-4.1-mini", "useForChat":true}';
+      status.textContent = "API guardada correctamente.";
+      await refresh();
+    } catch (error) {
+      status.textContent = error.message || "No se pudo guardar la API.";
+    } finally {
+      form.dataset.saving = "false";
+      button.disabled = false;
+    }
   });
 }
 
