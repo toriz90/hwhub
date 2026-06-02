@@ -1,45 +1,287 @@
-import { $, $$, loadBootstrap, loadSession, login, logout, state } from "./modules/shared.js";
-import { renderDashboard } from "./modules/dashboard.js";
-import { applyConversationStatusFilter, bindConversationActions, bindConversationFilters, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
-import { bindEditors, renderAdminCollections, renderFaqs } from "./modules/admin-crud.js";
-import { bindIntegrations, renderIntegrations } from "./modules/integrations.js";
-import { bindRoleLab, renderRoleMatrix } from "./modules/roles.js";
+const state = {
+  data: null,
+  alerts: 0,
+  selectedConversationId: null,
+  role: "viewer",
+  user: null
+};
 
-async function refresh() {
-  await loadBootstrap();
-  render();
+const filters = {
+  status: "",
+  channel: "",
+  search: ""
+};
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+const rolePermissions = {
+  admin: ["*"],
+  supervisor: ["conversation", "faqs", "branches", "agents", "routingRules", "integrations"],
+  agent: ["conversation"],
+  marketplace: ["conversation"],
+  wholesale: ["conversation"],
+  viewer: []
+};
+
+const roleCatalog = {
+  admin: ["configurar APIs", "editar reglas", "editar agentes", "cerrar conversaciones", "ver secretos enmascarados"],
+  supervisor: ["reasignar conversaciones", "pausar chats", "editar FAQs", "ver reportes"],
+  agent: ["tomar conversaciones", "responder clientes", "devolver al bot"],
+  marketplace: ["atender Amazon", "atender MercadoLibre", "atender marketplaces"],
+  wholesale: ["atender mayoreo", "ver contactos de directorio", "canalizar sucursal"],
+  viewer: ["ver bandeja", "ver FAQs", "ver directorio"]
+};
+
+function esc(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
-function render() {
-  renderDashboard(state.data, state.alerts);
-  renderConversations(state.data);
-  renderAdminCollections(state.data);
-  renderIntegrations(state.data.integrations || []);
-  renderRoleMatrix();
-  applyRoleUi();
+function statusLabel(status) {
+  return {
+    bot_active: "Bot activo",
+    waiting_for_agent: "Esperando agente",
+    agent_active: "Agente activo",
+    paused: "Pausado",
+    closed: "Cerrado"
+  }[status] || status;
+}
+
+function roleCan(permission) {
+  const permissions = rolePermissions[state.role] || [];
+  return permissions.includes("*") || permissions.includes(permission);
+}
+
+function formPayload(form) {
+  const data = new FormData(form);
+  const payload = Object.fromEntries(data.entries());
+  for (const checkbox of form.querySelectorAll('input[type="checkbox"]')) {
+    payload[checkbox.name] = checkbox.checked;
+  }
+  return payload;
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    credentials: "same-origin",
+    headers: {
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.headers || {})
+    },
+    ...options
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`);
+  return data;
+}
+
+async function loadSession() {
+  try {
+    const data = await api("/api/session");
+    state.user = data.user;
+    state.role = data.user.role;
+    return data.user;
+  } catch {
+    state.user = null;
+    state.role = "viewer";
+    return null;
+  }
+}
+
+async function login(email, password) {
+  const data = await api("/api/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password })
+  });
+  state.user = data.user;
+  state.role = data.user.role;
+  return data.user;
+}
+
+async function logout() {
+  await api("/api/logout", { method: "POST" }).catch(() => {});
+  state.user = null;
+  state.data = null;
+  state.role = "viewer";
+}
+
+async function loadBootstrap() {
+  state.data = await api("/api/bootstrap");
+  return state.data;
 }
 
 function setAuthenticatedUi(isAuthenticated) {
   $("#login-screen").classList.toggle("hidden", isAuthenticated);
   $(".sidebar").classList.toggle("hidden", !isAuthenticated);
   $("main").classList.toggle("hidden", !isAuthenticated);
-  if (state.user) {
-    $("#active-user").textContent = `${state.user.name} - ${state.user.role}`;
-  } else {
-    $("#active-user").textContent = "";
+  $("#active-user").textContent = state.user ? `${state.user.name} - ${state.user.role}` : "";
+}
+
+function renderDashboard() {
+  const appState = state.data;
+  $("#metric-conversations").textContent = appState.conversations.length;
+  $("#metric-agents").textContent = appState.agents.filter((agent) => agent.online).length;
+  $("#metric-faqs").textContent = appState.faqs.filter((faq) => faq.published).length;
+  $("#metric-alerts").textContent = state.alerts;
+  const counts = appState.conversations.reduce((acc, item) => {
+    acc[item.status] = (acc[item.status] || 0) + 1;
+    return acc;
+  }, {});
+  $("#metric-bot-active").textContent = counts.bot_active || 0;
+  $("#metric-waiting-agent").textContent = counts.waiting_for_agent || 0;
+  $("#metric-agent-active").textContent = counts.agent_active || 0;
+  $("#metric-paused").textContent = counts.paused || 0;
+  $("#metric-closed").textContent = counts.closed || 0;
+}
+
+function renderConversations() {
+  const appState = state.data;
+  const conversations = appState.conversations.filter((item) => {
+    const haystack = `${item.customer || ""} ${item.lastMessage || ""} ${item.intent || ""}`.toLowerCase();
+    return (
+      (!filters.status || item.status === filters.status) &&
+      (!filters.channel || item.channel === filters.channel) &&
+      (!filters.search || haystack.includes(filters.search.toLowerCase()))
+    );
+  });
+
+  $("#conversation-list").innerHTML = conversations
+    .map((item) => {
+      const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
+      return `
+        <article class="item">
+          <strong>${esc(item.customer)}</strong>
+          <p>${esc(item.lastMessage)}</p>
+          <p class="meta">${esc(item.channel)} - ${esc(item.intent || "sin intencion")} - ${agent ? esc(agent.name) : "sin agente"}</p>
+          <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
+          <div class="row-actions">
+            <button data-open-conversation="${esc(item.id)}">Abrir</button>
+            <button data-quick-conversation-action="take" data-id="${esc(item.id)}">Tomar</button>
+            <button data-quick-conversation-action="pause" data-id="${esc(item.id)}">Pausar</button>
+            <button data-quick-conversation-action="bot" data-id="${esc(item.id)}">Bot</button>
+            <button data-quick-conversation-action="close" data-id="${esc(item.id)}">Cerrar</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("") || `<article class="item"><p class="meta">No hay conversaciones con esos filtros.</p></article>`;
+
+  for (const button of $$("[data-open-conversation]")) button.onclick = () => openConversation(button.dataset.openConversation);
+  for (const button of $$("[data-quick-conversation-action]")) {
+    button.onclick = async () => {
+      await api(`/api/conversations/${button.dataset.id}/${button.dataset.quickConversationAction}`, { method: "POST" });
+      await refresh();
+    };
   }
 }
 
-function roleCan(permission) {
-  const permissions = {
-    admin: ["*"],
-    supervisor: ["conversation", "faqs", "branches", "agents", "routingRules"],
-    agent: ["conversation"],
-    marketplace: ["conversation"],
-    wholesale: ["conversation"],
-    viewer: []
-  }[state.role] || [];
-  return permissions.includes("*") || permissions.includes(permission);
+function renderAdminCollections() {
+  renderAgents();
+  renderRouting();
+  renderBranches();
+  renderFaqs();
+  bindRowActions();
+}
+
+function renderFaqs(query = $("#faq-search").value || "") {
+  const value = query.toLowerCase();
+  const filtered = state.data.faqs.filter((faq) => {
+    const haystack = `${faq.question} ${faq.shortAnswer} ${faq.category} ${(faq.tags || []).join(" ")}`.toLowerCase();
+    return haystack.includes(value);
+  });
+  $("#faq-list").innerHTML = filtered
+    .map((faq) => `
+      <article class="faq">
+        <strong>${esc(faq.question)}</strong>
+        <p>${esc(faq.shortAnswer)}</p>
+        <p class="meta">${esc(faq.category)}</p>
+        ${(faq.tags || []).map((tag) => `<span class="tag">${esc(tag)}</span>`).join("")}
+        <div class="row-actions">
+          <button data-edit="faqs" data-id="${esc(faq.id)}">Editar</button>
+          <button data-delete="faqs" data-id="${esc(faq.id)}">Eliminar</button>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderAgents() {
+  $("#agents-list").innerHTML = state.data.agents
+    .map((agent) => `
+      <article class="card">
+        <strong>${esc(agent.name)}</strong>
+        <p>${esc(agent.role)}</p>
+        <p class="meta">${agent.online ? "Activo" : "Fuera de linea"} - ${agent.activeConversations}/${agent.maxConversations} chats</p>
+        ${(agent.skills || []).map((skill) => `<span class="tag">${esc(skill)}</span>`).join("")}
+        <div class="row-actions">
+          <button data-edit="agents" data-id="${esc(agent.id)}">Editar</button>
+          <button data-delete="agents" data-id="${esc(agent.id)}">Eliminar</button>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderRouting() {
+  $("#routing-list").innerHTML = state.data.routingRules
+    .map((rule) => `
+      <article class="rule">
+        <strong>${esc(rule.name)}</strong>
+        <p class="meta">${esc(rule.intent)} - ${rule.botAllowed ? "bot permitido" : "requiere agente"} - prioridad ${esc(rule.priority)}</p>
+        <p>${esc(rule.fallbackMessage)}</p>
+        <div class="row-actions">
+          <button data-edit="routingRules" data-id="${esc(rule.id)}">Editar</button>
+          <button data-delete="routingRules" data-id="${esc(rule.id)}">Eliminar</button>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderBranches() {
+  $("#branches-list").innerHTML = state.data.branches
+    .map((branch) => `
+      <article class="card">
+        <strong>${esc(branch.name)}</strong>
+        <p>${esc(branch.city)} - ${esc(branch.hours)}</p>
+        <p class="meta">${esc(branch.phone)} - ${esc(branch.whatsapp)}</p>
+        <p class="meta">Mayoristas: ${esc(branch.wholesaleContact)}</p>
+        <div class="row-actions">
+          <button data-edit="branches" data-id="${esc(branch.id)}">Editar</button>
+          <button data-delete="branches" data-id="${esc(branch.id)}">Eliminar</button>
+        </div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderIntegrations() {
+  const integrations = state.data.integrations || [];
+  $("#integrations-list").innerHTML = integrations
+    .map((item) => `
+      <article class="card">
+        <strong>${esc(item.name)}</strong>
+        <p class="meta">${esc(item.provider)} - ${item.active ? "activa" : "inactiva"}</p>
+        ${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}
+      </article>
+    `)
+    .join("") || `<article class="card"><p class="meta">Sin APIs configuradas.</p></article>`;
+}
+
+function renderRoleMatrix() {
+  $("#role-matrix").innerHTML = Object.entries(roleCatalog)
+    .map(([role, permissions]) => `
+      <article class="card">
+        <strong>${esc(role)}</strong>
+        ${permissions.map((permission) => `<span class="tag">${esc(permission)}</span>`).join("")}
+      </article>
+    `)
+    .join("");
 }
 
 function applyRoleUi() {
@@ -48,14 +290,16 @@ function applyRoleUi() {
   const canAdmin = roleCan("faqs") || roleCan("branches") || roleCan("agents") || roleCan("routingRules");
   for (const form of $$("[data-editor]")) {
     const collection = form.dataset.editor;
-    form.classList.toggle("is-disabled", !roleCan(collection));
+    const allowed = roleCan(collection);
+    form.classList.toggle("is-disabled", !allowed);
     for (const control of $$("input, select, textarea, button").filter((item) => form.contains(item))) {
-      control.disabled = !roleCan(collection);
+      control.disabled = !allowed;
     }
   }
-  $("#integration-form").classList.toggle("is-disabled", state.role !== "admin");
+  const integrationsAllowed = state.role === "admin" || roleCan("integrations");
+  $("#integration-form").classList.toggle("is-disabled", !integrationsAllowed);
   for (const control of $$("input, select, textarea, button").filter((item) => $("#integration-form").contains(item))) {
-    control.disabled = state.role !== "admin";
+    control.disabled = !integrationsAllowed;
   }
   for (const button of $$("[data-delete], [data-edit]")) {
     const collection = button.dataset.delete || button.dataset.edit;
@@ -64,30 +308,76 @@ function applyRoleUi() {
   for (const button of $$("[data-conversation-action], [data-quick-conversation-action]")) button.disabled = !roleCan("conversation");
   $("#agent-reply").disabled = !roleCan("conversation");
   $("#agent-reply-form button").disabled = !roleCan("conversation");
-  document.body.dataset.role = state.role;
   document.body.classList.toggle("limited-role", !canAdmin);
+}
+
+function render() {
+  renderDashboard();
+  renderConversations();
+  renderAdminCollections();
+  renderIntegrations();
+  renderRoleMatrix();
+  applyRoleUi();
+}
+
+async function refresh() {
+  await loadBootstrap();
+  render();
 }
 
 function showView(view) {
   const selected = view || "dashboard";
-  for (const section of $$("[data-view]")) {
-    section.classList.toggle("active", section.dataset.view === selected);
-  }
-  for (const link of $$("[data-view-link]")) {
-    link.classList.toggle("active", link.dataset.viewLink === selected);
-  }
+  for (const section of $$("[data-view]")) section.classList.toggle("active", section.dataset.view === selected);
+  for (const link of $$("[data-view-link]")) link.classList.toggle("active", link.dataset.viewLink === selected);
 }
 
-function bindNavigation() {
-  for (const link of $$("[data-view-link]")) {
-    link.addEventListener("click", () => showView(link.dataset.viewLink));
-  }
-  const initial = window.location.hash.replace("#", "") || "dashboard";
-  showView(initial);
+function bindStaticEvents() {
+  for (const link of $$("[data-view-link]")) link.addEventListener("click", () => showView(link.dataset.viewLink));
+  showView(window.location.hash.replace("#", "") || "dashboard");
+
+  $("#chat-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await sendChat($("#message").value, $("#channel").value);
+    await refresh();
+  });
+  $("#simulate-whatsapp").addEventListener("click", async () => {
+    $("#channel").value = "whatsapp_cloud";
+    $("#message").value = "Quiero informacion de ventas mayoristas";
+    await sendChat($("#message").value, $("#channel").value);
+    await refresh();
+  });
+  $("#simulate-marketplace").addEventListener("click", async () => {
+    $("#channel").value = "whatsapp_cloud";
+    $("#message").value = "Necesito ayuda con mi compra de Amazon";
+    await sendChat($("#message").value, $("#channel").value);
+    await refresh();
+  });
+  $("#faq-search").addEventListener("input", (event) => renderFaqs(event.target.value));
+  $("#logout-button").addEventListener("click", async () => {
+    await logout();
+    window.location.hash = "#dashboard";
+    setAuthenticatedUi(false);
+  });
+  bindEditors();
+  bindConversationActions();
+  bindConversationFilters();
+  bindIntegrations();
+  bindRoleLab();
+  bindDashboardShortcuts();
 }
 
-function bindRoleSwitch() {
-  $("#active-role").value = state.role;
+function bindAuth() {
+  $("#login-form").onsubmit = async (event) => {
+    event.preventDefault();
+    $("#login-error").textContent = "";
+    const data = new FormData(event.currentTarget);
+    try {
+      await login(data.get("email"), data.get("password"));
+      await startApp();
+    } catch (error) {
+      $("#login-error").textContent = error.message || "Email o password incorrectos.";
+    }
+  };
 }
 
 function bindDashboardShortcuts() {
@@ -95,49 +385,169 @@ function bindDashboardShortcuts() {
     button.addEventListener("click", () => {
       showView("conversations");
       history.replaceState(null, "", "#conversations");
-      applyConversationStatusFilter(button.dataset.statusShortcut, render);
+      filters.status = button.dataset.statusShortcut;
+      filters.channel = "";
+      filters.search = "";
+      $("#conversation-status-filter").value = filters.status;
+      $("#conversation-channel-filter").value = "";
+      $("#conversation-search").value = "";
+      render();
     });
   }
 }
 
-$("#chat-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await sendChat($("#message").value, $("#channel").value);
-  await refresh();
-});
-
-$("#simulate-whatsapp").addEventListener("click", async () => {
-  $("#channel").value = "whatsapp_cloud";
-  $("#message").value = "Quiero informacion de ventas mayoristas";
-  await sendChat($("#message").value, $("#channel").value);
-  await refresh();
-});
-
-$("#simulate-marketplace").addEventListener("click", async () => {
-  $("#channel").value = "whatsapp_cloud";
-  $("#message").value = "Necesito ayuda con mi compra de Amazon";
-  await sendChat($("#message").value, $("#channel").value);
-  await refresh();
-});
-
-$("#faq-search").addEventListener("input", (event) => renderFaqs(state.data.faqs, event.target.value));
-function bindAuth() {
-  $("#login-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    $("#login-error").textContent = "";
-    const data = new FormData(event.currentTarget);
-    try {
-      await login(data.get("email"), data.get("password"));
-      await startApp();
-    } catch {
-      $("#login-error").textContent = "Email o password incorrectos.";
-    }
+function bindConversationFilters() {
+  $("#conversation-status-filter").addEventListener("change", (event) => {
+    filters.status = event.target.value;
+    render();
   });
+  $("#conversation-channel-filter").addEventListener("change", (event) => {
+    filters.channel = event.target.value;
+    render();
+  });
+  $("#conversation-search").addEventListener("input", (event) => {
+    filters.search = event.target.value;
+    render();
+  });
+  $("#clear-conversation-filters").addEventListener("click", () => {
+    filters.status = "";
+    filters.channel = "";
+    filters.search = "";
+    $("#conversation-status-filter").value = "";
+    $("#conversation-channel-filter").value = "";
+    $("#conversation-search").value = "";
+    render();
+  });
+}
 
-  $("#logout-button").addEventListener("click", async () => {
-    await logout();
-    window.location.hash = "#dashboard";
-    setAuthenticatedUi(false);
+async function openConversation(id) {
+  state.selectedConversationId = id;
+  const data = await api(`/api/conversations/${id}`);
+  $("#conversation-status").textContent = statusLabel(data.conversation.status);
+  $("#conversation-status").className = `status ${data.conversation.status}`;
+  $("#conversation-detail").className = "";
+  $("#conversation-detail").innerHTML = `
+    <div class="message-list">
+      ${data.messages
+        .map((message) => `
+          <div class="message ${esc(message.senderType)}">
+            <p>${esc(message.body)}</p>
+            <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleString()}</small>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function bindConversationActions() {
+  for (const button of $$("[data-conversation-action]")) {
+    button.addEventListener("click", async () => {
+      if (!state.selectedConversationId) return;
+      await api(`/api/conversations/${state.selectedConversationId}/${button.dataset.conversationAction}`, { method: "POST" });
+      await refresh();
+      await openConversation(state.selectedConversationId);
+    });
+  }
+  $("#agent-reply-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!state.selectedConversationId) return;
+    const input = $("#agent-reply");
+    const body = input.value.trim();
+    if (!body) return;
+    await api(`/api/conversations/${state.selectedConversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ senderType: "agent", body })
+    });
+    input.value = "";
+    await refresh();
+    await openConversation(state.selectedConversationId);
+  });
+}
+
+async function sendChat(message, channel = "web_widget") {
+  const data = await api("/api/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, channel, customer: "Cliente demo" })
+  });
+  $("#chat-result").innerHTML = `
+    <strong>Respuesta:</strong> ${esc(data.reply)}
+    <p class="meta">Estado: ${statusLabel(data.conversation.status)} - Agente: ${data.assignedAgent?.name || "sin asignar"}</p>
+  `;
+  return data;
+}
+
+function bindEditors() {
+  for (const form of $$(".editor[data-editor]")) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const collection = form.dataset.editor;
+      const payload = formPayload(form);
+      const id = payload.id;
+      delete payload.id;
+      await api(`/api/${collection}${id ? `/${id}` : ""}`, {
+        method: id ? "PUT" : "POST",
+        body: JSON.stringify(payload)
+      });
+      form.reset();
+      await refresh();
+    });
+  }
+}
+
+function bindRowActions() {
+  for (const button of $$("[data-edit]")) {
+    button.onclick = () => {
+      const collection = button.dataset.edit;
+      const item = state.data[collection].find((entry) => String(entry.id) === button.dataset.id);
+      if (item) fillForm(collection, item);
+    };
+  }
+  for (const button of $$("[data-delete]")) {
+    button.onclick = async () => {
+      await api(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
+      await refresh();
+    };
+  }
+}
+
+function fillForm(collection, item) {
+  const form = document.querySelector(`[data-editor="${collection}"]`);
+  form.reset();
+  for (const [key, value] of Object.entries(item)) {
+    const input = form.elements[key];
+    if (!input) continue;
+    if (input.type === "checkbox") input.checked = Boolean(value);
+    else input.value = Array.isArray(value) ? value.join(", ") : value ?? "";
+  }
+  form.elements.id.value = item.id;
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function bindIntegrations() {
+  $("#integration-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = formPayload(event.currentTarget);
+    await api("/api/integrations", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    event.currentTarget.reset();
+    await refresh();
+  });
+}
+
+function bindRoleLab() {
+  $("#role-test-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    $("#role-test-result").innerHTML = `
+      <article class="card">
+        <strong>${esc(data.get("role"))}</strong>
+        <p class="meta">Canal: ${esc(data.get("channel"))}</p>
+        <p>Prueba lista para validar canalizacion con datos actuales.</p>
+      </article>
+    `;
   });
 }
 
@@ -164,23 +574,15 @@ async function startApp() {
   setAuthenticatedUi(true);
   try {
     await loadBootstrap();
-  } catch {
-    await logout().catch(() => {});
+  } catch (error) {
+    await logout();
     setAuthenticatedUi(false);
-    $("#login-error").textContent = "Tu sesion expiro o no se pudo cargar el dashboard.";
+    $("#login-error").textContent = error.message || "No se pudo cargar el dashboard.";
     return;
   }
   if (!appStarted) {
-    bindNavigation();
-    bindRoleSwitch();
-    bindDashboardShortcuts();
-    bindEditors(refresh);
-    bindConversationActions(refresh);
-    bindConversationFilters(render);
-    bindIntegrations(refresh);
-    bindRoleLab(() => state.data);
+    bindStaticEvents();
     bindRealtime();
-    window.addEventListener("hwhub:refresh", refresh);
     appStarted = true;
   }
   render();
@@ -192,7 +594,13 @@ async function init() {
   if (await loadSession()) await startApp();
 }
 
-init().catch(() => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => init().catch(showInitError));
+} else {
+  init().catch(showInitError);
+}
+
+function showInitError() {
   setAuthenticatedUi(false);
   $("#login-error").textContent = "No se pudo iniciar la aplicacion.";
-});
+}
