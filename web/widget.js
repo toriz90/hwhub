@@ -14,7 +14,14 @@
           name: currentScript?.dataset.customerName || saved.profile?.name || "",
           phone: currentScript?.dataset.customerPhone || saved.profile?.phone || "",
           email: currentScript?.dataset.customerEmail || saved.profile?.email || "",
-          wooCustomerId: currentScript?.dataset.customerId || saved.profile?.wooCustomerId || ""
+          wooCustomerId: currentScript?.dataset.customerId || saved.profile?.wooCustomerId || "",
+          serviceCenter: currentScript?.dataset.serviceCenter || saved.profile?.serviceCenter || "",
+          marketplace: currentScript?.dataset.marketplace || saved.profile?.marketplace || "",
+          distributor: currentScript?.dataset.distributor || saved.profile?.distributor || "",
+          equipmentModel: currentScript?.dataset.equipmentModel || saved.profile?.equipmentModel || "",
+          serialNumber: currentScript?.dataset.serialNumber || saved.profile?.serialNumber || "",
+          orderNumber: currentScript?.dataset.orderNumber || saved.profile?.orderNumber || "",
+          details: saved.profile?.details || ""
         },
         messages: saved.messages || []
       };
@@ -55,6 +62,7 @@
       <form id="hwhub-widget-profile" class="hwhub-widget-profile">
         <input id="hwhub-widget-name" placeholder="Nombre" autocomplete="name">
         <input id="hwhub-widget-phone" placeholder="Telefono o WhatsApp" autocomplete="tel">
+        <input id="hwhub-widget-email" placeholder="Email para cita" autocomplete="email">
       </form>
       <div id="hwhub-widget-messages" class="hwhub-widget-messages"></div>
       <div class="hwhub-widget-compose">
@@ -69,11 +77,13 @@
   const messages = panel.querySelector("#hwhub-widget-messages");
   const nameInput = panel.querySelector("#hwhub-widget-name");
   const phoneInput = panel.querySelector("#hwhub-widget-phone");
+  const emailInput = panel.querySelector("#hwhub-widget-email");
   const textarea = panel.querySelector("#hwhub-widget-message");
   const sendButton = panel.querySelector("#hwhub-widget-send");
 
   nameInput.value = session.profile.name || "";
   phoneInput.value = session.profile.phone || "";
+  emailInput.value = session.profile.email || "";
 
   function renderMessages() {
     const items = session.messages.length ? session.messages : [
@@ -104,6 +114,7 @@
   function syncProfile() {
     session.profile.name = nameInput.value.trim();
     session.profile.phone = phoneInput.value.trim();
+    session.profile.email = emailInput.value.trim();
     saveSession();
   }
 
@@ -117,6 +128,7 @@
 
   nameInput.addEventListener("input", syncProfile);
   phoneInput.addEventListener("input", syncProfile);
+  emailInput.addEventListener("input", syncProfile);
 
   async function sendMessage() {
     const message = textarea.value.trim();

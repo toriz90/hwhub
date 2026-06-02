@@ -405,7 +405,14 @@ function customerProfileFromBody(body = {}) {
     name: String(name || "").trim(),
     phone: String(phone || "").trim(),
     email: String(email || "").trim(),
-    wooCustomerId: body.wooCustomerId || customer.wooCustomerId || body.customerId || customer.id || null
+    wooCustomerId: body.wooCustomerId || customer.wooCustomerId || body.customerId || customer.id || null,
+    serviceCenter: body.serviceCenter || customer.serviceCenter || "",
+    marketplace: body.marketplace || customer.marketplace || "",
+    distributor: body.distributor || customer.distributor || "",
+    equipmentModel: body.equipmentModel || customer.equipmentModel || "",
+    serialNumber: body.serialNumber || customer.serialNumber || "",
+    orderNumber: body.orderNumber || customer.orderNumber || "",
+    details: body.details || customer.details || ""
   };
 }
 
@@ -415,7 +422,14 @@ function mergeCustomerProfile(conversation, profile) {
     name: profile.name || conversation?.customer || current.name || "",
     phone: profile.phone || conversation?.customerPhone || current.phone || "",
     email: profile.email || current.email || "",
-    wooCustomerId: profile.wooCustomerId || current.wooCustomerId || null
+    wooCustomerId: profile.wooCustomerId || current.wooCustomerId || null,
+    serviceCenter: profile.serviceCenter || current.serviceCenter || "",
+    marketplace: profile.marketplace || current.marketplace || "",
+    distributor: profile.distributor || current.distributor || "",
+    equipmentModel: profile.equipmentModel || current.equipmentModel || "",
+    serialNumber: profile.serialNumber || current.serialNumber || "",
+    orderNumber: profile.orderNumber || current.orderNumber || "",
+    details: profile.details || current.details || ""
   };
 }
 
@@ -425,6 +439,28 @@ function profilePrompt(profile) {
   if (!profile.phone) missing.push("un telefono o WhatsApp de contacto");
   if (!missing.length) return null;
   return `Para darte seguimiento sin perder la conversacion, comparteme ${missing.join(" y ")}. Mientras tanto, dime en que puedo ayudarte.`;
+}
+
+function appointmentState(profile, text = "", history = []) {
+  const fullText = [...history.map((item) => item.body), text].join("\n").toLowerCase();
+  const wantsAppointment = ["cita", "agenda", "agendar", "reservar", "centro de servicio", "servicio"].some((term) => fullText.includes(term));
+  if (!wantsAppointment) return null;
+  const hasDateTime = /\b(hoy|mañana|\d{1,2}[\/-]\d{1,2}|\d{1,2}:\d{2}|\d{1,2}\s*(am|pm))\b/i.test(fullText);
+  const missing = [];
+  if (!profile.name || profile.name === "Visitante" || profile.name === "Widget") missing.push("nombre");
+  if (!profile.phone) missing.push("telefono");
+  if (!profile.email) missing.push("email");
+  if (!profile.serviceCenter && !fullText.includes("centro de servicio") && !fullText.includes("sucursal")) missing.push("centro de servicio/sucursal");
+  if (!profile.marketplace) missing.push("marketplace");
+  if (!profile.distributor) missing.push("distribuidor");
+  if (!profile.equipmentModel) missing.push("modelo del equipo");
+  if (!profile.orderNumber && !/#?\d{4,}/.test(fullText)) missing.push("numero de pedido");
+  if (!hasDateTime) missing.push("fecha y hora");
+  return {
+    requiredFields: ["nombre", "apellido si aplica", "email", "telefono", "marketplace", "sucursal", "distribuidor", "modelo del equipo", "numero de pedido", "fecha y hora", "detalles"],
+    missing,
+    canCreate: missing.length === 0
+  };
 }
 
 function detectMarketplace(text = "", channel = "web_widget") {
@@ -618,11 +654,13 @@ const server = createServer(async (req, res) => {
     if (!savedConversation && visitorId) savedConversation = await store.activeConversationByExternalId?.(visitorId, channel);
     const existingConversation = Boolean(savedConversation);
     const history = savedConversation ? await store.messages(savedConversation.id) : [];
+    const mergedProfile = mergeCustomerProfile(savedConversation, profileInput);
     const connectorContext = await buildConnectorContext({ text: body.message || "", history, store });
+    connectorContext.customerProfile = mergedProfile;
+    connectorContext.appointmentState = appointmentState(mergedProfile, body.message || "", history);
     currentState.connectorContext = connectorContext;
     currentState.conversationHistory = history;
     const routed = routeMessage({ text: body.message || "", channel, currentState });
-    const mergedProfile = mergeCustomerProfile(savedConversation, profileInput);
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
     const missingProfilePrompt = profilePrompt(mergedProfile);
     if (missingProfilePrompt && !existingConversation) {
