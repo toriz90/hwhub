@@ -340,6 +340,26 @@ h2 {
   background: var(--green);
 }
 
+.priority {
+  display: inline-block;
+  margin: 0.55rem 0 0 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #edf1f5;
+  color: var(--ink);
+  font-size: 0.72rem;
+}
+
+.priority.high {
+  background: rgba(243, 165, 31, 0.15);
+  color: #8a5a00;
+}
+
+.priority.urgent {
+  background: rgba(232, 76, 112, 0.14);
+  color: #a51e42;
+}
+
 .flow {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

@@ -157,7 +157,7 @@ function ruleFromRow(row) {
 }
 
 function conversationFromRow(row) {
-  return {
+  return enrichConversation({
     id: row.id,
     channel: row.channel,
     customer: row.customer_name || "Visitante",
@@ -165,8 +165,29 @@ function conversationFromRow(row) {
     intent: row.detected_intent,
     marketplace: row.marketplace,
     assignedAgentId: row.assigned_agent_id,
-    lastMessage: row.last_message || row.metadata?.lastMessage || ""
-  };
+    lastMessage: row.last_message || row.metadata?.lastMessage || "",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  });
+}
+
+function enrichConversation(conversation) {
+  const updated = conversation.updatedAt ? new Date(conversation.updatedAt) : new Date();
+  const waitingMinutes = Math.max(0, Math.round((Date.now() - updated.getTime()) / 60000));
+  const marketplace = conversation.marketplace || "";
+  const urgentMarketplace = ["amazon", "mercadolibre", "walmart", "coppel", "elektra", "tiktok", "temu"].includes(marketplace);
+  const needsAgent = ["waiting_for_agent", "paused"].includes(conversation.status);
+  const priority =
+    conversation.status === "closed" ? "normal" :
+    waitingMinutes >= 30 || (needsAgent && urgentMarketplace) ? "urgent" :
+    waitingMinutes >= 15 || needsAgent ? "high" :
+    "normal";
+  const slaState =
+    conversation.status === "closed" ? "closed" :
+    waitingMinutes >= 30 ? "breached" :
+    waitingMinutes >= 15 ? "at_risk" :
+    "ok";
+  return { ...conversation, waitingMinutes, priority, slaState };
 }
 
 function messageFromRow(row) {
@@ -309,7 +330,11 @@ function createMemoryStore(state) {
   return {
     mode: "memory",
     async bootstrap() {
-      return { ...state, integrations: state.integrations || [] };
+      return {
+        ...state,
+        conversations: state.conversations.map((conversation) => enrichConversation(conversation)),
+        integrations: state.integrations || []
+      };
     },
     async collection(name) {
       return state[name] || [];
@@ -334,6 +359,8 @@ function createMemoryStore(state) {
     async createConversation(conversation) {
       state.messages ||= [];
       state.conversationEvents ||= [];
+      conversation.createdAt ||= new Date().toISOString();
+      conversation.updatedAt ||= conversation.createdAt;
       state.conversations.unshift(conversation);
       state.messages.push({
         id: `messages-${Date.now()}`,
@@ -390,7 +417,10 @@ function createMemoryStore(state) {
       };
       state.messages.push(message);
       const conversation = state.conversations.find((item) => item.id === conversationId);
-      if (conversation) conversation.lastMessage = message.body;
+      if (conversation) {
+        conversation.lastMessage = message.body;
+        conversation.updatedAt = new Date().toISOString();
+      }
       await this.addEvent(conversationId, {
         eventType: "message.created",
         actorType: payload.senderType || "agent",
@@ -405,6 +435,7 @@ function createMemoryStore(state) {
       if (!conversation) return null;
       const previousStatus = conversation.status;
       conversation.status = status;
+      conversation.updatedAt = new Date().toISOString();
       await this.addEvent(id, {
         eventType: "conversation.status_changed",
         actorType: "system",

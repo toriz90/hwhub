@@ -10,6 +10,8 @@ const state = {
 const filters = {
   status: "",
   channel: "",
+  priority: "",
+  slaState: "",
   search: ""
 };
 
@@ -147,6 +149,8 @@ function renderDashboard() {
   $("#metric-agent-active").textContent = counts.agent_active || 0;
   $("#metric-paused").textContent = counts.paused || 0;
   $("#metric-closed").textContent = counts.closed || 0;
+  $("#metric-urgent").textContent = appState.conversations.filter((item) => item.priority === "urgent").length;
+  $("#metric-sla-risk").textContent = appState.conversations.filter((item) => ["at_risk", "breached"].includes(item.slaState)).length;
 }
 
 function renderConversations() {
@@ -156,6 +160,8 @@ function renderConversations() {
     return (
       (!filters.status || item.status === filters.status) &&
       (!filters.channel || item.channel === filters.channel) &&
+      (!filters.priority || item.priority === filters.priority) &&
+      (!filters.slaState || item.slaState === filters.slaState || (filters.slaState === "at_risk" && item.slaState === "breached")) &&
       (!filters.search || haystack.includes(filters.search.toLowerCase()))
     );
   });
@@ -169,6 +175,7 @@ function renderConversations() {
           <p>${esc(item.lastMessage)}</p>
           <p class="meta">${esc(item.channel)} - ${esc(item.intent || "sin intencion")} - ${agent ? esc(agent.name) : "sin agente"}</p>
           <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
+          <span class="priority ${esc(item.priority)}">${priorityLabel(item.priority)} · ${item.waitingMinutes || 0} min</span>
           <div class="row-actions">
             <button data-open-conversation="${esc(item.id)}">Abrir</button>
             <button data-quick-conversation-action="take" data-id="${esc(item.id)}">Tomar</button>
@@ -458,9 +465,44 @@ function bindDashboardShortcuts() {
       history.replaceState(null, "", "#conversations");
       filters.status = button.dataset.statusShortcut;
       filters.channel = "";
+      filters.priority = "";
+      filters.slaState = "";
       filters.search = "";
       $("#conversation-status-filter").value = filters.status;
       $("#conversation-channel-filter").value = "";
+      $("#conversation-priority-filter").value = "";
+      $("#conversation-search").value = "";
+      render();
+    });
+  }
+  for (const button of $$("[data-priority-shortcut]")) {
+    button.addEventListener("click", () => {
+      showView("conversations");
+      history.replaceState(null, "", "#conversations");
+      filters.status = "";
+      filters.channel = "";
+      filters.priority = button.dataset.priorityShortcut;
+      filters.slaState = "";
+      filters.search = "";
+      $("#conversation-status-filter").value = "";
+      $("#conversation-channel-filter").value = "";
+      $("#conversation-priority-filter").value = filters.priority;
+      $("#conversation-search").value = "";
+      render();
+    });
+  }
+  for (const button of $$("[data-sla-shortcut]")) {
+    button.addEventListener("click", () => {
+      showView("conversations");
+      history.replaceState(null, "", "#conversations");
+      filters.status = "";
+      filters.channel = "";
+      filters.priority = "";
+      filters.slaState = button.dataset.slaShortcut;
+      filters.search = "";
+      $("#conversation-status-filter").value = "";
+      $("#conversation-channel-filter").value = "";
+      $("#conversation-priority-filter").value = "";
       $("#conversation-search").value = "";
       render();
     });
@@ -476,6 +518,11 @@ function bindConversationFilters() {
     filters.channel = event.target.value;
     render();
   });
+  $("#conversation-priority-filter").addEventListener("change", (event) => {
+    filters.priority = event.target.value;
+    filters.slaState = "";
+    render();
+  });
   $("#conversation-search").addEventListener("input", (event) => {
     filters.search = event.target.value;
     render();
@@ -483,12 +530,23 @@ function bindConversationFilters() {
   $("#clear-conversation-filters").addEventListener("click", () => {
     filters.status = "";
     filters.channel = "";
+    filters.priority = "";
+    filters.slaState = "";
     filters.search = "";
     $("#conversation-status-filter").value = "";
     $("#conversation-channel-filter").value = "";
+    $("#conversation-priority-filter").value = "";
     $("#conversation-search").value = "";
     render();
   });
+}
+
+function priorityLabel(priority) {
+  return {
+    urgent: "Urgente",
+    high: "Alta",
+    normal: "Normal"
+  }[priority] || "Normal";
 }
 
 async function openConversation(id) {

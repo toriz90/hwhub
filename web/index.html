@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260602-audit">
+    <link rel="stylesheet" href="/styles.css?v=20260602-sla">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -94,6 +94,14 @@
           </article>
         </section>
         <section class="status-metrics">
+          <button data-priority-shortcut="urgent">
+            <span>Urgentes</span>
+            <strong id="metric-urgent">0</strong>
+          </button>
+          <button data-sla-shortcut="at_risk">
+            <span>SLA en riesgo</span>
+            <strong id="metric-sla-risk">0</strong>
+          </button>
           <button data-status-shortcut="bot_active">
             <span>Bot activo</span>
             <strong id="metric-bot-active">0</strong>
@@ -147,6 +155,12 @@
                 <option value="plivo">Plivo</option>
               </select>
               <input id="conversation-search" placeholder="Buscar cliente o mensaje">
+              <select id="conversation-priority-filter">
+                <option value="">Todas las prioridades</option>
+                <option value="urgent">Urgentes</option>
+                <option value="high">Altas</option>
+                <option value="normal">Normales</option>
+              </select>
               <button id="clear-conversation-filters" type="button">Limpiar</button>
             </div>
             <div id="conversation-list" class="list"></div>
@@ -429,7 +443,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260602-audit"></script>
+    <script src="/app.js?v=20260602-sla"></script>
     <script src="/widget.js?v=20260602-auth" data-channel="official_site"></script>
   </body>
 </html>
