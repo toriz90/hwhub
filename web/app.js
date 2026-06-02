@@ -1,4 +1,4 @@
-import { $, $$, loadBootstrap, state } from "./modules/shared.js";
+import { $, $$, loadBootstrap, loadSession, login, logout, state } from "./modules/shared.js";
 import { renderDashboard } from "./modules/dashboard.js";
 import { applyConversationStatusFilter, bindConversationActions, bindConversationFilters, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
 import { bindEditors, renderAdminCollections, renderFaqs } from "./modules/admin-crud.js";
@@ -19,6 +19,15 @@ function render() {
   applyRoleUi();
 }
 
+function setAuthenticatedUi(isAuthenticated) {
+  $("#login-screen").classList.toggle("hidden", isAuthenticated);
+  $(".sidebar").classList.toggle("hidden", !isAuthenticated);
+  $("main").classList.toggle("hidden", !isAuthenticated);
+  if (state.user) {
+    $("#active-user").textContent = `${state.user.name} · ${state.user.role}`;
+  }
+}
+
 function roleCan(permission) {
   const permissions = {
     admin: ["*"],
@@ -33,6 +42,7 @@ function roleCan(permission) {
 
 function applyRoleUi() {
   $("#active-role").value = state.role;
+  $("#active-role").disabled = true;
   const canAdmin = roleCan("faqs") || roleCan("branches") || roleCan("agents") || roleCan("routingRules");
   for (const form of $$("[data-editor]")) {
     const collection = form.dataset.editor;
@@ -76,11 +86,6 @@ function bindNavigation() {
 
 function bindRoleSwitch() {
   $("#active-role").value = state.role;
-  $("#active-role").addEventListener("change", () => {
-    state.role = $("#active-role").value;
-    localStorage.setItem("hwhub.role", state.role);
-    render();
-  });
 }
 
 function bindDashboardShortcuts() {
@@ -114,30 +119,64 @@ $("#simulate-marketplace").addEventListener("click", async () => {
 });
 
 $("#faq-search").addEventListener("input", (event) => renderFaqs(state.data.faqs, event.target.value));
-window.addEventListener("hwhub:refresh", refresh);
+function bindAuth() {
+  $("#login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    $("#login-error").textContent = "";
+    const data = new FormData(event.currentTarget);
+    try {
+      await login(data.get("email"), data.get("password"));
+      await startApp();
+    } catch {
+      $("#login-error").textContent = "Email o password incorrectos.";
+    }
+  });
 
-const events = new EventSource("/api/events");
-events.addEventListener("conversation.created", async () => {
-  state.alerts += 1;
-  await refresh();
-});
-events.addEventListener("conversation.updated", async () => {
-  state.alerts += 1;
-  await refresh();
-  if (state.selectedConversationId) await openConversation(state.selectedConversationId);
-});
-events.addEventListener("message.created", async (event) => {
-  const message = JSON.parse(event.data);
-  if (message.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
-});
+  $("#logout-button").addEventListener("click", async () => {
+    await logout();
+    window.location.hash = "#dashboard";
+    setAuthenticatedUi(false);
+  });
+}
 
-await loadBootstrap();
-bindNavigation();
-bindRoleSwitch();
-bindDashboardShortcuts();
-bindEditors(refresh);
-bindConversationActions(refresh);
-bindConversationFilters(render);
-bindIntegrations(refresh);
-bindRoleLab(() => state.data);
-render();
+function bindRealtime() {
+  const events = new EventSource("/api/events");
+  events.addEventListener("conversation.created", async () => {
+    state.alerts += 1;
+    await refresh();
+  });
+  events.addEventListener("conversation.updated", async () => {
+    state.alerts += 1;
+    await refresh();
+    if (state.selectedConversationId) await openConversation(state.selectedConversationId);
+  });
+  events.addEventListener("message.created", async (event) => {
+    const message = JSON.parse(event.data);
+    if (message.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
+  });
+}
+
+let appStarted = false;
+
+async function startApp() {
+  setAuthenticatedUi(true);
+  await loadBootstrap();
+  if (!appStarted) {
+    bindNavigation();
+    bindRoleSwitch();
+    bindDashboardShortcuts();
+    bindEditors(refresh);
+    bindConversationActions(refresh);
+    bindConversationFilters(render);
+    bindIntegrations(refresh);
+    bindRoleLab(() => state.data);
+    bindRealtime();
+    window.addEventListener("hwhub:refresh", refresh);
+    appStarted = true;
+  }
+  render();
+}
+
+bindAuth();
+setAuthenticatedUi(false);
+if (await loadSession()) await startApp();

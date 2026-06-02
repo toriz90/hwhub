@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <section id="login-screen" class="login-screen">
+      <form id="login-form" class="login-card">
+        <span class="brand-mark">HW</span>
+        <div>
+          <p class="eyebrow">Acceso administrativo</p>
+          <h1>HWHub</h1>
+        </div>
+        <label>
+          Email
+          <input name="email" type="email" autocomplete="username" required>
+        </label>
+        <label>
+          Password
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button>Entrar</button>
+        <p id="login-error" class="form-error"></p>
+      </form>
+    </section>
+
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-mark">HW</span>
@@ -46,6 +66,8 @@
               <option value="viewer">Solo lectura</option>
             </select>
           </label>
+          <span id="active-user" class="user-pill"></span>
+          <button id="logout-button" type="button">Salir</button>
           <button id="simulate-whatsapp">Simular WhatsApp</button>
           <button id="simulate-marketplace">Simular marketplace</button>
         </div>

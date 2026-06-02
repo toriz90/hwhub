@@ -2,7 +2,8 @@ export const state = {
   data: null,
   alerts: 0,
   selectedConversationId: null,
-  role: localStorage.getItem("hwhub.role") || "admin"
+  role: "viewer",
+  user: null
 };
 
 export const $ = (selector) => document.querySelector(selector);
@@ -38,15 +39,45 @@ export function formPayload(form) {
 
 export async function api(path, options = {}) {
   const response = await fetch(path, {
+    credentials: "same-origin",
     headers: {
       ...(options.body ? { "content-type": "application/json" } : {}),
-      "x-hwhub-role": state.role,
       ...(options.headers || {})
     },
     ...options
   });
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
   return response.json();
+}
+
+export async function loadSession() {
+  try {
+    const data = await api("/api/session");
+    state.user = data.user;
+    state.role = data.user.role;
+    return data.user;
+  } catch {
+    state.user = null;
+    state.role = "viewer";
+    return null;
+  }
+}
+
+export async function login(email, password) {
+  const data = await api("/api/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password })
+  });
+  state.user = data.user;
+  state.role = data.user.role;
+  return data.user;
+}
+
+export async function logout() {
+  await api("/api/logout", { method: "POST" });
+  state.user = null;
+  state.data = null;
+  state.role = "viewer";
 }
 
 export async function loadBootstrap() {

@@ -175,7 +175,14 @@ function sendJson(res, data, status = 200) {
 
 const rolePermissions = {
   admin: ["*"],
-  supervisor: ["conversation:write", "faqs:write", "branches:write", "agents:write", "routingRules:write"],
+  supervisor: [
+    "conversation:write",
+    "faqs:write",
+    "branches:write",
+    "agents:write",
+    "routingRules:write",
+    "integrations:write"
+  ],
   agent: ["conversation:write"],
   marketplace: ["conversation:write"],
   wholesale: ["conversation:write"],
@@ -183,7 +190,9 @@ const rolePermissions = {
 };
 
 function roleFrom(req) {
-  return req.headers["x-hwhub-role"] || "admin";
+  if (req.user?.role) return req.user.role;
+  if (process.env.ALLOW_ROLE_HEADER === "true") return req.headers["x-hwhub-role"] || "viewer";
+  return "viewer";
 }
 
 function can(req, permission) {
@@ -196,6 +205,30 @@ function requirePermission(req, permission) {
   const error = new Error("Role does not have permission for this action");
   error.statusCode = 403;
   throw error;
+}
+
+function parseCookies(req) {
+  return Object.fromEntries(
+    String(req.headers.cookie || "")
+      .split(";")
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const index = entry.indexOf("=");
+        return [entry.slice(0, index), decodeURIComponent(entry.slice(index + 1))];
+      })
+  );
+}
+
+function sessionCookie(session, clear = false) {
+  const secure = process.env.COOKIE_SECURE === "true" ? "; Secure" : "";
+  if (clear) return `hwhub_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+  const maxAge = Math.max(0, Math.round((session.expiresAt.getTime() - Date.now()) / 1000));
+  return `hwhub_session=${encodeURIComponent(session.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
+}
+
+function sendUnauthorized(res) {
+  sendJson(res, { error: "Authentication required" }, 401);
 }
 
 async function readBody(req) {
@@ -329,12 +362,54 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+  const cookies = parseCookies(req);
+  req.sessionId = cookies.hwhub_session || null;
+  req.user = await store.userFromSession(req.sessionId);
+
+  if (url.pathname === "/api/login" && req.method === "POST") {
+    const body = await readBody(req);
+    const user = await store.authenticate(body.email, body.password);
+    if (!user) {
+      sendJson(res, { error: "Credenciales invalidas" }, 401);
+      return;
+    }
+    const session = await store.createSession(user.id);
+    res.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "set-cookie": sessionCookie(session)
+    });
+    res.end(JSON.stringify({ user }));
+    return;
+  }
+
+  if (url.pathname === "/api/logout" && req.method === "POST") {
+    await store.deleteSession(req.sessionId);
+    res.writeHead(200, {
+      "content-type": "application/json; charset=utf-8",
+      "set-cookie": sessionCookie(null, true)
+    });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
+  if (url.pathname === "/api/session") {
+    if (!req.user) {
+      sendUnauthorized(res);
+      return;
+    }
+    sendJson(res, { user: req.user });
+    return;
+  }
+
   if (url.pathname === "/api/events") {
+    if (!req.user) {
+      sendUnauthorized(res);
+      return;
+    }
     res.writeHead(200, {
       "content-type": "text/event-stream",
       "cache-control": "no-cache",
-      connection: "keep-alive",
-      "access-control-allow-origin": "*"
+      connection: "keep-alive"
     });
     clients.add(res);
     res.write(`event: ready\ndata: {"ok":true}\n\n`);
@@ -343,6 +418,10 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/bootstrap") {
+    if (!req.user) {
+      sendUnauthorized(res);
+      return;
+    }
     sendJson(res, await store.bootstrap());
     return;
   }
@@ -380,6 +459,11 @@ const server = createServer(async (req, res) => {
       reply: routed.reply,
       assignedAgent: routed.assignedAgent
     });
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/") && !req.user) {
+    sendUnauthorized(res);
     return;
   }
 

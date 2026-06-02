@@ -1,3 +1,9 @@
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+
+const SESSION_DAYS = 7;
+const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@hwhub.local";
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-password";
+
 export async function createDataStore(defaultState) {
   if (!process.env.DATABASE_URL) {
     console.log("HWHub usando almacenamiento en memoria");
@@ -8,6 +14,7 @@ export async function createDataStore(defaultState) {
     const { Pool } = await import("pg");
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     await pool.query("select 1");
+    await ensureAuthSchema(pool);
     await seedDatabase(pool, defaultState);
     console.log("HWHub conectado a PostgreSQL");
     return createPostgresStore(pool, defaultState);
@@ -15,6 +22,58 @@ export async function createDataStore(defaultState) {
     console.warn(`No se pudo conectar a PostgreSQL, usando memoria: ${error.message}`);
     return createMemoryStore(defaultState);
   }
+}
+
+function hashPassword(password) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash = "") {
+  const [salt, hash] = storedHash.split(":");
+  if (!salt || !hash) return false;
+  const expected = Buffer.from(hash, "hex");
+  const actual = scryptSync(password, salt, 64);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function publicUser(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    agentId: row.agent_id || null
+  };
+}
+
+function sessionExpiry() {
+  return new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+}
+
+async function ensureAuthSchema(pool) {
+  await pool.query(`
+    create table if not exists users (
+      id uuid primary key default gen_random_uuid(),
+      name text not null,
+      email text unique not null,
+      password_hash text not null,
+      role text not null default 'viewer',
+      agent_id uuid references agents(id),
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await pool.query(`
+    create table if not exists sessions (
+      id text primary key,
+      user_id uuid not null references users(id) on delete cascade,
+      expires_at timestamptz not null,
+      created_at timestamptz not null default now()
+    )
+  `);
 }
 
 function csv(value) {
@@ -191,9 +250,31 @@ async function seedDatabase(pool, defaults) {
       );
     }
   }
+
+  const users = await pool.query("select count(*)::int as count from users");
+  if (!users.rows[0].count) {
+    await pool.query(
+      `insert into users (name, email, password_hash, role)
+       values ($1, $2, $3, 'admin')`,
+      ["Administrador", DEFAULT_ADMIN_EMAIL.toLowerCase(), hashPassword(DEFAULT_ADMIN_PASSWORD)]
+    );
+  }
 }
 
 function createMemoryStore(state) {
+  state.users ||= [
+    {
+      id: "user-admin",
+      name: "Administrador",
+      email: DEFAULT_ADMIN_EMAIL.toLowerCase(),
+      passwordHash: hashPassword(DEFAULT_ADMIN_PASSWORD),
+      role: "admin",
+      agentId: null,
+      isActive: true
+    }
+  ];
+  state.sessions ||= [];
+
   return {
     mode: "memory",
     async bootstrap() {
@@ -272,6 +353,29 @@ function createMemoryStore(state) {
       if (index >= 0) state.integrations[index] = item;
       else state.integrations.unshift(item);
       return { ...item, config: maskConfig(item.config) };
+    },
+    async authenticate(email, password) {
+      const user = state.users.find((item) => item.email === String(email || "").toLowerCase() && item.isActive);
+      if (!user || !verifyPassword(password || "", user.passwordHash)) return null;
+      return publicUser({ ...user, agent_id: user.agentId });
+    },
+    async createSession(userId) {
+      const session = {
+        id: randomBytes(32).toString("hex"),
+        userId,
+        expiresAt: sessionExpiry()
+      };
+      state.sessions.push(session);
+      return session;
+    },
+    async userFromSession(sessionId) {
+      const session = state.sessions.find((item) => item.id === sessionId && item.expiresAt > new Date());
+      if (!session) return null;
+      const user = state.users.find((item) => item.id === session.userId && item.isActive);
+      return publicUser(user ? { ...user, agent_id: user.agentId } : null);
+    },
+    async deleteSession(sessionId) {
+      state.sessions = state.sessions.filter((item) => item.id !== sessionId);
     }
   };
 }
@@ -416,6 +520,41 @@ function createPostgresStore(pool, fallbackState) {
         [payload.provider, payload.name, config, active]
       );
       return integrationFromRow(rows[0]);
+    },
+    async authenticate(email, password) {
+      const { rows } = await pool.query("select * from users where lower(email) = lower($1) and is_active = true", [
+        email || ""
+      ]);
+      const user = rows[0];
+      if (!user || !verifyPassword(password || "", user.password_hash)) return null;
+      return publicUser(user);
+    },
+    async createSession(userId) {
+      const session = {
+        id: randomBytes(32).toString("hex"),
+        userId,
+        expiresAt: sessionExpiry()
+      };
+      await pool.query("insert into sessions (id, user_id, expires_at) values ($1, $2, $3)", [
+        session.id,
+        session.userId,
+        session.expiresAt
+      ]);
+      return session;
+    },
+    async userFromSession(sessionId) {
+      if (!sessionId) return null;
+      const { rows } = await pool.query(
+        `select u.*
+         from sessions s
+         join users u on u.id = s.user_id
+         where s.id = $1 and s.expires_at > now() and u.is_active = true`,
+        [sessionId]
+      );
+      return publicUser(rows[0]);
+    },
+    async deleteSession(sessionId) {
+      if (sessionId) await pool.query("delete from sessions where id = $1", [sessionId]);
     }
   };
 }
