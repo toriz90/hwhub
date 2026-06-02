@@ -23,7 +23,7 @@ http://localhost:3000
 - Eventos en tiempo real con Server-Sent Events para alertas del backoffice.
 - Flujo de chatbot configurable desde datos del backend.
 - Preparacion para OpenAI o Claude como motor IA.
-- Motor IA controlado por contexto de FAQs, directorio y reglas de ruteo. Por defecto usa `AI_PROVIDER=mock`; para IA real usa `AI_PROVIDER=openai` o `AI_PROVIDER=claude` con tokens por `.env`, o guarda una API activa `openai`/`claude` desde la pantalla APIs.
+- Motor IA controlado por contexto de FAQs, directorio y reglas de ruteo. Por defecto usa `AI_PROVIDER=mock`; para IA real usa `AI_PROVIDER=openai` o `AI_PROVIDER=claude` con tokens por `.env`, o guarda una API activa `openai`/`claude` desde la pantalla APIs con `{"apiKey":"...", "model":"...", "useForChat":true}`.
 - Preparacion para PostgreSQL con full-text search, trigramas, pgvector y reglas de ruteo.
 - Preparacion para WooCommerce, Easy!Appointments, WhatsApp Cloud API, Evolution API, Telnyx y Plivo.
 

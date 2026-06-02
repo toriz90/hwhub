@@ -40,7 +40,7 @@ async function resolveProvider(store) {
   }
   const openaiIntegration = await store.integrationConfig?.("openai");
   const openaiKey = openaiIntegration?.apiKey || openaiIntegration?.token;
-  if (isUsableKey(openaiKey)) {
+  if (openaiIntegration?.useForChat === true && isUsableKey(openaiKey)) {
     return {
       name: "openai",
       apiKey: openaiKey,
@@ -49,7 +49,7 @@ async function resolveProvider(store) {
   }
   const claudeIntegration = await store.integrationConfig?.("claude");
   const claudeKey = claudeIntegration?.apiKey || claudeIntegration?.token;
-  if (isUsableKey(claudeKey)) {
+  if (claudeIntegration?.useForChat === true && isUsableKey(claudeKey)) {
     return {
       name: "claude",
       apiKey: claudeKey,
