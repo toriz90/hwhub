@@ -283,7 +283,7 @@ async function testIntegrationConnection(integration) {
   const config = integration.config || {};
   const secret = secretFrom(config);
 
-  if (!secret && ["openai", "claude", "whatsapp_cloud", "evolution_api", "telnyx", "plivo"].includes(provider)) {
+  if (!secret && ["openai", "claude", "whatsapp_cloud", "evolution_api", "telnyx", "plivo", "trackship"].includes(provider)) {
     return { ok: false, message: "Falta apiKey/token en la configuracion." };
   }
 
@@ -371,6 +371,11 @@ async function testIntegrationConnection(integration) {
       if (response.ok) return { ok: true, message: "Plivo respondio correctamente." };
       return { ok: false, message: `Plivo rechazo la conexion (${response.status}). ${await readProviderError(response)}`.trim() };
     }
+  }
+
+  if (provider === "trackship") {
+    if (!config.appName) return { ok: false, message: "Falta appName de TrackShip." };
+    return { ok: true, message: "Credenciales minimas de TrackShip listas para consultar guias." };
   }
 
   return { ok: true, message: "Configuracion registrada." };
@@ -609,12 +614,14 @@ const server = createServer(async (req, res) => {
     const visitorId = body.visitorId || body.externalConversationId || null;
     const profileInput = customerProfileFromBody(body);
     const currentState = await store.bootstrap();
-    const connectorContext = await buildConnectorContext({ text: body.message || "", store });
-    currentState.connectorContext = connectorContext;
-    const routed = routeMessage({ text: body.message || "", channel, currentState });
     let savedConversation = body.conversationId ? await store.conversationById?.(body.conversationId) : null;
     if (!savedConversation && visitorId) savedConversation = await store.activeConversationByExternalId?.(visitorId, channel);
     const existingConversation = Boolean(savedConversation);
+    const history = savedConversation ? await store.messages(savedConversation.id) : [];
+    const connectorContext = await buildConnectorContext({ text: body.message || "", history, store });
+    currentState.connectorContext = connectorContext;
+    currentState.conversationHistory = history;
+    const routed = routeMessage({ text: body.message || "", channel, currentState });
     const mergedProfile = mergeCustomerProfile(savedConversation, profileInput);
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
     const missingProfilePrompt = profilePrompt(mergedProfile);
@@ -626,6 +633,7 @@ const server = createServer(async (req, res) => {
       };
     } else if (routed.status === "bot_active") {
       try {
+        if (savedConversation) emit("conversation.typing", { conversationId: savedConversation.id, senderType: "bot", typing: true });
         ai = await generateBotReply({ text: body.message || "", routed, currentState, store });
       } catch (error) {
         ai = {
@@ -634,6 +642,8 @@ const server = createServer(async (req, res) => {
           error: error.message,
           usedContext: null
         };
+      } finally {
+        if (savedConversation) emit("conversation.typing", { conversationId: savedConversation.id, senderType: "bot", typing: false });
       }
     }
     if (!savedConversation) {

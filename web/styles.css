@@ -536,6 +536,11 @@ textarea:disabled {
   margin-top: 0.25rem;
 }
 
+.message.typing {
+  opacity: 0.72;
+  font-style: italic;
+}
+
 .timeline {
   display: grid;
   gap: 0.6rem;
@@ -700,6 +705,34 @@ textarea {
   justify-self: center;
   color: #991b1b;
   background: #fee2e2;
+}
+
+.hwhub-widget-typing {
+  display: inline-flex;
+  gap: 0.22rem;
+  align-items: center;
+}
+
+.hwhub-widget-typing span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: hwhubTyping 1s infinite ease-in-out;
+}
+
+.hwhub-widget-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.hwhub-widget-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes hwhubTyping {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 0.9; transform: translateY(-2px); }
 }
 
 .hwhub-widget-compose {

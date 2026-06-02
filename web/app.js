@@ -4,7 +4,8 @@ const state = {
   alerts: 0,
   selectedConversationId: null,
   role: "viewer",
-  user: null
+  user: null,
+  typing: {}
 };
 
 const filters = {
@@ -108,6 +109,15 @@ const integrationDefinitions = [
       { key: "baseUrl", label: "URL de agenda", type: "url", required: true, placeholder: "https://agenda.tudominio.com" },
       { key: "apiKey", label: "API key/token", type: "password" },
       { key: "testPath", label: "Ruta de prueba", type: "text", required: true, value: "/index.php/api/v1/services" }
+    ]
+  },
+  {
+    provider: "trackship",
+    name: "TrackShip envios",
+    fields: [
+      { key: "apiKey", label: "API key", type: "password", required: true },
+      { key: "appName", label: "App name", type: "text", required: true, value: "WhaleHub" },
+      { key: "trackingProvider", label: "Proveedor default", type: "text", placeholder: "dhl, fedex, estafeta..." }
     ]
   }
 ];
@@ -824,6 +834,8 @@ async function openConversation(id) {
           </div>
         `)
         .join("")}
+      ${state.typing[id]?.bot ? `<div class="message bot typing"><p>Bot escribiendo...</p></div>` : ""}
+      ${state.typing[id]?.agent ? `<div class="message agent typing"><p>Agente escribiendo...</p></div>` : ""}
     </div>
     <div class="timeline">
       <h3>Historial</h3>
@@ -992,6 +1004,12 @@ function bindRealtime() {
     state.alerts += 1;
     await refresh();
     if (state.selectedConversationId) await openConversation(state.selectedConversationId);
+  });
+  events.addEventListener("conversation.typing", async (event) => {
+    const data = JSON.parse(event.data);
+    state.typing[data.conversationId] ||= {};
+    state.typing[data.conversationId][data.senderType] = Boolean(data.typing);
+    if (data.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
   });
   events.addEventListener("message.created", async (event) => {
     const message = JSON.parse(event.data);

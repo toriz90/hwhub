@@ -90,6 +90,17 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
+  function setTyping(active, senderType = "bot") {
+    const existing = messages.querySelector(".hwhub-widget-typing");
+    if (existing) existing.remove();
+    if (!active) return;
+    const bubble = document.createElement("article");
+    bubble.className = `hwhub-widget-message ${senderType} hwhub-widget-typing`;
+    bubble.innerHTML = `<span></span><span></span><span></span>`;
+    messages.append(bubble);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
   function syncProfile() {
     session.profile.name = nameInput.value.trim();
     session.profile.phone = phoneInput.value.trim();
@@ -114,6 +125,7 @@
     session.messages.push({ senderType: "customer", body: message });
     textarea.value = "";
     renderMessages();
+    setTyping(true, "bot");
     sendButton.disabled = true;
     sendButton.textContent = "Enviando...";
     try {
@@ -143,6 +155,7 @@
       saveSession();
       renderMessages();
     } catch (error) {
+      setTyping(false);
       session.messages.push({ senderType: "system", body: error.message || "No se pudo contactar al asistente." });
       renderMessages();
     } finally {

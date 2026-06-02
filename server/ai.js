@@ -94,6 +94,11 @@ function buildContext({ text, routed, currentState }) {
     fallbackMessage: rule.fallbackMessage
   }));
   const connectorContext = currentState.connectorContext || {};
+  const history = (currentState.conversationHistory || []).slice(-10).map((message) => ({
+    sender: message.senderType,
+    body: message.body,
+    at: message.createdAt
+  }));
   return {
     summary: {
       intent: routed.intent,
@@ -104,6 +109,8 @@ function buildContext({ text, routed, currentState }) {
       rules: rules.length,
       products: connectorContext.products?.total || 0,
       appointmentServices: connectorContext.appointments?.total || 0,
+      order: connectorContext.order?.number || null,
+      shipment: connectorContext.shipment?.trackingNumber || null,
       connectorErrors: connectorContext.errors?.length || 0
     },
     prompt: [
@@ -112,9 +119,13 @@ function buildContext({ text, routed, currentState }) {
       "Usa solamente la informacion de contexto. Si falta informacion, pide el dato necesario o canaliza a agente.",
       "No inventes telefonos, horarios, estados de pedidos, citas ni politicas.",
       "Si hay productos de WooCommerce, puedes mencionar precio, disponibilidad y enlace cuando exista.",
+      "Si hay datos de pedido WooCommerce, responde con el estatus real del pedido y no digas que lo revisaras despues.",
+      "Si hay datos de TrackShip, menciona estatus de envio, guia y URL de seguimiento cuando exista.",
       "Si hay servicios de Easy!Appointments, puedes ofrecer iniciar la agenda, pero no confirmes una cita sin fecha, hora, nombre y contacto.",
+      "Usa el historial para mantener el hilo. Si el cliente pregunta 'por que no respondes' o continua una frase, asume que habla del tema vigente.",
       "Si el ruteo indica agente o pausa, no prometas resolver: confirma la canalizacion.",
       "",
+      `Historial reciente: ${JSON.stringify(history)}`,
       `Mensaje del cliente: ${text || ""}`,
       `Ruteo detectado: ${JSON.stringify(routed)}`,
       `FAQs relevantes: ${JSON.stringify(faqs)}`,
