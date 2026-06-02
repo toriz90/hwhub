@@ -25,6 +25,8 @@ function setAuthenticatedUi(isAuthenticated) {
   $("main").classList.toggle("hidden", !isAuthenticated);
   if (state.user) {
     $("#active-user").textContent = `${state.user.name} · ${state.user.role}`;
+  } else {
+    $("#active-user").textContent = "";
   }
 }
 
@@ -160,7 +162,14 @@ let appStarted = false;
 
 async function startApp() {
   setAuthenticatedUi(true);
-  await loadBootstrap();
+  try {
+    await loadBootstrap();
+  } catch {
+    await logout().catch(() => {});
+    setAuthenticatedUi(false);
+    $("#login-error").textContent = "Tu sesion expiro o no se pudo cargar el dashboard.";
+    return;
+  }
   if (!appStarted) {
     bindNavigation();
     bindRoleSwitch();
