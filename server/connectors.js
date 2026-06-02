@@ -21,7 +21,24 @@ function productSearchTerm(text = "") {
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .split(/\s+/)
     .filter((word) => word.length > 2)
-    .filter((word) => !["precio", "stock", "producto", "productos", "tienen", "tienes", "cuanto", "cuesta", "quiero"].includes(word))
+    .filter((word) => ![
+      "precio",
+      "precios",
+      "stock",
+      "producto",
+      "productos",
+      "tienen",
+      "tienes",
+      "cuanto",
+      "cuesta",
+      "quiero",
+      "saber",
+      "disponible",
+      "disponibles",
+      "existencia",
+      "comprar",
+      "catalogo"
+    ].includes(word))
     .slice(0, 5)
     .join(" ");
 }
