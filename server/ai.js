@@ -39,22 +39,29 @@ async function resolveProvider(store) {
     };
   }
   const openaiIntegration = await store.integrationConfig?.("openai");
-  if (openaiIntegration?.apiKey || openaiIntegration?.token) {
+  const openaiKey = openaiIntegration?.apiKey || openaiIntegration?.token;
+  if (isUsableKey(openaiKey)) {
     return {
       name: "openai",
-      apiKey: openaiIntegration.apiKey || openaiIntegration.token,
+      apiKey: openaiKey,
       model: openaiIntegration.model || DEFAULT_OPENAI_MODEL
     };
   }
   const claudeIntegration = await store.integrationConfig?.("claude");
-  if (claudeIntegration?.apiKey || claudeIntegration?.token) {
+  const claudeKey = claudeIntegration?.apiKey || claudeIntegration?.token;
+  if (isUsableKey(claudeKey)) {
     return {
       name: "claude",
-      apiKey: claudeIntegration.apiKey || claudeIntegration.token,
+      apiKey: claudeKey,
       model: claudeIntegration.model || DEFAULT_ANTHROPIC_MODEL
     };
   }
   return { name: "mock" };
+}
+
+function isUsableKey(value) {
+  const key = String(value || "").trim();
+  return key.length > 12 && !["...", "test", "placeholder", "changeme"].includes(key.toLowerCase());
 }
 
 function buildContext({ text, routed, currentState }) {
