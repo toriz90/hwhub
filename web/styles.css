@@ -729,6 +729,17 @@ textarea {
   font-size: 0.78rem;
 }
 
+.hwhub-widget-form-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+}
+
+.hwhub-widget-form-actions button:first-child {
+  background: #edf1f5;
+  color: var(--ink);
+}
+
 .hwhub-widget-chat-screen {
   display: grid;
   gap: 0.6rem;

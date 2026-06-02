@@ -15,6 +15,11 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+function easyHeaders(config = {}) {
+  const token = config.apiKey || config.token;
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
+
 function productSearchTerm(text = "") {
   return String(text)
     .toLowerCase()
@@ -223,9 +228,7 @@ async function fetchEasyAppointmentServices(config) {
   const endpoint = endpointFrom(config);
   if (!endpoint) return null;
   const testPath = config.testPath || "/index.php/api/v1/services";
-  const headers = {};
-  const token = config.apiKey || config.token;
-  if (token) headers.authorization = `Bearer ${token}`;
+  const headers = easyHeaders(config);
   const services = await fetchJson(`${endpoint}${testPath}`, { headers });
   const list = Array.isArray(services) ? services : services?.services || services?.data || [];
   return {
@@ -238,4 +241,94 @@ async function fetchEasyAppointmentServices(config) {
       description: service.description
     }))
   };
+}
+
+export async function getEasyAppointmentOptions(store) {
+  const config = await store.integrationConfig?.("easyappointments");
+  if (!config) return { services: [], providers: [] };
+  const endpoint = endpointFrom(config);
+  const headers = easyHeaders(config);
+  const [servicesData, providersData] = await Promise.all([
+    fetchJson(`${endpoint}/index.php/api/v1/services`, { headers }),
+    fetchJson(`${endpoint}/index.php/api/v1/providers`, { headers })
+  ]);
+  const services = (Array.isArray(servicesData) ? servicesData : []).map((service) => ({
+    id: service.id,
+    name: service.name,
+    duration: service.duration,
+    price: service.price
+  }));
+  const providers = (Array.isArray(providersData) ? providersData : []).map((provider) => ({
+    id: provider.id,
+    name: [provider.firstName, provider.lastName].filter(Boolean).join(" "),
+    email: provider.email,
+    phone: provider.phone,
+    timezone: provider.timezone,
+    services: provider.services || [],
+    workingPlan: provider.settings?.workingPlan || {}
+  }));
+  return { services, providers };
+}
+
+function isoDate(value = new Date()) {
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function normalizeSlots(data) {
+  if (Array.isArray(data)) return data.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean);
+  const list = data?.availableHours || data?.availabilities || data?.data || [];
+  return Array.isArray(list) ? list.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean) : [];
+}
+
+export async function prevalidateEasyAppointment(store, payload = {}) {
+  const config = await store.integrationConfig?.("easyappointments");
+  if (!config) return { ok: false, reason: "missing_integration", message: "Easy!Appointments no esta configurado." };
+  const serviceId = Number(payload.serviceId);
+  const providerId = Number(payload.providerId);
+  const date = String(payload.date || "");
+  if (!serviceId || !providerId || !date) {
+    return { ok: false, reason: "missing_fields", message: "Faltan servicio, proveedor o fecha." };
+  }
+  const today = isoDate();
+  if (date <= today) {
+    const next = await findNextAvailability(config, serviceId, providerId, addDays(new Date(), 1));
+    return {
+      ok: false,
+      reason: "same_day_blocked",
+      message: "No se pueden agendar citas para el mismo dia.",
+      nextAvailable: next
+    };
+  }
+  const slots = await fetchEasyAvailabilities(config, serviceId, providerId, date);
+  if (slots.length) return { ok: true, date, slots };
+  const next = await findNextAvailability(config, serviceId, providerId, addDays(new Date(date), 1));
+  return {
+    ok: false,
+    reason: "no_slots",
+    message: "No hay horarios disponibles para esa fecha.",
+    nextAvailable: next
+  };
+}
+
+async function fetchEasyAvailabilities(config, serviceId, providerId, date) {
+  const endpoint = endpointFrom(config);
+  const headers = easyHeaders(config);
+  const params = new URLSearchParams({ serviceId: String(serviceId), providerId: String(providerId), date });
+  const data = await fetchJson(`${endpoint}/index.php/api/v1/availabilities?${params}`, { headers });
+  return normalizeSlots(data);
+}
+
+async function findNextAvailability(config, serviceId, providerId, startDate) {
+  for (let index = 0; index < 30; index += 1) {
+    const date = isoDate(addDays(startDate, index));
+    const slots = await fetchEasyAvailabilities(config, serviceId, providerId, date);
+    if (slots.length) return { date, slots };
+  }
+  return null;
 }

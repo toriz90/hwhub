@@ -4,7 +4,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDataStore } from "./database.js";
 import { generateBotReply } from "./ai.js";
-import { buildConnectorContext } from "./connectors.js";
+import { buildConnectorContext, getEasyAppointmentOptions, prevalidateEasyAppointment } from "./connectors.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -641,6 +641,16 @@ const server = createServer(async (req, res) => {
       uptime: Math.round(process.uptime()),
       timestamp: new Date().toISOString()
     });
+    return;
+  }
+
+  if (url.pathname === "/api/appointments/options" && req.method === "GET") {
+    sendJson(res, await getEasyAppointmentOptions(store));
+    return;
+  }
+
+  if (url.pathname === "/api/appointments/prevalidate" && req.method === "POST") {
+    sendJson(res, await prevalidateEasyAppointment(store, await readBody(req)));
     return;
   }
 
