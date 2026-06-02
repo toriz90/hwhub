@@ -4,6 +4,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDataStore } from "./database.js";
 import { generateBotReply } from "./ai.js";
+import { buildConnectorContext } from "./connectors.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -575,6 +576,8 @@ const server = createServer(async (req, res) => {
     const body = await readBody(req);
     const channel = body.channel || "web_widget";
     const currentState = await store.bootstrap();
+    const connectorContext = await buildConnectorContext({ text: body.message || "", store });
+    currentState.connectorContext = connectorContext;
     const routed = routeMessage({ text: body.message || "", channel, currentState });
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
     if (routed.status === "bot_active") {
@@ -620,6 +623,8 @@ const server = createServer(async (req, res) => {
         usedContext: ai.usedContext || null,
         error: ai.error || null
       }
+      ,
+      connectors: connectorContext
     });
     return;
   }

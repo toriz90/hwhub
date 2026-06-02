@@ -876,6 +876,8 @@ async function sendChat(message, channel = "web_widget") {
     <p class="meta">Canal: ${esc(data.conversation.channel)} - Intencion: ${esc(data.conversation.intent)} - Marketplace: ${esc(data.conversation.marketplace)}</p>
     <p class="meta">Estado: ${statusLabel(data.conversation.status)} - Agente: ${data.assignedAgent?.name || "sin asignar"}</p>
     <p class="meta">IA: ${esc(data.ai?.provider || "rules")}${data.ai?.model ? ` - ${esc(data.ai.model)}` : ""}</p>
+    <p class="meta">APIs: productos ${esc(data.connectors?.products?.total || 0)} - servicios agenda ${esc(data.connectors?.appointments?.total || 0)}</p>
+    ${(data.connectors?.errors || []).map((error) => `<p class="meta">API ${esc(error.provider)}: ${esc(error.message)}</p>`).join("")}
     ${data.ai?.error ? `<p class="meta">Error IA: ${esc(data.ai.error)}</p>` : ""}
   `;
   return data;

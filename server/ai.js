@@ -93,6 +93,7 @@ function buildContext({ text, routed, currentState }) {
     botAllowed: rule.botAllowed,
     fallbackMessage: rule.fallbackMessage
   }));
+  const connectorContext = currentState.connectorContext || {};
   return {
     summary: {
       intent: routed.intent,
@@ -100,20 +101,26 @@ function buildContext({ text, routed, currentState }) {
       status: routed.status,
       faqs: faqs.length,
       branches: branches.length,
-      rules: rules.length
+      rules: rules.length,
+      products: connectorContext.products?.total || 0,
+      appointmentServices: connectorContext.appointments?.total || 0,
+      connectorErrors: connectorContext.errors?.length || 0
     },
     prompt: [
       "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes.",
       "Responde en espanol, claro y breve.",
       "Usa solamente la informacion de contexto. Si falta informacion, pide el dato necesario o canaliza a agente.",
       "No inventes telefonos, horarios, estados de pedidos, citas ni politicas.",
+      "Si hay productos de WooCommerce, puedes mencionar precio, disponibilidad y enlace cuando exista.",
+      "Si hay servicios de Easy!Appointments, puedes ofrecer iniciar la agenda, pero no confirmes una cita sin fecha, hora, nombre y contacto.",
       "Si el ruteo indica agente o pausa, no prometas resolver: confirma la canalizacion.",
       "",
       `Mensaje del cliente: ${text || ""}`,
       `Ruteo detectado: ${JSON.stringify(routed)}`,
       `FAQs relevantes: ${JSON.stringify(faqs)}`,
       `Directorio: ${JSON.stringify(branches)}`,
-      `Reglas: ${JSON.stringify(rules)}`
+      `Reglas: ${JSON.stringify(rules)}`,
+      `Contexto externo de APIs: ${JSON.stringify(connectorContext)}`
     ].join("\n")
   };
 }
