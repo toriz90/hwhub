@@ -62,6 +62,16 @@ export function bindConversationFilters(render) {
   });
 }
 
+export function applyConversationStatusFilter(status, render) {
+  filters.status = status;
+  filters.channel = "";
+  filters.search = "";
+  $("#conversation-status-filter").value = status;
+  $("#conversation-channel-filter").value = "";
+  $("#conversation-search").value = "";
+  render();
+}
+
 export async function openConversation(id) {
   state.selectedConversationId = id;
   const data = await api(`/api/conversations/${id}`);

@@ -1,6 +1,6 @@
 import { $, $$, loadBootstrap, state } from "./modules/shared.js";
 import { renderDashboard } from "./modules/dashboard.js";
-import { bindConversationActions, bindConversationFilters, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
+import { applyConversationStatusFilter, bindConversationActions, bindConversationFilters, renderConversations, sendChat, openConversation } from "./modules/conversations.js";
 import { bindEditors, renderAdminCollections, renderFaqs } from "./modules/admin-crud.js";
 import { bindIntegrations, renderIntegrations } from "./modules/integrations.js";
 import { bindRoleLab, renderRoleMatrix } from "./modules/roles.js";
@@ -83,6 +83,16 @@ function bindRoleSwitch() {
   });
 }
 
+function bindDashboardShortcuts() {
+  for (const button of $$("[data-status-shortcut]")) {
+    button.addEventListener("click", () => {
+      showView("conversations");
+      history.replaceState(null, "", "#conversations");
+      applyConversationStatusFilter(button.dataset.statusShortcut, render);
+    });
+  }
+}
+
 $("#chat-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   await sendChat($("#message").value, $("#channel").value);
@@ -124,6 +134,7 @@ events.addEventListener("message.created", async (event) => {
 await loadBootstrap();
 bindNavigation();
 bindRoleSwitch();
+bindDashboardShortcuts();
 bindEditors(refresh);
 bindConversationActions(refresh);
 bindConversationFilters(render);

@@ -145,6 +145,12 @@ h2 {
   margin-bottom: 1rem;
 }
 
+.status-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+}
+
 .metrics article,
 .panel {
   background: rgba(255, 255, 255, 0.84);
@@ -157,15 +163,36 @@ h2 {
   padding: 1rem;
 }
 
+.status-metrics button {
+  padding: 1rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
 .metrics span {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.status-metrics span {
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 .metrics strong {
   display: block;
   margin-top: 0.3rem;
   font-size: 1.8rem;
+}
+
+.status-metrics strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.55rem;
 }
 
 .workspace {
@@ -527,6 +554,7 @@ textarea {
   }
 
   .metrics,
+  .status-metrics,
   .workspace,
   .grid-two,
   .flow,
