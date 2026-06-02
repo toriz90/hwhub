@@ -24,7 +24,7 @@ function setAuthenticatedUi(isAuthenticated) {
   $(".sidebar").classList.toggle("hidden", !isAuthenticated);
   $("main").classList.toggle("hidden", !isAuthenticated);
   if (state.user) {
-    $("#active-user").textContent = `${state.user.name} · ${state.user.role}`;
+    $("#active-user").textContent = `${state.user.name} - ${state.user.role}`;
   } else {
     $("#active-user").textContent = "";
   }
@@ -186,6 +186,13 @@ async function startApp() {
   render();
 }
 
-bindAuth();
-setAuthenticatedUi(false);
-if (await loadSession()) await startApp();
+async function init() {
+  bindAuth();
+  setAuthenticatedUi(false);
+  if (await loadSession()) await startApp();
+}
+
+init().catch(() => {
+  setAuthenticatedUi(false);
+  $("#login-error").textContent = "No se pudo iniciar la aplicacion.";
+});
