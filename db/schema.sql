@@ -134,6 +134,9 @@ CREATE TABLE integration_accounts (
   name text NOT NULL,
   encrypted_config jsonb NOT NULL,
   is_active boolean NOT NULL DEFAULT true,
+  last_checked_at timestamptz,
+  last_check_status text,
+  last_check_message text,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

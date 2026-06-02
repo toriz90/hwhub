@@ -59,6 +59,11 @@ function roleCan(permission) {
   return permissions.includes("*") || permissions.includes(permission);
 }
 
+function formatDateTime(value) {
+  if (!value) return "Sin prueba";
+  return new Date(value).toLocaleString();
+}
+
 function formPayload(form) {
   const data = new FormData(form);
   const payload = Object.fromEntries(data.entries());
@@ -284,9 +289,16 @@ function renderIntegrations() {
       <article class="card">
         <strong>${esc(item.name)}</strong>
         <p class="meta">${esc(item.provider)} - ${item.active ? "activa" : "inactiva"}</p>
+        <p class="meta">
+          Ultima prueba: ${esc(formatDateTime(item.lastCheckedAt))}
+          ${item.lastCheckStatus ? `- ${esc(item.lastCheckStatus)}` : ""}
+        </p>
+        ${item.lastCheckMessage ? `<p class="meta">${esc(item.lastCheckMessage)}</p>` : ""}
         ${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}
         <div class="row-actions">
           <button data-edit-integration="${esc(item.id)}">Editar</button>
+          <button data-test-integration="${esc(item.id)}">Probar</button>
+          <button class="danger" data-delete-integration="${esc(item.id)}">Eliminar</button>
         </div>
       </article>
     `)
@@ -306,6 +318,44 @@ function renderIntegrations() {
       form.elements.active.checked = Boolean(item.active);
       $("#integration-status").textContent = "Editando API existente. Deja config vacia para conservar el token.";
       form.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+  }
+
+  for (const button of $$("[data-test-integration]")) {
+    button.onclick = async () => {
+      const item = integrations.find((entry) => entry.id === button.dataset.testIntegration);
+      if (!item) return;
+      button.disabled = true;
+      button.textContent = "Probando...";
+      $("#integration-status").textContent = `Probando conexion de ${item.name}...`;
+      try {
+        const result = await api(`/api/integrations/${encodeURIComponent(item.id)}/test`, { method: "POST" });
+        $("#integration-status").textContent = result.message || "Prueba finalizada.";
+        await refresh();
+      } catch (error) {
+        $("#integration-status").textContent = error.message || "No se pudo probar la API.";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Probar";
+      }
+    };
+  }
+
+  for (const button of $$("[data-delete-integration]")) {
+    button.onclick = async () => {
+      const item = integrations.find((entry) => entry.id === button.dataset.deleteIntegration);
+      if (!item || !confirm(`Eliminar la API "${item.name}"?`)) return;
+      button.disabled = true;
+      $("#integration-status").textContent = `Eliminando ${item.name}...`;
+      try {
+        await api(`/api/integrations/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+        $("#integration-status").textContent = "API eliminada correctamente.";
+        await refresh();
+      } catch (error) {
+        $("#integration-status").textContent = error.message || "No se pudo eliminar la API.";
+      } finally {
+        button.disabled = false;
+      }
     };
   }
 }

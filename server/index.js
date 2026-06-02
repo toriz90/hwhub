@@ -249,6 +249,82 @@ async function readBody(req) {
   }
 }
 
+function secretFrom(config = {}) {
+  return config.apiKey || config.token || config.accessToken || config.bearerToken || config.secret || "";
+}
+
+function endpointFrom(config = {}) {
+  return config.baseUrl || config.url || config.endpoint || "";
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function testIntegrationConnection(integration) {
+  const provider = String(integration.provider || "").toLowerCase();
+  const config = integration.config || {};
+  const secret = secretFrom(config);
+
+  if (!secret && ["openai", "claude", "whatsapp_cloud", "evolution_api", "telnyx", "plivo"].includes(provider)) {
+    return { ok: false, message: "Falta apiKey/token en la configuracion." };
+  }
+
+  if (provider === "openai") {
+    const response = await fetchWithTimeout("https://api.openai.com/v1/models", {
+      headers: { authorization: `Bearer ${secret}` }
+    });
+    if (response.ok) return { ok: true, message: "OpenAI respondio correctamente." };
+    return { ok: false, message: `OpenAI rechazo la conexion (${response.status}).` };
+  }
+
+  if (provider === "claude") {
+    const response = await fetchWithTimeout("https://api.anthropic.com/v1/models", {
+      headers: {
+        "x-api-key": secret,
+        "anthropic-version": "2023-06-01"
+      }
+    });
+    if (response.ok) return { ok: true, message: "Claude respondio correctamente." };
+    return { ok: false, message: `Claude rechazo la conexion (${response.status}).` };
+  }
+
+  if (provider === "woocommerce") {
+    const endpoint = endpointFrom(config);
+    if (!endpoint || !config.consumerKey || !config.consumerSecret) {
+      return { ok: false, message: "Faltan url, consumerKey o consumerSecret de WooCommerce." };
+    }
+    return { ok: true, message: "Configuracion minima de WooCommerce lista para sincronizar." };
+  }
+
+  if (provider === "easyappointments") {
+    if (!endpointFrom(config)) return { ok: false, message: "Falta url/baseUrl de Easy!Appointments." };
+    return { ok: true, message: "Configuracion minima de Easy!Appointments lista." };
+  }
+
+  if (provider === "whatsapp_cloud") {
+    if (!config.phoneNumberId && !config.businessAccountId) {
+      return { ok: false, message: "Falta phoneNumberId o businessAccountId de WhatsApp Cloud." };
+    }
+    return { ok: true, message: "Configuracion minima de WhatsApp Cloud lista." };
+  }
+
+  if (["evolution_api", "telnyx", "plivo"].includes(provider)) {
+    if (!endpointFrom(config) && provider === "evolution_api") {
+      return { ok: false, message: "Falta endpoint/baseUrl de Evolution API." };
+    }
+    return { ok: true, message: "Credenciales minimas detectadas." };
+  }
+
+  return { ok: true, message: "Configuracion registrada." };
+}
+
 function emit(event, payload) {
   const body = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
   for (const client of clients) client.write(body);
@@ -583,6 +659,34 @@ const server = createServer(async (req, res) => {
     const integration = await store.saveIntegration(await readBody(req));
     emit("integrations.updated", integration);
     sendJson(res, integration, 201);
+    return;
+  }
+
+  if (url.pathname.match(/^\/api\/integrations\/[^/]+\/test$/) && req.method === "POST") {
+    requirePermission(req, "integrations:write");
+    const id = url.pathname.split("/")[3];
+    const integration = await store.integrationById?.(id);
+    if (!integration) {
+      sendJson(res, { error: "Integration not found" }, 404);
+      return;
+    }
+    const result = await testIntegrationConnection(integration);
+    const updated = await store.recordIntegrationCheck?.(id, result);
+    emit("integrations.updated", updated || integration);
+    sendJson(res, { ...result, integration: updated || integration });
+    return;
+  }
+
+  if (url.pathname.match(/^\/api\/integrations\/[^/]+$/) && req.method === "DELETE") {
+    requirePermission(req, "integrations:write");
+    const id = url.pathname.split("/")[3];
+    const deleted = await store.deleteIntegration?.(id);
+    if (!deleted) {
+      sendJson(res, { error: "Integration not found" }, 404);
+      return;
+    }
+    emit("integrations.deleted", { id });
+    sendJson(res, { ok: true });
     return;
   }
 

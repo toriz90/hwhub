@@ -92,6 +92,19 @@ async function ensureAuthSchema(pool) {
       created_at timestamptz not null default now()
     )
   `);
+  await pool.query(`
+    create table if not exists integration_accounts (
+      id uuid primary key default gen_random_uuid(),
+      provider text not null,
+      name text not null,
+      encrypted_config jsonb not null,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await pool.query("alter table integration_accounts add column if not exists last_checked_at timestamptz");
+  await pool.query("alter table integration_accounts add column if not exists last_check_status text");
+  await pool.query("alter table integration_accounts add column if not exists last_check_message text");
 }
 
 function csv(value) {
@@ -222,7 +235,10 @@ function integrationFromRow(row) {
     provider: row.provider,
     name: row.name,
     active: row.is_active,
-    config: maskConfig(config)
+    config: maskConfig(config),
+    lastCheckedAt: row.last_checked_at || row.lastCheckedAt || null,
+    lastCheckStatus: row.last_check_status || row.lastCheckStatus || null,
+    lastCheckMessage: row.last_check_message || row.lastCheckMessage || null
   };
 }
 
@@ -463,7 +479,10 @@ function createMemoryStore(state) {
         provider: payload.provider,
         name: payload.name,
         active: Boolean(payload.active),
-        config
+        config,
+        lastCheckedAt: null,
+        lastCheckStatus: null,
+        lastCheckMessage: null
       };
       const index = state.integrations.findIndex(
         (entry) =>
@@ -471,12 +490,32 @@ function createMemoryStore(state) {
           (entry.provider === item.provider && String(entry.name).toLowerCase() === String(item.name).toLowerCase())
       );
       if (index >= 0) {
+        const previous = state.integrations[index];
         item.id = state.integrations[index].id;
         item.config = Object.keys(config).length ? config : state.integrations[index].config;
+        item.lastCheckedAt = previous.lastCheckedAt || null;
+        item.lastCheckStatus = previous.lastCheckStatus || null;
+        item.lastCheckMessage = previous.lastCheckMessage || null;
         state.integrations[index] = item;
       }
       else state.integrations.unshift(item);
       return { ...item, config: maskConfig(item.config) };
+    },
+    async integrationById(id) {
+      return (state.integrations || []).find((entry) => entry.id === id) || null;
+    },
+    async recordIntegrationCheck(id, result) {
+      const item = (state.integrations || []).find((entry) => entry.id === id);
+      if (!item) return null;
+      item.lastCheckedAt = new Date().toISOString();
+      item.lastCheckStatus = result.ok ? "ok" : "error";
+      item.lastCheckMessage = result.message;
+      return { ...item, config: maskConfig(item.config) };
+    },
+    async deleteIntegration(id) {
+      const before = state.integrations?.length || 0;
+      state.integrations = (state.integrations || []).filter((entry) => entry.id !== id);
+      return before !== state.integrations.length;
     },
     async integrationConfig(provider) {
       const item = (state.integrations || []).find((entry) => entry.provider === provider && entry.active !== false);
@@ -748,6 +787,31 @@ function createPostgresStore(pool, fallbackState) {
         [payload.provider, payload.name, config, active]
       );
       return integrationFromRow(rows[0]);
+    },
+    async integrationById(id) {
+      const { rows } = await pool.query("select * from integration_accounts where id=$1", [id]);
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        ...integrationFromRow(row),
+        config: row.encrypted_config || {}
+      };
+    },
+    async recordIntegrationCheck(id, result) {
+      const { rows } = await pool.query(
+        `update integration_accounts
+         set last_checked_at=now(),
+             last_check_status=$2,
+             last_check_message=$3
+         where id=$1
+         returning *`,
+        [id, result.ok ? "ok" : "error", result.message]
+      );
+      return rows[0] ? integrationFromRow(rows[0]) : null;
+    },
+    async deleteIntegration(id) {
+      const { rowCount } = await pool.query("delete from integration_accounts where id=$1", [id]);
+      return rowCount > 0;
     },
     async integrationConfig(provider) {
       const { rows } = await pool.query(

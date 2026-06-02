@@ -455,6 +455,11 @@ textarea:disabled {
   color: var(--ink);
 }
 
+.row-actions button.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .filters {
   display: grid;
   grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(180px, 1.2fr) auto;
