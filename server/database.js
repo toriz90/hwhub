@@ -45,7 +45,9 @@ function publicUser(row) {
     name: row.name,
     email: row.email,
     role: row.role,
-    agentId: row.agent_id || null
+    agentId: row.agent_id || null,
+    isActive: row.is_active ?? row.isActive ?? true,
+    createdAt: row.created_at || row.createdAt || null
   };
 }
 
@@ -376,6 +378,41 @@ function createMemoryStore(state) {
     },
     async deleteSession(sessionId) {
       state.sessions = state.sessions.filter((item) => item.id !== sessionId);
+    },
+    async users() {
+      return state.users.map((user) => publicUser({ ...user, agent_id: user.agentId, is_active: user.isActive }));
+    },
+    async saveUser(payload) {
+      const item = normalizeUserPayload(payload);
+      if (item.id) {
+        const user = state.users.find((entry) => entry.id === item.id);
+        if (!user) return null;
+        user.name = item.name;
+        user.email = item.email;
+        user.role = item.role;
+        user.agentId = item.agentId;
+        user.isActive = item.isActive;
+        if (item.password) user.passwordHash = hashPassword(item.password);
+        return publicUser({ ...user, agent_id: user.agentId, is_active: user.isActive });
+      }
+      const user = {
+        id: `user-${Date.now()}`,
+        name: item.name,
+        email: item.email,
+        role: item.role,
+        agentId: item.agentId,
+        isActive: item.isActive,
+        passwordHash: hashPassword(item.password || randomBytes(12).toString("hex")),
+        createdAt: new Date().toISOString()
+      };
+      state.users.unshift(user);
+      return publicUser({ ...user, agent_id: user.agentId, is_active: user.isActive });
+    },
+    async updatePassword(userId, password) {
+      const user = state.users.find((entry) => entry.id === userId);
+      if (!user) return null;
+      user.passwordHash = hashPassword(password);
+      return publicUser({ ...user, agent_id: user.agentId, is_active: user.isActive });
     }
   };
 }
@@ -555,6 +592,47 @@ function createPostgresStore(pool, fallbackState) {
     },
     async deleteSession(sessionId) {
       if (sessionId) await pool.query("delete from sessions where id = $1", [sessionId]);
+    },
+    async users() {
+      const { rows } = await pool.query(
+        "select id, name, email, role, agent_id, is_active, created_at from users order by created_at desc"
+      );
+      return rows.map(publicUser);
+    },
+    async saveUser(payload) {
+      const item = normalizeUserPayload(payload);
+      if (item.id) {
+        const params = [item.id, item.name, item.email, item.role, isUuid(item.agentId) ? item.agentId : null, item.isActive];
+        const passwordSql = item.password ? ", password_hash=$7" : "";
+        if (item.password) params.push(hashPassword(item.password));
+        const { rows } = await pool.query(
+          `update users set name=$2, email=lower($3), role=$4, agent_id=$5, is_active=$6${passwordSql}
+           where id=$1 returning id, name, email, role, agent_id, is_active, created_at`,
+          params
+        );
+        return rows[0] ? publicUser(rows[0]) : null;
+      }
+      const { rows } = await pool.query(
+        `insert into users (name, email, password_hash, role, agent_id, is_active)
+         values ($1, lower($2), $3, $4, $5, $6)
+         returning id, name, email, role, agent_id, is_active, created_at`,
+        [
+          item.name,
+          item.email,
+          hashPassword(item.password || randomBytes(12).toString("hex")),
+          item.role,
+          isUuid(item.agentId) ? item.agentId : null,
+          item.isActive
+        ]
+      );
+      return publicUser(rows[0]);
+    },
+    async updatePassword(userId, password) {
+      const { rows } = await pool.query(
+        `update users set password_hash=$2 where id=$1 returning id, name, email, role, agent_id, is_active, created_at`,
+        [userId, hashPassword(password)]
+      );
+      return rows[0] ? publicUser(rows[0]) : null;
     }
   };
 }
@@ -606,6 +684,18 @@ function normalizePayload(name, payload) {
     };
   }
   return payload;
+}
+
+function normalizeUserPayload(payload) {
+  return {
+    id: payload.id || null,
+    name: payload.name || "",
+    email: String(payload.email || "").toLowerCase(),
+    role: payload.role || "viewer",
+    agentId: payload.agentId || payload.agent_id || null,
+    isActive: Boolean(payload.isActive ?? payload.is_active ?? true),
+    password: payload.password || ""
+  };
 }
 
 async function createFaq(pool, payload) {

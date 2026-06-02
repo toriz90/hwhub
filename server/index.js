@@ -189,6 +189,10 @@ const rolePermissions = {
   viewer: []
 };
 
+function isAdmin(req) {
+  return roleFrom(req) === "admin";
+}
+
 function roleFrom(req) {
   if (req.user?.role) return req.user.role;
   if (process.env.ALLOW_ROLE_HEADER === "true") return req.headers["x-hwhub-role"] || "viewer";
@@ -535,6 +539,45 @@ const server = createServer(async (req, res) => {
     const integration = await store.saveIntegration(await readBody(req));
     emit("integrations.updated", integration);
     sendJson(res, integration, 201);
+    return;
+  }
+
+  if (url.pathname === "/api/users" && req.method === "GET") {
+    if (!isAdmin(req)) {
+      sendJson(res, { error: "Only admins can manage users" }, 403);
+      return;
+    }
+    sendJson(res, await store.users());
+    return;
+  }
+
+  if (url.pathname === "/api/users" && req.method === "POST") {
+    if (!isAdmin(req)) {
+      sendJson(res, { error: "Only admins can manage users" }, 403);
+      return;
+    }
+    const user = await store.saveUser(await readBody(req));
+    if (!user) {
+      sendJson(res, { error: "User not found" }, 404);
+      return;
+    }
+    emit("users.updated", user);
+    sendJson(res, user, 201);
+    return;
+  }
+
+  if (url.pathname === "/api/users/password" && req.method === "POST") {
+    const body = await readBody(req);
+    if (!body.newPassword || String(body.newPassword).length < 8) {
+      sendJson(res, { error: "Password must have at least 8 characters" }, 400);
+      return;
+    }
+    const user = await store.authenticate(req.user.email, body.currentPassword || "");
+    if (!user) {
+      sendJson(res, { error: "Current password is incorrect" }, 401);
+      return;
+    }
+    sendJson(res, await store.updatePassword(req.user.id, body.newPassword));
     return;
   }
 

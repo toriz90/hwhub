@@ -44,6 +44,7 @@
         <a href="#directory" data-view-link="directory">Directorio</a>
         <a href="#routing" data-view-link="routing">Ruteo</a>
         <a href="#integrations" data-view-link="integrations">APIs</a>
+        <a href="#users" data-view-link="users">Usuarios</a>
         <a href="#roles" data-view-link="roles">Roles</a>
       </nav>
     </aside>
@@ -384,9 +385,51 @@
           </div>
         </section>
       </div>
+
+      <div class="view" data-view="users">
+        <section class="grid-two">
+          <div class="panel">
+            <header>
+              <div>
+                <p class="eyebrow">Accesos</p>
+                <h2>Usuarios del back</h2>
+              </div>
+            </header>
+            <form id="user-form" class="editor">
+              <input type="hidden" name="id">
+              <input name="name" placeholder="Nombre" required>
+              <input name="email" type="email" placeholder="Email" required>
+              <select name="role">
+                <option value="admin">Admin</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="agent">Agente ATC</option>
+                <option value="marketplace">Marketplace</option>
+                <option value="wholesale">Mayoristas</option>
+                <option value="viewer">Solo lectura</option>
+              </select>
+              <select name="agentId" id="user-agent-select">
+                <option value="">Sin agente asociado</option>
+              </select>
+              <input name="password" type="password" placeholder="Password nuevo o inicial">
+              <label class="check"><input type="checkbox" name="isActive" checked> Activo</label>
+              <button>Guardar usuario</button>
+            </form>
+          </div>
+
+          <div class="panel">
+            <header>
+              <div>
+                <p class="eyebrow">Roles reales</p>
+                <h2>Cuentas activas</h2>
+              </div>
+            </header>
+            <div id="users-list" class="cards"></div>
+          </div>
+        </section>
+      </div>
     </main>
 
-    <script src="/app.js?v=20260602-classic"></script>
+    <script src="/app.js?v=20260602-users"></script>
     <script src="/widget.js?v=20260602-auth" data-channel="official_site"></script>
   </body>
 </html>

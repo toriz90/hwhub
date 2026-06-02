@@ -1,5 +1,6 @@
 const state = {
   data: null,
+  users: [],
   alerts: 0,
   selectedConversationId: null,
   role: "viewer",
@@ -113,6 +114,15 @@ async function logout() {
 async function loadBootstrap() {
   state.data = await api("/api/bootstrap");
   return state.data;
+}
+
+async function loadUsers() {
+  if (state.role !== "admin") {
+    state.users = [];
+    return state.users;
+  }
+  state.users = await api("/api/users");
+  return state.users;
 }
 
 function setAuthenticatedUi(isAuthenticated) {
@@ -284,6 +294,45 @@ function renderRoleMatrix() {
     .join("");
 }
 
+function renderUsers() {
+  const select = $("#user-agent-select");
+  select.innerHTML = `<option value="">Sin agente asociado</option>` + state.data.agents
+    .map((agent) => `<option value="${esc(agent.id)}">${esc(agent.name)} - ${esc(agent.role)}</option>`)
+    .join("");
+
+  $("#users-list").innerHTML = state.users
+    .map((user) => {
+      const agent = state.data.agents.find((item) => item.id === user.agentId);
+      return `
+        <article class="card">
+          <strong>${esc(user.name)}</strong>
+          <p>${esc(user.email)}</p>
+          <p class="meta">${esc(user.role)} - ${user.isActive ? "activo" : "inactivo"}${agent ? ` - ${esc(agent.name)}` : ""}</p>
+          <div class="row-actions">
+            <button data-edit-user="${esc(user.id)}">Editar</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("") || `<article class="card"><p class="meta">Sin usuarios visibles.</p></article>`;
+
+  for (const button of $$("[data-edit-user]")) {
+    button.onclick = () => {
+      const user = state.users.find((item) => item.id === button.dataset.editUser);
+      if (!user) return;
+      const form = $("#user-form");
+      form.reset();
+      form.elements.id.value = user.id;
+      form.elements.name.value = user.name;
+      form.elements.email.value = user.email;
+      form.elements.role.value = user.role;
+      form.elements.agentId.value = user.agentId || "";
+      form.elements.isActive.checked = Boolean(user.isActive);
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+  }
+}
+
 function applyRoleUi() {
   $("#active-role").value = state.role;
   $("#active-role").disabled = true;
@@ -301,6 +350,11 @@ function applyRoleUi() {
   for (const control of $$("input, select, textarea, button").filter((item) => $("#integration-form").contains(item))) {
     control.disabled = !integrationsAllowed;
   }
+  const usersAllowed = state.role === "admin";
+  $("#user-form").classList.toggle("is-disabled", !usersAllowed);
+  for (const control of $$("input, select, textarea, button").filter((item) => $("#user-form").contains(item))) {
+    control.disabled = !usersAllowed;
+  }
   for (const button of $$("[data-delete], [data-edit]")) {
     const collection = button.dataset.delete || button.dataset.edit;
     button.disabled = !roleCan(collection);
@@ -317,11 +371,13 @@ function render() {
   renderAdminCollections();
   renderIntegrations();
   renderRoleMatrix();
+  renderUsers();
   applyRoleUi();
 }
 
 async function refresh() {
   await loadBootstrap();
+  await loadUsers();
   render();
 }
 
@@ -362,8 +418,23 @@ function bindStaticEvents() {
   bindConversationActions();
   bindConversationFilters();
   bindIntegrations();
+  bindUsers();
   bindRoleLab();
   bindDashboardShortcuts();
+}
+
+function bindUsers() {
+  $("#user-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const payload = formPayload(event.currentTarget);
+    if (!payload.password) delete payload.password;
+    await api("/api/users", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    event.currentTarget.reset();
+    await refresh();
+  });
 }
 
 function bindAuth() {
@@ -574,6 +645,7 @@ async function startApp() {
   setAuthenticatedUi(true);
   try {
     await loadBootstrap();
+    await loadUsers();
   } catch (error) {
     await logout();
     setAuthenticatedUi(false);
