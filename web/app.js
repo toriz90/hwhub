@@ -23,6 +23,35 @@ const filters = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+function notify(message, type = "ok", detail = "") {
+  const region = $("#toast-region");
+  if (!region || !message) return;
+  const toast = document.createElement("div");
+  toast.className = `toast is-${type}`;
+  toast.innerHTML = `${esc(message)}${detail ? `<small>${esc(detail)}</small>` : ""}`;
+  region.append(toast);
+  window.setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(8px)";
+    window.setTimeout(() => toast.remove(), 180);
+  }, type === "error" ? 5200 : 3200);
+}
+
+function setButtonBusy(button, busy, label = "Procesando...") {
+  if (!button) return;
+  if (busy) {
+    button.dataset.originalText ||= button.textContent;
+    button.textContent = label;
+    button.classList.add("is-busy");
+    button.disabled = true;
+    return;
+  }
+  button.textContent = button.dataset.originalText || button.textContent;
+  delete button.dataset.originalText;
+  button.classList.remove("is-busy");
+  button.disabled = false;
+}
+
 const rolePermissions = {
   admin: ["*"],
   supervisor: ["conversation", "faqs", "branches", "directoryContacts", "agents", "routingRules", "integrations"],
@@ -577,6 +606,7 @@ function renderIntegrations() {
       $("#save-integration").disabled = false;
       $("#integration-status").textContent = "Editando API existente. Los secretos vacios se conservan; si cambias credenciales, prueba antes de guardar.";
       form.scrollIntoView({ behavior: "smooth", block: "center" });
+      notify("API cargada para editar", "info", item.name);
     };
   }
 
@@ -584,18 +614,18 @@ function renderIntegrations() {
     button.onclick = async () => {
       const item = integrations.find((entry) => entry.id === button.dataset.testIntegration);
       if (!item) return;
-      button.disabled = true;
-      button.textContent = "Probando...";
+      setButtonBusy(button, true, "Probando...");
       $("#integration-status").textContent = `Probando conexion de ${item.name}...`;
       try {
         const result = await api(`/api/integrations/${encodeURIComponent(item.id)}/test`, { method: "POST" });
         $("#integration-status").textContent = result.message || "Prueba finalizada.";
         await refresh();
+        notify(result.ok ? "Conexion probada correctamente" : "La prueba no fue correcta", result.ok ? "ok" : "warning", result.message || item.name);
       } catch (error) {
         $("#integration-status").textContent = error.message || "No se pudo probar la API.";
+        notify("No se pudo probar la API", "error", error.message);
       } finally {
-        button.disabled = false;
-        button.textContent = "Probar";
+        setButtonBusy(button, false);
       }
     };
   }
@@ -604,16 +634,18 @@ function renderIntegrations() {
     button.onclick = async () => {
       const item = integrations.find((entry) => entry.id === button.dataset.deleteIntegration);
       if (!item || !confirm(`Eliminar la API "${item.name}"?`)) return;
-      button.disabled = true;
+      setButtonBusy(button, true, "Eliminando...");
       $("#integration-status").textContent = `Eliminando ${item.name}...`;
       try {
         await api(`/api/integrations/${encodeURIComponent(item.id)}`, { method: "DELETE" });
         $("#integration-status").textContent = "API eliminada correctamente.";
         await refresh();
+        notify("API eliminada correctamente", "ok", item.name);
       } catch (error) {
         $("#integration-status").textContent = error.message || "No se pudo eliminar la API.";
+        notify("No se pudo eliminar la API", "error", error.message);
       } finally {
-        button.disabled = false;
+        setButtonBusy(button, false);
       }
     };
   }
@@ -784,13 +816,23 @@ function bindStaticEvents() {
 
   $("#chat-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    await sendChat($("#message").value, $("#channel").value);
-    await refresh();
+    const button = event.currentTarget.querySelector("button");
+    setButtonBusy(button, true, "Probando...");
+    try {
+      await sendChat($("#message").value, $("#channel").value);
+      await refresh();
+      notify("Prueba de ruteo ejecutada", "ok");
+    } catch (error) {
+      notify("No se pudo probar el ruteo", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
   $("#chatbot-settings-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     const status = $("#chatbot-settings-status");
+    const button = form.querySelector("button");
     const payload = {
       prompt: form.elements.prompt.value,
       temperature: Number(form.elements.temperature.value || 0.3),
@@ -808,27 +850,50 @@ function bindStaticEvents() {
       }
     };
     status.textContent = "Guardando...";
+    setButtonBusy(button, true, "Guardando...");
     try {
       await api("/api/settings/chatbot", { method: "POST", body: JSON.stringify(payload) });
       status.textContent = "Configuracion guardada. El codigo del widget no cambia; el widget lee estos ajustes desde WhaleHub.";
+      notify("Configuracion del chatbot guardada", "ok");
       await refresh();
     } catch (error) {
       status.textContent = error.message || "No se pudo guardar la configuracion.";
+      notify("No se pudo guardar el chatbot", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
     }
   });
   $("#chatbot-settings-form").addEventListener("input", updateWidgetPreview);
   $("#chatbot-settings-form").addEventListener("change", updateWidgetPreview);
   $("#simulate-whatsapp").addEventListener("click", async () => {
+    const button = $("#simulate-whatsapp");
+    setButtonBusy(button, true, "Simulando...");
     $("#channel").value = "whatsapp_cloud";
     $("#message").value = "Quiero informacion de ventas mayoristas";
-    await sendChat($("#message").value, $("#channel").value);
-    await refresh();
+    try {
+      await sendChat($("#message").value, $("#channel").value);
+      await refresh();
+      notify("Simulacion WhatsApp ejecutada", "ok");
+    } catch (error) {
+      notify("No se pudo simular WhatsApp", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
   $("#simulate-marketplace").addEventListener("click", async () => {
+    const button = $("#simulate-marketplace");
+    setButtonBusy(button, true, "Simulando...");
     $("#channel").value = "whatsapp_cloud";
     $("#message").value = "Necesito ayuda con mi compra de Amazon";
-    await sendChat($("#message").value, $("#channel").value);
-    await refresh();
+    try {
+      await sendChat($("#message").value, $("#channel").value);
+      await refresh();
+      notify("Simulacion marketplace ejecutada", "ok");
+    } catch (error) {
+      notify("No se pudo simular marketplace", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
   $("#faq-search").addEventListener("input", (event) => renderFaqs(event.target.value));
   $("#branch-state-filter").addEventListener("change", (event) => {
@@ -848,6 +913,7 @@ function bindStaticEvents() {
     $("#branch-search").value = "";
     renderBranches();
     applyRoleUi();
+    notify("Filtros de sucursales limpiados", "info");
   });
   $("#directory-area-filter").addEventListener("change", (event) => {
     filters.directoryArea = event.target.value;
@@ -866,24 +932,40 @@ function bindStaticEvents() {
     $("#directory-search").value = "";
     renderDirectoryContacts();
     applyRoleUi();
+    notify("Filtros de directorio limpiados", "info");
   });
   $("#copy-widget-code").addEventListener("click", async () => {
     const output = $("#widget-embed-code");
     const status = $("#widget-code-status");
+    const button = $("#copy-widget-code");
     updateWidgetEmbedCode();
+    setButtonBusy(button, true, "Copiando...");
     try {
       await navigator.clipboard.writeText(output.value);
       status.textContent = "Codigo copiado.";
+      notify("Codigo del widget copiado", "ok");
     } catch {
       output.select();
       document.execCommand("copy");
       status.textContent = "Codigo seleccionado para copiar.";
+      notify("Codigo seleccionado para copiar", "info");
+    } finally {
+      setButtonBusy(button, false);
     }
   });
   $("#logout-button").addEventListener("click", async () => {
-    await logout();
-    window.location.hash = "#dashboard";
-    setAuthenticatedUi(false);
+    const button = $("#logout-button");
+    setButtonBusy(button, true, "Saliendo...");
+    try {
+      await logout();
+      window.location.hash = "#dashboard";
+      setAuthenticatedUi(false);
+      notify("Sesion cerrada", "info");
+    } catch (error) {
+      notify("No se pudo cerrar sesion", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
   const integrationProvider = $("#integration-form").elements.provider;
   integrationProvider.addEventListener("change", () => {
@@ -909,9 +991,10 @@ function bindStaticEvents() {
     const { config, errors } = syncIntegrationConfig();
     if (errors.length) {
       status.textContent = errors.join(" ");
+      notify("Completa los campos requeridos", "warning", errors.join(" "));
       return;
     }
-    button.disabled = true;
+    setButtonBusy(button, true, "Probando...");
     status.textContent = "Probando conexion...";
     try {
       const result = await api("/api/integrations/test", {
@@ -925,12 +1008,14 @@ function bindStaticEvents() {
       form.dataset.configTested = result.ok ? "true" : "false";
       $("#save-integration").disabled = !result.ok;
       status.textContent = result.message || "Prueba finalizada.";
+      notify(result.ok ? "Conexion probada correctamente" : "La prueba no fue correcta", result.ok ? "ok" : "warning", result.message || "");
     } catch (error) {
       form.dataset.configTested = "false";
       $("#save-integration").disabled = true;
       status.textContent = error.message || "No se pudo probar la conexion.";
+      notify("No se pudo probar la conexion", "error", error.message);
     } finally {
-      button.disabled = false;
+      setButtonBusy(button, false);
     }
   });
   renderIntegrationFields(integrationProvider.value, definitionDefaults(integrationTemplate(integrationProvider.value)));
@@ -946,14 +1031,24 @@ function bindStaticEvents() {
 function bindUsers() {
   $("#user-form").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("button");
     const payload = formPayload(event.currentTarget);
     if (!payload.password) delete payload.password;
-    await api("/api/users", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    event.currentTarget.reset();
-    await refresh();
+    setButtonBusy(button, true, "Guardando...");
+    try {
+      await api("/api/users", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      form.reset();
+      await refresh();
+      notify("Usuario guardado correctamente", "ok");
+    } catch (error) {
+      notify("No se pudo guardar el usuario", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
 }
 
@@ -986,6 +1081,7 @@ function bindDashboardShortcuts() {
       $("#conversation-priority-filter").value = "";
       $("#conversation-search").value = "";
       render();
+      notify("Filtro aplicado en conversaciones", "info", statusLabel(filters.status));
     });
   }
   for (const button of $$("[data-priority-shortcut]")) {
@@ -1002,6 +1098,7 @@ function bindDashboardShortcuts() {
       $("#conversation-priority-filter").value = filters.priority;
       $("#conversation-search").value = "";
       render();
+      notify("Filtro aplicado en conversaciones", "info", `Prioridad ${priorityLabel(filters.priority)}`);
     });
   }
   for (const button of $$("[data-sla-shortcut]")) {
@@ -1018,6 +1115,7 @@ function bindDashboardShortcuts() {
       $("#conversation-priority-filter").value = "";
       $("#conversation-search").value = "";
       render();
+      notify("Filtro aplicado en conversaciones", "info", "Alertas de SLA");
     });
   }
 }
@@ -1051,6 +1149,7 @@ function bindConversationFilters() {
     $("#conversation-priority-filter").value = "";
     $("#conversation-search").value = "";
     render();
+    notify("Filtros de conversaciones limpiados", "info");
   });
 }
 
@@ -1267,6 +1366,7 @@ function bindConversationActions() {
     button.addEventListener("click", async () => {
       if (!state.selectedConversationId) {
         setConversationActionStatus("Selecciona una conversacion antes de aplicar acciones.", "warning");
+        notify("Selecciona una conversacion", "warning");
         return;
       }
       const action = button.dataset.conversationAction;
@@ -1285,8 +1385,10 @@ function bindConversationActions() {
         await refresh();
         await openConversation(state.selectedConversationId);
         setConversationActionStatus(labels.done, "ok");
+        notify(labels.done, "ok");
       } catch (error) {
         setConversationActionStatus(error.message || "No se pudo aplicar la accion.", "error");
+        notify("No se pudo aplicar la accion", "error", error.message);
       } finally {
         button.textContent = labels.button || previousText;
         button.classList.remove("is-loading");
@@ -1297,16 +1399,25 @@ function bindConversationActions() {
   $("#agent-reply-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!state.selectedConversationId) return;
+    const button = event.currentTarget.querySelector("button");
     const input = $("#agent-reply");
     const body = input.value.trim();
     if (!body) return;
-    await api(`/api/conversations/${state.selectedConversationId}/messages`, {
-      method: "POST",
-      body: JSON.stringify({ senderType: "agent", body })
-    });
-    input.value = "";
-    await refresh();
-    await openConversation(state.selectedConversationId);
+    setButtonBusy(button, true, "Enviando...");
+    try {
+      await api(`/api/conversations/${state.selectedConversationId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ senderType: "agent", body })
+      });
+      input.value = "";
+      await refresh();
+      await openConversation(state.selectedConversationId);
+      notify("Mensaje enviado", "ok");
+    } catch (error) {
+      notify("No se pudo enviar el mensaje", "error", error.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
   });
 }
 
@@ -1330,11 +1441,19 @@ async function sendChat(message, channel = "web_widget") {
 }
 
 function bindEditors() {
+  const collectionLabels = {
+    agents: "Agente",
+    faqs: "FAQ",
+    branches: "Sucursal",
+    directoryContacts: "Contacto",
+    routingRules: "Regla de ruteo"
+  };
   for (const form of $$(".editor[data-editor]")) {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const collection = form.dataset.editor;
       const note = collection === "agents" ? $("#agent-presence-note") : null;
+      const button = form.querySelector("button");
       const payload = formPayload(form);
       if (collection === "branches" && !payload.hours) {
         payload.hours = [
@@ -1345,6 +1464,7 @@ function bindEditors() {
       }
       const id = payload.id;
       delete payload.id;
+      setButtonBusy(button, true, "Guardando...");
       try {
         await api(`/api/${collection}${id ? `/${id}` : ""}`, {
           method: id ? "PUT" : "POST",
@@ -1356,9 +1476,12 @@ function bindEditors() {
           if (note) note.textContent = "Agente guardado correctamente.";
         }
         await refresh();
+        notify(`${collectionLabels[collection] || "Registro"} guardado correctamente`, "ok");
       } catch (error) {
         if (note) note.textContent = error.message || "No se pudo guardar el agente.";
-        else throw error;
+        notify(`No se pudo guardar ${collectionLabels[collection] || "el registro"}`, "error", error.message);
+      } finally {
+        setButtonBusy(button, false);
       }
     });
   }
@@ -1369,13 +1492,24 @@ function bindRowActions() {
     button.onclick = () => {
       const collection = button.dataset.edit;
       const item = state.data[collection].find((entry) => String(entry.id) === button.dataset.id);
-      if (item) fillForm(collection, item);
+      if (item) {
+        fillForm(collection, item);
+        notify("Datos cargados para editar", "info");
+      }
     };
   }
   for (const button of $$("[data-delete]")) {
     button.onclick = async () => {
-      await api(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
-      await refresh();
+      setButtonBusy(button, true, "Eliminando...");
+      try {
+        await api(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
+        await refresh();
+        notify("Registro eliminado correctamente", "ok");
+      } catch (error) {
+        notify("No se pudo eliminar el registro", "error", error.message);
+      } finally {
+        setButtonBusy(button, false);
+      }
     };
   }
   for (const input of $$("[data-agent-presence]")) {
@@ -1397,9 +1531,10 @@ function bindRowActions() {
           })
         });
         await refresh();
+        notify(input.checked ? "Agente activado" : "Agente desactivado", "ok", agent.name);
       } catch (error) {
         input.checked = !input.checked;
-        alert(error.message || "No se pudo cambiar el estado del agente.");
+        notify("No se pudo cambiar el estado del agente", "error", error.message);
       } finally {
         input.disabled = false;
       }
@@ -1440,14 +1575,16 @@ function bindIntegrations() {
     const { errors } = syncIntegrationConfig({ allowBlankSecrets: true });
     if (errors.length) {
       status.textContent = errors.join(" ");
+      notify("Completa los campos requeridos", "warning", errors.join(" "));
       return;
     }
     if (form.dataset.configTested !== "true") {
       status.textContent = "Primero prueba la conexion correctamente antes de guardar.";
+      notify("Primero prueba la conexion", "warning");
       return;
     }
     form.dataset.saving = "true";
-    button.disabled = true;
+    setButtonBusy(button, true, "Guardando...");
     status.textContent = "Guardando...";
     try {
       const payload = formPayload(form);
@@ -1457,12 +1594,16 @@ function bindIntegrations() {
       });
       form.reset();
       renderIntegrationFields(form.elements.provider.value, definitionDefaults(integrationTemplate(form.elements.provider.value)));
+      form.dataset.configTested = "false";
       status.textContent = "API guardada correctamente.";
       await refresh();
+      notify("API guardada correctamente", "ok");
     } catch (error) {
       status.textContent = error.message || "No se pudo guardar la API.";
+      notify("No se pudo guardar la API", "error", error.message);
     } finally {
       form.dataset.saving = "false";
+      setButtonBusy(button, false);
       button.disabled = form.dataset.configTested !== "true";
     }
   });
@@ -1479,6 +1620,7 @@ function bindRoleLab() {
         <p>Prueba lista para validar canalizacion con datos actuales.</p>
       </article>
     `;
+    notify("Prueba de rol lista", "ok");
   });
 }
 
