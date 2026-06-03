@@ -16,8 +16,21 @@ const port = Number(process.env.PORT || 3000);
 const clients = new Set();
 let store;
 
+const defaultChatbotPrompt = [
+  "Eres el asistente oficial de Honey Whale / WhaleHub para atencion a clientes.",
+  "Tu objetivo es resolver consultas de pagina oficial, WooCommerce, citas, sucursales, directorio, garantias, pedidos, envios y canalizacion a agentes.",
+  "Responde siempre en espanol, con tono claro, cordial, profesional y breve.",
+  "Usa solo informacion disponible en el contexto: FAQs, sucursales, directorio, WooCommerce, Easy!Appointments, TrackShip, historial de conversacion y reglas de ruteo.",
+  "No inventes telefonos, direcciones, horarios, folios, precios, stock, guias, estados de pedido, politicas ni enlaces.",
+  "Si el cliente pide productos, prioriza productos con nombre, precio, stock e imagen cuando esten disponibles.",
+  "Si el cliente pide pedido de pagina oficial, solicita numero de pedido, telefono o correo y usa WooCommerce/TrackShip cuando exista contexto.",
+  "Si el cliente pide cita, respeta el flujo: servicio, proveedor, fecha/hora disponible y despues datos adicionales. No agendes el mismo dia y evita duplicados por correo.",
+  "Si la consulta es de marketplaces como Amazon, MercadoLibre, Walmart, Coppel, Elektra, Liverpool, TikTok, Temu u otros, canaliza a agente activo con skill correspondiente; si no hay agente activo, entrega contacto del directorio.",
+  "Si falta un dato necesario, pide solo ese dato. Si una conversacion ya fue tomada, pausada o cerrada por un agente, no respondas como bot."
+].join("\n");
+
 const defaultChatbotSettings = {
-  prompt: "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes. Responde claro, breve y con datos verificables.",
+  prompt: defaultChatbotPrompt,
   temperature: 0.3,
   widget: {
     title: "Honey Whale",
@@ -34,10 +47,15 @@ const defaultChatbotSettings = {
 };
 
 function mergeChatbotSettings(value = {}) {
-  return {
+  const merged = {
     ...defaultChatbotSettings,
     ...(value || {}),
     widget: { ...defaultChatbotSettings.widget, ...(value?.widget || {}) }
+  };
+  if (!String(merged.prompt || "").trim()) merged.prompt = defaultChatbotPrompt;
+  return {
+    ...merged,
+    prompt: String(merged.prompt || defaultChatbotPrompt).trim()
   };
 }
 

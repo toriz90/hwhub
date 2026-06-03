@@ -810,7 +810,7 @@ function bindStaticEvents() {
     status.textContent = "Guardando...";
     try {
       await api("/api/settings/chatbot", { method: "POST", body: JSON.stringify(payload) });
-      status.textContent = "Configuracion guardada. Refresca el sitio publico para ver cambios del widget.";
+      status.textContent = "Configuracion guardada. El codigo del widget no cambia; el widget lee estos ajustes desde WhaleHub.";
       await refresh();
     } catch (error) {
       status.textContent = error.message || "No se pudo guardar la configuracion.";
