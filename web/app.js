@@ -323,14 +323,16 @@ function renderConversations() {
     .map((item) => {
       const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
       return `
-        <article class="item">
-          <strong>${esc(item.customer)}</strong>
+        <article class="item conversation-card ${state.selectedConversationId === item.id ? "selected" : ""}" data-open-conversation="${esc(item.id)}">
+          <div class="conversation-card-head">
+            <strong>${esc(item.customer)}</strong>
+            <span>${item.waitingMinutes || 0} min</span>
+          </div>
           <p>${esc(item.lastMessage)}</p>
           <p class="meta">${esc(item.channel)} - ${esc(item.intent || "sin intencion")} - ${agent ? esc(agent.name) : "sin agente"}</p>
           <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
           <span class="priority ${esc(item.priority)}">${priorityLabel(item.priority)} · ${item.waitingMinutes || 0} min</span>
           <div class="row-actions">
-            <button data-open-conversation="${esc(item.id)}">Abrir</button>
             <button data-quick-conversation-action="take" data-id="${esc(item.id)}">Tomar</button>
             <button data-quick-conversation-action="pause" data-id="${esc(item.id)}">Pausar</button>
             <button data-quick-conversation-action="bot" data-id="${esc(item.id)}">Bot</button>
@@ -341,7 +343,12 @@ function renderConversations() {
     })
     .join("") || `<article class="item"><p class="meta">No hay conversaciones con esos filtros.</p></article>`;
 
-  for (const button of $$("[data-open-conversation]")) button.onclick = () => openConversation(button.dataset.openConversation);
+  for (const item of $$(".conversation-card")) {
+    item.onclick = (event) => {
+      if (event.target.closest("button")) return;
+      openConversation(item.dataset.openConversation);
+    };
+  }
   for (const button of $$("[data-quick-conversation-action]")) {
     button.onclick = async () => {
       await api(`/api/conversations/${button.dataset.id}/${button.dataset.quickConversationAction}`, { method: "POST" });
@@ -861,34 +868,51 @@ function priorityLabel(priority) {
 async function openConversation(id) {
   state.selectedConversationId = id;
   const data = await api(`/api/conversations/${id}`);
+  const currentAgent = state.data.agents.find((agent) => agent.id === data.conversation.assignedAgentId);
   $("#conversation-status").textContent = statusLabel(data.conversation.status);
   $("#conversation-status").className = `status ${data.conversation.status}`;
   $("#conversation-detail").className = "";
   $("#conversation-detail").innerHTML = `
-    <div class="message-list">
-      ${data.messages
-        .map((message) => `
-          <div class="message ${esc(message.senderType)}">
-            <p>${esc(message.body)}</p>
-            <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleString()}</small>
-          </div>
-        `)
-        .join("")}
-      ${state.typing[id]?.bot ? `<div class="message bot typing"><p>Bot escribiendo...</p></div>` : ""}
-      ${state.typing[id]?.agent ? `<div class="message agent typing"><p>Agente escribiendo...</p></div>` : ""}
-    </div>
-    <div class="timeline">
-      <h3>Historial</h3>
-      ${(data.events || [])
-        .map((event) => `
-          <article class="timeline-event">
-            <strong>${esc(event.body)}</strong>
-            <p class="meta">${esc(event.eventType)} - ${esc(event.actorType)} - ${new Date(event.createdAt).toLocaleString()}</p>
-          </article>
-        `)
-        .join("") || `<article class="timeline-event"><p class="meta">Sin eventos registrados.</p></article>`}
-    </div>
+    <section class="conversation-shell">
+      <div class="conversation-thread">
+        <div class="conversation-context">
+          <article><span>Cliente</span><strong>${esc(data.conversation.customer)}</strong></article>
+          <article><span>Canal</span><strong>${esc(data.conversation.channel)}</strong></article>
+          <article><span>Intencion</span><strong>${esc(data.conversation.intent || "sin intencion")}</strong></article>
+          <article><span>Agente</span><strong>${currentAgent ? esc(currentAgent.name) : "sin asignar"}</strong></article>
+        </div>
+        <div class="message-list">
+          ${data.messages
+            .map((message) => `
+              <div class="message ${esc(message.senderType)}">
+                <p>${esc(message.body)}</p>
+                <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
+              </div>
+            `)
+            .join("")}
+          ${state.typing[id]?.bot ? `<div class="message bot typing"><p>Bot escribiendo...</p></div>` : ""}
+          ${state.typing[id]?.agent ? `<div class="message agent typing"><p>Agente escribiendo...</p></div>` : ""}
+        </div>
+      </div>
+      <aside class="conversation-activity">
+        <h3>Actividad</h3>
+        <div class="timeline">
+          ${(data.events || [])
+            .map((event) => `
+              <article class="timeline-event">
+                <strong>${esc(event.body)}</strong>
+                <p class="meta">${esc(event.eventType)} - ${esc(event.actorType)}</p>
+                <p class="meta">${new Date(event.createdAt).toLocaleString()}</p>
+              </article>
+            `)
+            .join("") || `<article class="timeline-event"><p class="meta">Sin eventos registrados.</p></article>`}
+        </div>
+      </aside>
+    </section>
   `;
+  renderConversations();
+  const messageList = $("#conversation-detail .message-list");
+  if (messageList) messageList.scrollTop = messageList.scrollHeight;
 }
 
 function bindConversationActions() {
