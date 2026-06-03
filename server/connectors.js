@@ -34,6 +34,15 @@ async function fetchEasyJson(config, path, { cache = true } = {}) {
   return data;
 }
 
+async function postEasyJson(config, path, payload) {
+  const endpoint = endpointFrom(config);
+  return fetchJson(`${endpoint}${path}`, {
+    method: "POST",
+    headers: { ...easyHeaders(config), "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+}
+
 function cleanCatalogValue(value) {
   const text = String(value ?? "").trim();
   if (!text || /^n\/?a$/i.test(text)) return "";
@@ -346,6 +355,20 @@ function addDays(date, days) {
   return next;
 }
 
+function addMinutesToTime(date, time, minutes) {
+  const [hour = "0", minute = "0"] = String(time || "").split(":");
+  const total = (Number(hour) * 60) + Number(minute) + Number(minutes || 0);
+  const nextHour = Math.floor(total / 60) % 24;
+  const nextMinute = total % 60;
+  return `${date} ${String(nextHour).padStart(2, "0")}:${String(nextMinute).padStart(2, "0")}:00`;
+}
+
+function appointmentDateTime(date, time) {
+  const value = String(time || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(value)) return value.length === 16 ? `${value}:00` : value;
+  return `${date} ${value.slice(0, 5)}:00`;
+}
+
 function normalizeSlots(data) {
   if (Array.isArray(data)) return data.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean);
   const list = data?.availableHours || data?.availabilities || data?.data || [];
@@ -430,6 +453,110 @@ export async function prevalidateEasyAppointment(store, payload = {}) {
     message: "No hay horarios disponibles para esa fecha.",
     nextAvailable: next,
     limits: { minDate, maxDate, futureBookingLimit, minimumAdvanceBooking }
+  };
+}
+
+function sourceFieldsFromPayload(payload = {}) {
+  const sourceType = String(payload.sourceType || "").trim();
+  const sourceValue = String(payload.sourceValue || "").trim();
+  return {
+    customField1: sourceType === "marketplace" ? sourceValue : "",
+    customField3: sourceType === "sucursal" ? sourceValue : "",
+    customField4: sourceType === "distribuidor" ? sourceValue : "",
+    customField5: String(payload.equipmentModel || "").trim()
+  };
+}
+
+function appointmentNotes(payload = {}) {
+  return [
+    "Cita creada desde WhaleHub.",
+    payload.sourceType && payload.sourceValue ? `Origen: ${payload.sourceType} - ${payload.sourceValue}` : "",
+    payload.equipmentModel ? `Modelo: ${payload.equipmentModel}` : "",
+    payload.orderNumber ? `Pedido: ${payload.orderNumber}` : "",
+    payload.serialNumber ? `Serie: ${payload.serialNumber}` : "",
+    payload.details ? `Detalles: ${payload.details}` : ""
+  ].filter(Boolean).join("\n");
+}
+
+async function findCustomerByEmail(config, email) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return null;
+  const customers = await fetchEasyJson(config, "/index.php/api/v1/customers?length=1000", { cache: false });
+  return (Array.isArray(customers) ? customers : [])
+    .find((customer) => String(customer.email || "").trim().toLowerCase() === normalizedEmail) || null;
+}
+
+async function createEasyCustomer(config, payload = {}, timezone = "America/Mexico_City") {
+  const customerPayload = {
+    firstName: String(payload.firstName || "").trim(),
+    lastName: String(payload.lastName || "").trim(),
+    email: String(payload.email || "").trim(),
+    phone: String(payload.phone || "").trim(),
+    timezone,
+    language: "spanish",
+    notes: appointmentNotes(payload),
+    ...sourceFieldsFromPayload(payload)
+  };
+  return postEasyJson(config, "/index.php/api/v1/customers", customerPayload);
+}
+
+export async function createEasyAppointment(store, payload = {}) {
+  const config = await store.integrationConfig?.("easyappointments");
+  if (!config) return { ok: false, reason: "missing_integration", message: "Easy!Appointments no esta configurado." };
+
+  const required = ["firstName", "lastName", "email", "phone", "serviceId", "providerId", "date", "time", "sourceType", "sourceValue", "equipmentModel"];
+  const missing = required.filter((key) => !String(payload[key] || "").trim());
+  if (missing.length) {
+    return { ok: false, reason: "missing_fields", message: "Faltan datos obligatorios para crear la cita.", missing };
+  }
+
+  const settings = settingsMap(await fetchEasyJson(config, "/index.php/api/v1/settings?length=1000"));
+  const timezone = settings.default_timezone || "America/Mexico_City";
+  const validation = await prevalidateEasyAppointment(store, {
+    serviceId: payload.serviceId,
+    providerId: payload.providerId,
+    date: payload.date,
+    email: payload.email
+  });
+  if (!validation.ok) return validation;
+
+  const selectedTime = String(payload.time || "").slice(0, 5);
+  if (!validation.slots.some((slot) => String(slot).slice(0, 5) === selectedTime)) {
+    return {
+      ok: false,
+      reason: "slot_unavailable",
+      message: "Ese horario ya no esta disponible. Selecciona otro horario.",
+      slots: validation.slots
+    };
+  }
+
+  const services = await fetchEasyJson(config, "/index.php/api/v1/services");
+  const service = (Array.isArray(services) ? services : []).find((item) => Number(item.id) === Number(payload.serviceId));
+  const duration = Number(service?.duration || 15);
+  let customer = await findCustomerByEmail(config, payload.email);
+  if (!customer) customer = await createEasyCustomer(config, payload, timezone);
+
+  const appointmentPayload = {
+    start: appointmentDateTime(payload.date, selectedTime),
+    end: addMinutesToTime(payload.date, selectedTime, duration),
+    notes: appointmentNotes(payload),
+    serviceId: Number(payload.serviceId),
+    providerId: Number(payload.providerId),
+    customerId: Number(customer.id),
+    location: String(payload.sourceValue || "")
+  };
+  const appointment = await postEasyJson(config, "/index.php/api/v1/appointments", appointmentPayload);
+  return {
+    ok: true,
+    appointment,
+    customer: {
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone
+    },
+    service: service ? { id: service.id, name: service.name, duration: service.duration } : null
   };
 }
 

@@ -332,14 +332,16 @@
     saveSession();
   }
 
-  function optionList(items = [], selectedValue = "") {
+  function optionList(items = [], selectedValue = "", options = {}) {
+    const includeUnknown = options.includeUnknown !== false;
+    const placeholder = options.placeholder || "Seleccionar";
     const values = items.map((item) => typeof item === "string" ? { value: item, label: item } : {
       value: item.value ?? item.id ?? item.name ?? "",
       label: item.label ?? item.name ?? item.value ?? item.id ?? ""
     }).filter((item) => String(item.value).trim());
-    const hasSelected = selectedValue && !values.some((item) => String(item.value) === String(selectedValue));
+    const hasSelected = includeUnknown && selectedValue && !values.some((item) => String(item.value) === String(selectedValue));
     const normalized = hasSelected ? [{ value: selectedValue, label: selectedValue }, ...values] : values;
-    return `<option value="">Seleccionar</option>` + normalized
+    return `<option value="">${esc(placeholder)}</option>` + normalized
       .map((item) => `<option value="${esc(item.value)}"${String(item.value) === String(selectedValue) ? " selected" : ""}>${esc(item.label)}</option>`)
       .join("");
   }
@@ -348,9 +350,12 @@
     if (!appointmentOptions) return;
     const serviceId = Number(appointmentForm.querySelector('[data-appointment-field="appointmentServiceId"]').value);
     const providerSelect = appointmentForm.querySelector('[data-appointment-field="appointmentProviderId"]');
-    const currentValue = selectedValue || providerSelect.value || session.profile.appointmentProviderId || "";
+    const currentValue = selectedValue || "";
     const providers = (appointmentOptions.providers || []).filter((provider) => !serviceId || (provider.services || []).includes(serviceId));
-    providerSelect.innerHTML = optionList(providers.map((provider) => ({ value: provider.id, label: provider.name })), currentValue);
+    providerSelect.disabled = !serviceId;
+    providerSelect.innerHTML = serviceId
+      ? optionList(providers.map((provider) => ({ value: provider.id, label: provider.name })), currentValue, { includeUnknown: false })
+      : `<option value="">Selecciona servicio primero</option>`;
   }
 
   function updateSourceValueOptions(selectedValue) {
@@ -465,7 +470,14 @@
 
   appointmentForm.addEventListener("change", async (event) => {
     if (event.target?.dataset?.appointmentField === "appointmentServiceId") {
-      updateProviderOptions();
+      session.profile.appointmentProviderId = "";
+      session.profile.appointmentTime = "";
+      const providerSelect = appointmentForm.querySelector('[data-appointment-field="appointmentProviderId"]');
+      const timeSelect = appointmentForm.querySelector('[data-appointment-field="appointmentTime"]');
+      providerSelect.value = "";
+      timeSelect.innerHTML = `<option value="">Seleccionar</option>`;
+      appointmentError.textContent = "";
+      updateProviderOptions("");
     }
     if (event.target?.dataset?.appointmentField === "sourceType") {
       session.profile.sourceValue = "";
@@ -492,6 +504,32 @@
     const service = appointmentOptions?.services?.find((item) => String(item.id) === String(session.profile.appointmentServiceId));
     const provider = appointmentOptions?.providers?.find((item) => String(item.id) === String(session.profile.appointmentProviderId));
     const source = `${session.profile.sourceType}: ${session.profile.sourceValue}`;
+    appointmentError.textContent = "Creando cita...";
+    const createResponse = await fetch(`${api}/api/appointments/create`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        firstName: session.profile.firstName,
+        lastName: session.profile.lastName,
+        email: session.profile.email,
+        phone: session.profile.phone,
+        serviceId: session.profile.appointmentServiceId,
+        providerId: session.profile.appointmentProviderId,
+        date: session.profile.appointmentDate,
+        time: session.profile.appointmentTime,
+        sourceType: session.profile.sourceType,
+        sourceValue: session.profile.sourceValue,
+        equipmentModel: session.profile.equipmentModel,
+        orderNumber: session.profile.orderNumber,
+        serialNumber: session.profile.serialNumber,
+        details: session.profile.details
+      })
+    });
+    const createResult = await createResponse.json();
+    if (!createResult.ok) {
+      appointmentError.textContent = createResult.message || "No se pudo crear la cita.";
+      return;
+    }
     const message = [
       pendingAppointmentMessage || "Quiero agendar una cita",
       `Servicio: ${service?.name || session.profile.appointmentServiceId}`,
@@ -503,9 +541,18 @@
       session.profile.serialNumber ? `Serie: ${session.profile.serialNumber}` : "",
       session.profile.details ? `Detalles: ${session.profile.details}` : ""
     ].filter(Boolean).join("\n");
+    const confirmation = [
+      `Cita creada correctamente${createResult.appointment?.id ? ` con ID ${createResult.appointment.id}` : ""}.`,
+      `Servicio: ${service?.name || createResult.service?.name || session.profile.appointmentServiceId}`,
+      `Proveedor: ${provider?.name || session.profile.appointmentProviderId}`,
+      `Fecha y hora: ${createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`}`
+    ].join("\n");
     pendingAppointmentMessage = "";
     setScreen("chat");
-    await sendMessageToApi(message);
+    session.messages.push({ senderType: "customer", body: message, createdAt: new Date().toISOString() });
+    session.messages.push({ senderType: "bot", body: confirmation, createdAt: new Date().toISOString() });
+    saveSession();
+    renderMessages();
   });
 
   profileForm.addEventListener("submit", (event) => {
