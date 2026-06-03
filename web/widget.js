@@ -184,7 +184,7 @@
       </form>
       <form id="hwhub-widget-appointment" class="hwhub-widget-profile-screen" hidden>
         <h3>Datos para cita</h3>
-        <p>Selecciona servicio, proveedor, fecha y horario disponible.</p>
+        <p id="hwhub-widget-appointment-profile">Selecciona servicio, proveedor, fecha y horario disponible.</p>
         <div class="hwhub-widget-profile-grid">
           <label>Servicio *<select data-appointment-field="appointmentServiceId" required></select></label>
           <label>Proveedor *<select data-appointment-field="appointmentProviderId" required></select></label>
@@ -233,8 +233,10 @@
   const cancelAppointment = panel.querySelector("#hwhub-widget-cancel-appointment");
   const title = panel.querySelector("#hwhub-widget-title");
   const subtitle = panel.querySelector("#hwhub-widget-subtitle");
+  const appointmentProfile = panel.querySelector("#hwhub-widget-appointment-profile");
   let appointmentOptions = null;
   let pendingAppointmentMessage = "";
+  let appointmentBusy = false;
 
   async function loadWidgetConfig() {
     try {
@@ -266,6 +268,41 @@
     saveSession();
   }
 
+  function clearAppointmentStatus() {
+    appointmentError.textContent = "";
+    appointmentError.className = "hwhub-widget-error";
+  }
+
+  function setAppointmentStatus(message, type = "error", html = false) {
+    appointmentError.className = `hwhub-widget-error is-${type}`;
+    if (html) {
+      appointmentError.innerHTML = message;
+    } else {
+      appointmentError.textContent = message;
+    }
+  }
+
+  function setAppointmentBusy(active) {
+    appointmentBusy = active;
+    for (const button of appointmentForm.querySelectorAll("button")) button.disabled = active;
+    editProfile.disabled = active;
+  }
+
+  function resetAppointmentSelection() {
+    for (const key of ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime"]) {
+      session.profile[key] = "";
+    }
+    saveSession();
+  }
+
+  function existingAppointmentStatus(result = {}) {
+    const current = result.existingAppointment || {};
+    const url = safeUrl(current.rescheduleUrl || "");
+    const link = url ? ` <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Reagendar cita</a>` : "";
+    const email = session.profile.email ? ` Correo: ${esc(session.profile.email)}.` : "";
+    return `${esc(result.message || "Ya existe una cita futura asociada a este correo.")} Cita actual: ${esc(current.start || "sin fecha visible")}.${email}${link}`;
+  }
+
   function setScreen(screen) {
     const showChat = screen === "chat" && session.profileComplete;
     const showAppointment = screen === "appointment" && session.profileComplete;
@@ -277,6 +314,7 @@
       renderMessages();
       textarea.focus();
     } else if (showAppointment) {
+      syncProfileFromForm();
       loadAppointmentOptions();
     } else {
       fillProfileForm();
@@ -308,17 +346,35 @@
       maxDate.setDate(maxDate.getDate() + Number(appointmentOptions.settings.futureBookingLimit));
       dateInput.max = maxDate.toISOString().slice(0, 10);
     }
-    fillAppointmentForm();
+    await fillAppointmentForm();
   }
 
-  function fillAppointmentForm() {
+  async function fillAppointmentForm() {
+    clearAppointmentStatus();
+    appointmentProfile.textContent = `Agenda para ${session.profile.name || "cliente"} - ${session.profile.email || "sin correo"} - ${session.profile.phone || "sin telefono"}`;
     for (const input of appointmentForm.querySelectorAll("[data-appointment-field]")) {
       if (["appointmentProviderId", "sourceValue", "equipmentModel"].includes(input.dataset.appointmentField)) continue;
       input.value = session.profile[input.dataset.appointmentField] || "";
     }
+    const serviceSelect = appointmentForm.querySelector('[data-appointment-field="appointmentServiceId"]');
+    if (!serviceSelect.value && appointmentOptions.services?.length) {
+      serviceSelect.value = appointmentOptions.services[0].id;
+      session.profile.appointmentServiceId = serviceSelect.value;
+    }
     updateProviderOptions(session.profile.appointmentProviderId || "");
+    const providerSelect = appointmentForm.querySelector('[data-appointment-field="appointmentProviderId"]');
+    if (!providerSelect.value && providerSelect.options.length === 2) {
+      providerSelect.selectedIndex = 1;
+      session.profile.appointmentProviderId = providerSelect.value;
+    }
     updateSourceValueOptions(session.profile.sourceValue || "");
     updateModelOptions(session.profile.equipmentModel || "");
+    const dateInput = appointmentForm.querySelector('[data-appointment-field="appointmentDate"]');
+    if (!dateInput.value && dateInput.min) {
+      dateInput.value = dateInput.min;
+      session.profile.appointmentDate = dateInput.value;
+    }
+    if (serviceSelect.value && providerSelect.value && dateInput.value) await prevalidateAppointment();
   }
 
   function syncAppointmentFromForm() {
@@ -394,23 +450,23 @@
       timeSelect.innerHTML = `<option value="">Seleccionar</option>` + result.slots
         .map((slot) => `<option value="${esc(slot)}">${esc(slot)}</option>`)
         .join("");
-      appointmentError.textContent = "Horarios disponibles cargados.";
+      setAppointmentStatus("Horarios disponibles cargados.", "ok");
       return;
     }
     timeSelect.innerHTML = `<option value="">Sin horarios</option>`;
     const next = result.nextAvailable;
     if (result.reason === "existing_appointment") {
-      appointmentError.textContent = `${result.message} Cita actual: ${result.existingAppointment?.start || "sin fecha visible"}.`;
+      setAppointmentStatus(existingAppointmentStatus(result), "warning", true);
       return;
     }
     if (next?.date) {
-      appointmentError.textContent = `${result.message} Proxima fecha disponible: ${next.date}.`;
+      setAppointmentStatus(`${result.message} Proxima fecha disponible: ${next.date}.`, "warning");
       appointmentForm.querySelector('[data-appointment-field="appointmentDate"]').value = next.date;
       timeSelect.innerHTML = `<option value="">Seleccionar</option>` + (next.slots || [])
         .map((slot) => `<option value="${esc(slot)}">${esc(slot)}</option>`)
         .join("");
     } else {
-      appointmentError.textContent = result.message || "No hay disponibilidad cercana.";
+      setAppointmentStatus(result.message || "No hay disponibilidad cercana.", result.reason === "missing_fields" ? "error" : "warning");
     }
   }
 
@@ -476,8 +532,9 @@
       const timeSelect = appointmentForm.querySelector('[data-appointment-field="appointmentTime"]');
       providerSelect.value = "";
       timeSelect.innerHTML = `<option value="">Seleccionar</option>`;
-      appointmentError.textContent = "";
+      clearAppointmentStatus();
       updateProviderOptions("");
+      if (providerSelect.options.length === 2) providerSelect.selectedIndex = 1;
     }
     if (event.target?.dataset?.appointmentField === "sourceType") {
       session.profile.sourceValue = "";
@@ -498,36 +555,49 @@
     const required = ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime", "sourceType", "sourceValue", "equipmentModel"];
     const missing = required.filter((key) => !String(session.profile[key] || "").trim());
     if (missing.length) {
-      appointmentError.textContent = "Completa servicio, proveedor, fecha, hora, origen y modelo.";
+      setAppointmentStatus("Completa servicio, proveedor, fecha, hora, origen y modelo.", "error");
       return;
     }
     const service = appointmentOptions?.services?.find((item) => String(item.id) === String(session.profile.appointmentServiceId));
     const provider = appointmentOptions?.providers?.find((item) => String(item.id) === String(session.profile.appointmentProviderId));
     const source = `${session.profile.sourceType}: ${session.profile.sourceValue}`;
-    appointmentError.textContent = "Creando cita...";
-    const createResponse = await fetch(`${api}/api/appointments/create`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        firstName: session.profile.firstName,
-        lastName: session.profile.lastName,
-        email: session.profile.email,
-        phone: session.profile.phone,
-        serviceId: session.profile.appointmentServiceId,
-        providerId: session.profile.appointmentProviderId,
-        date: session.profile.appointmentDate,
-        time: session.profile.appointmentTime,
-        sourceType: session.profile.sourceType,
-        sourceValue: session.profile.sourceValue,
-        equipmentModel: session.profile.equipmentModel,
-        orderNumber: session.profile.orderNumber,
-        serialNumber: session.profile.serialNumber,
-        details: session.profile.details
-      })
-    });
-    const createResult = await createResponse.json();
+    setAppointmentStatus("Creando cita...", "ok");
+    setAppointmentBusy(true);
+    let createResult;
+    try {
+      const createResponse = await fetch(`${api}/api/appointments/create`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          firstName: session.profile.firstName,
+          lastName: session.profile.lastName,
+          email: session.profile.email,
+          phone: session.profile.phone,
+          serviceId: session.profile.appointmentServiceId,
+          providerId: session.profile.appointmentProviderId,
+          date: session.profile.appointmentDate,
+          time: session.profile.appointmentTime,
+          sourceType: session.profile.sourceType,
+          sourceValue: session.profile.sourceValue,
+          equipmentModel: session.profile.equipmentModel,
+          orderNumber: session.profile.orderNumber,
+          serialNumber: session.profile.serialNumber,
+          details: session.profile.details
+        })
+      });
+      createResult = await createResponse.json();
+    } catch (error) {
+      setAppointmentStatus(error.message || "No se pudo crear la cita.", "error");
+      return;
+    } finally {
+      setAppointmentBusy(false);
+    }
     if (!createResult.ok) {
-      appointmentError.textContent = createResult.message || "No se pudo crear la cita.";
+      if (createResult.reason === "existing_appointment") {
+        setAppointmentStatus(existingAppointmentStatus(createResult), "warning", true);
+      } else {
+        setAppointmentStatus(createResult.message || "No se pudo crear la cita.", "error");
+      }
       return;
     }
     const message = [
@@ -558,7 +628,10 @@
 
   profileForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    const previousEmail = String(session.profile.email || "").trim().toLowerCase();
     syncProfileFromForm();
+    const nextEmail = String(session.profile.email || "").trim().toLowerCase();
+    if (previousEmail && previousEmail !== nextEmail) resetAppointmentSelection();
     if (!isProfileComplete()) {
       profileError.textContent = "Completa todos los campos obligatorios.";
       return;

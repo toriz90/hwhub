@@ -369,6 +369,11 @@ function appointmentDateTime(date, time) {
   return `${date} ${value.slice(0, 5)}:00`;
 }
 
+function appointmentPublicUrl(config = {}, hash) {
+  const endpoint = endpointFrom(config);
+  return hash && endpoint ? `${endpoint}/index.php/appointments/index/${encodeURIComponent(hash)}` : "";
+}
+
 function normalizeSlots(data) {
   if (Array.isArray(data)) return data.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean);
   const list = data?.availableHours || data?.availabilities || data?.data || [];
@@ -396,6 +401,8 @@ async function findFutureAppointmentByEmail(config, email, today) {
     appointmentId: future.id,
     start: future.start,
     status: future.status,
+    hash: future.hash,
+    rescheduleUrl: appointmentPublicUrl(config, future.hash),
     serviceId: future.serviceId,
     providerId: future.providerId
   } : null;
@@ -550,7 +557,7 @@ export async function createEasyAppointment(store, payload = {}) {
   const appointment = await postEasyJson(config, "/index.php/api/v1/appointments", appointmentPayload);
   return {
     ok: true,
-    appointment,
+    appointment: { ...appointment, manageUrl: appointmentPublicUrl(config, appointment?.hash) },
     customer: {
       id: customer.id,
       firstName: customer.firstName,
