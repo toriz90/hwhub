@@ -545,7 +545,8 @@
       `Cita creada correctamente${createResult.appointment?.id ? ` con ID ${createResult.appointment.id}` : ""}.`,
       `Servicio: ${service?.name || createResult.service?.name || session.profile.appointmentServiceId}`,
       `Proveedor: ${provider?.name || session.profile.appointmentProviderId}`,
-      `Fecha y hora: ${createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`}`
+      `Fecha y hora: ${createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`}`,
+      "Revisa tu correo electronico; ahi recibiras la confirmacion con el PDF adjunto y tu folio de cita."
     ].join("\n");
     pendingAppointmentMessage = "";
     setScreen("chat");
