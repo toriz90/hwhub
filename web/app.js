@@ -147,7 +147,8 @@ const integrationDefinitions = [
     fields: [
       { key: "baseUrl", label: "URL de tienda", type: "url", required: true, placeholder: "https://tutienda.com" },
       { key: "consumerKey", label: "Consumer key", type: "password", required: true, placeholder: "ck_..." },
-      { key: "consumerSecret", label: "Consumer secret", type: "password", required: true, placeholder: "cs_..." }
+      { key: "consumerSecret", label: "Consumer secret", type: "password", required: true, placeholder: "cs_..." },
+      { key: "widgetSharedSecret", label: "Secreto widget WooCommerce", type: "password", placeholder: "Mismo secreto usado en WordPress" }
     ]
   },
   {

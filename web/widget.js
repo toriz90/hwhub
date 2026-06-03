@@ -28,6 +28,8 @@
           phone: currentScript?.dataset.customerPhone || saved.profile?.phone || "",
           email: currentScript?.dataset.customerEmail || saved.profile?.email || "",
           wooCustomerId: currentScript?.dataset.customerId || saved.profile?.wooCustomerId || "",
+          wooCustomerToken: currentScript?.dataset.customerToken || saved.profile?.wooCustomerToken || "",
+          wooCustomerIssuedAt: currentScript?.dataset.customerIssuedAt || saved.profile?.wooCustomerIssuedAt || "",
           serviceCenter: currentScript?.dataset.serviceCenter || saved.profile?.serviceCenter || "",
           appointmentServiceId: saved.profile?.appointmentServiceId || "",
           appointmentProviderId: saved.profile?.appointmentProviderId || "",
@@ -663,7 +665,7 @@
     positionHorizontal: "right",
     positionVertical: "bottom"
   };
-  session.profileComplete = session.profileComplete && isProfileComplete();
+  session.profileComplete = session.profileComplete || isProfileComplete();
   injectWidgetStyles();
 
   const button = document.createElement("button");
@@ -1305,7 +1307,9 @@
           customerName: session.profile.name,
           customerPhone: session.profile.phone,
           customerEmail: session.profile.email,
-          wooCustomerId: session.profile.wooCustomerId
+          wooCustomerId: session.profile.wooCustomerId,
+          wooCustomerToken: session.profile.wooCustomerToken,
+          wooCustomerIssuedAt: session.profile.wooCustomerIssuedAt
         })
       });
       const data = await response.json();

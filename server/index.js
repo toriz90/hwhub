@@ -470,6 +470,8 @@ function customerProfileFromBody(body = {}) {
     phone: String(phone || "").trim(),
     email: String(email || "").trim(),
     wooCustomerId: body.wooCustomerId || customer.wooCustomerId || body.customerId || customer.id || null,
+    wooCustomerToken: body.wooCustomerToken || customer.wooCustomerToken || body.customerToken || customer.token || "",
+    wooCustomerIssuedAt: body.wooCustomerIssuedAt || customer.wooCustomerIssuedAt || body.customerIssuedAt || customer.issuedAt || "",
     serviceCenter: body.serviceCenter || customer.serviceCenter || "",
     marketplace: body.marketplace || customer.marketplace || "",
     distributor: body.distributor || customer.distributor || "",
@@ -490,6 +492,8 @@ function mergeCustomerProfile(conversation, profile) {
     phone: profile.phone || conversation?.customerPhone || current.phone || "",
     email: profile.email || current.email || "",
     wooCustomerId: profile.wooCustomerId || current.wooCustomerId || null,
+    wooCustomerToken: profile.wooCustomerToken || current.wooCustomerToken || "",
+    wooCustomerIssuedAt: profile.wooCustomerIssuedAt || current.wooCustomerIssuedAt || "",
     serviceCenter: profile.serviceCenter || current.serviceCenter || "",
     marketplace: profile.marketplace || current.marketplace || "",
     distributor: profile.distributor || current.distributor || "",
@@ -907,8 +911,12 @@ const server = createServer(async (req, res) => {
     const existingConversation = Boolean(savedConversation);
     const history = savedConversation ? await store.messages(savedConversation.id) : [];
     const mergedProfile = mergeCustomerProfile(savedConversation, profileInput);
-    const connectorContext = await buildConnectorContext({ text: body.message || "", history, store });
-    connectorContext.customerProfile = mergedProfile;
+    const connectorContext = await buildConnectorContext({ text: body.message || "", history, store, customerProfile: mergedProfile });
+    connectorContext.customerProfile = {
+      ...mergedProfile,
+      wooCustomerToken: mergedProfile.wooCustomerToken ? "present" : "",
+      wooCustomerIssuedAt: mergedProfile.wooCustomerIssuedAt || ""
+    };
     connectorContext.appointmentState = appointmentState(mergedProfile, body.message || "", history);
     currentState.connectorContext = connectorContext;
     currentState.conversationHistory = history;

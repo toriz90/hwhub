@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 function endpointFrom(config = {}) {
   return String(config.baseUrl || config.url || config.endpoint || "").replace(/\/+$/, "");
 }
@@ -135,7 +137,7 @@ function wantsOrderStatus(text = "") {
   return ["pedido", "orden", "envio", "paquete", "guia", "rastreo", "tracking", "trackship"].some((term) => value.includes(term));
 }
 
-export async function buildConnectorContext({ text, history = [], store }) {
+export async function buildConnectorContext({ text, history = [], store, customerProfile = {} }) {
   const context = {};
   const errors = [];
   const fullText = conversationText(text, history);
@@ -155,6 +157,18 @@ export async function buildConnectorContext({ text, history = [], store }) {
     try {
       const config = await store.integrationConfig?.("woocommerce");
       if (config && orderNumber) context.order = await fetchWooOrder(config, orderNumber);
+      if (config && !orderNumber) {
+        const verifiedCustomer = verifyWooCustomerToken(config, customerProfile);
+        context.wooCustomerAuthenticated = verifiedCustomer.ok;
+        if (verifiedCustomer.ok) {
+          context.customerOrders = await fetchWooCustomerOrders(config, customerProfile);
+          const latestOrder = context.customerOrders?.items?.[0];
+          if (latestOrder) context.order = await fetchWooOrder(config, latestOrder.id);
+        } else if (customerProfile?.wooCustomerId || customerProfile?.email) {
+          context.wooCustomerAuthRequired = true;
+          context.wooCustomerAuthMessage = verifiedCustomer.reason;
+        }
+      }
     } catch (error) {
       errors.push({ provider: "woocommerce", message: error.message });
     }
@@ -180,6 +194,33 @@ export async function buildConnectorContext({ text, history = [], store }) {
     ...context,
     errors
   };
+}
+
+function hmacSha256(secret, payload) {
+  return createHmac("sha256", String(secret || "")).update(payload).digest("hex");
+}
+
+function safeCompare(left = "", right = "") {
+  const leftBuffer = Buffer.from(String(left), "hex");
+  const rightBuffer = Buffer.from(String(right), "hex");
+  if (leftBuffer.length !== rightBuffer.length || !leftBuffer.length) return false;
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function verifyWooCustomerToken(config = {}, profile = {}) {
+  const secret = config.widgetSharedSecret || config.hwhubWidgetSecret || "";
+  if (!secret) return { ok: false, reason: "missing_widget_secret" };
+  const id = String(profile.wooCustomerId || "").trim();
+  const email = String(profile.email || "").trim().toLowerCase();
+  const issuedAt = String(profile.wooCustomerIssuedAt || "").trim();
+  const token = String(profile.wooCustomerToken || "").trim();
+  if (!id || !email || !issuedAt || !token) return { ok: false, reason: "missing_signed_customer_data" };
+  const ageMs = Date.now() - Number(issuedAt) * 1000;
+  if (!Number.isFinite(ageMs) || ageMs < -5 * 60 * 1000 || ageMs > 24 * 60 * 60 * 1000) {
+    return { ok: false, reason: "expired_customer_token" };
+  }
+  const expected = hmacSha256(secret, `${id}|${email}|${issuedAt}`);
+  return safeCompare(expected, token) ? { ok: true } : { ok: false, reason: "invalid_customer_token" };
 }
 
 async function fetchWooProducts(config, search) {
@@ -251,6 +292,39 @@ async function fetchWooOrder(config, orderNumber) {
       quantity: item.quantity,
       total: item.total
     }))
+  };
+}
+
+async function fetchWooCustomerOrders(config, profile = {}) {
+  const endpoint = endpointFrom(config);
+  if (!endpoint || !config.consumerKey || !config.consumerSecret || !profile.wooCustomerId) return null;
+  const auth = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString("base64");
+  const params = new URLSearchParams({
+    customer: String(profile.wooCustomerId),
+    per_page: "5",
+    orderby: "date",
+    order: "desc"
+  });
+  const orders = await fetchJson(`${endpoint}/wp-json/wc/v3/orders?${params}`, {
+    headers: { authorization: `Basic ${auth}` }
+  });
+  const normalizedEmail = String(profile.email || "").trim().toLowerCase();
+  const items = (Array.isArray(orders) ? orders : [])
+    .filter((order) => !normalizedEmail || String(order.billing?.email || "").trim().toLowerCase() === normalizedEmail)
+    .map((order) => ({
+      id: order.id,
+      number: order.number || String(order.id),
+      status: order.status,
+      total: order.total,
+      currency: order.currency,
+      dateCreated: order.date_created,
+      paymentMethod: order.payment_method_title,
+      itemCount: Array.isArray(order.line_items) ? order.line_items.length : 0
+    }));
+  return {
+    customerId: String(profile.wooCustomerId),
+    total: items.length,
+    items
   };
 }
 
