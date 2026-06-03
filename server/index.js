@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createDataStore } from "./database.js";
 import { generateBotReply } from "./ai.js";
 import { buildConnectorContext, createEasyAppointment, getEasyAppointmentOptions, prevalidateEasyAppointment } from "./connectors.js";
+import { branchSeeds } from "./branchSeeds.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -39,6 +40,7 @@ function mergeChatbotSettings(value = {}) {
 
 const state = {
   branches: [
+    ...branchSeeds,
     {
       id: "branch-cdmx",
       name: "Sucursal CDMX",

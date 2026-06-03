@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-actions-link">
+    <link rel="stylesheet" href="/styles.css?v=20260603-branches">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -41,7 +41,7 @@
         <a href="#chatbot" data-view-link="chatbot">Chatbot</a>
         <a href="#agents" data-view-link="agents">Agentes</a>
         <a href="#knowledge" data-view-link="knowledge">FAQs</a>
-        <a href="#directory" data-view-link="directory">Directorio</a>
+        <a href="#branches" data-view-link="branches">Sucursales</a>
         <a href="#routing" data-view-link="routing">Ruteo</a>
         <a href="#integrations" data-view-link="integrations">APIs</a>
         <a href="#users" data-view-link="users">Usuarios</a>
@@ -296,27 +296,42 @@
         </section>
       </div>
 
-      <div class="view" data-view="directory">
+      <div class="view" data-view="branches">
         <section class="workspace single">
-          <div class="panel" id="directory">
+          <div class="panel" id="branches">
             <header>
               <div>
-                <p class="eyebrow">Directorio</p>
-                <h2>Sucursales y contactos</h2>
+                <p class="eyebrow">Directorio operativo</p>
+                <h2>Sucursales</h2>
               </div>
             </header>
             <form class="editor" data-editor="branches">
               <input type="hidden" name="id">
               <input name="name" placeholder="Nombre">
-              <input name="city" placeholder="Ciudad">
+              <input name="state" placeholder="Estado">
+              <input name="municipality" placeholder="Municipio / Alcaldia">
+              <input name="colony" placeholder="Colonia">
+              <input name="city" placeholder="Ciudad visible">
               <input name="phone" placeholder="Telefono">
               <input name="whatsapp" placeholder="WhatsApp">
+              <input name="email" placeholder="Email">
               <input name="address" placeholder="Direccion">
-              <input name="hours" placeholder="Horario">
+              <input name="weekdayHours" placeholder="Horario entre semana">
+              <input name="saturdayHours" placeholder="Horario sabado">
+              <input name="sundayHours" placeholder="Horario domingo">
+              <input name="hours" placeholder="Resumen de horario">
               <input name="services" placeholder="Servicios separados por coma">
               <input name="wholesaleContact" placeholder="Contacto mayorista">
+              <label class="check-row"><input name="active" type="checkbox" checked> Activa</label>
               <button>Guardar sucursal</button>
             </form>
+            <div class="filters">
+              <select id="branch-state-filter">
+                <option value="">Todos los estados</option>
+              </select>
+              <input id="branch-search" class="search" placeholder="Buscar por estado, colonia, nombre o direccion">
+              <button id="clear-branch-filters" type="button">Limpiar</button>
+            </div>
             <div id="branches-list" class="cards"></div>
           </div>
         </section>
@@ -469,7 +484,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-actions-link"></script>
-    <script src="/widget.js?v=20260603-actions-link" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-branches"></script>
+    <script src="/widget.js?v=20260603-branches" data-channel="official_site"></script>
   </body>
 </html>

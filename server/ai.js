@@ -78,9 +78,13 @@ function buildContext({ text, routed, currentState }) {
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
-  const branches = currentState.branches.slice(0, 5).map((branch) => ({
+  const branches = currentState.branches.slice(0, 20).map((branch) => ({
     name: branch.name,
+    state: branch.state,
     city: branch.city,
+    municipality: branch.municipality,
+    colony: branch.colony,
+    address: branch.address,
     phone: branch.phone,
     whatsapp: branch.whatsapp,
     services: branch.services,

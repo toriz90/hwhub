@@ -13,7 +13,9 @@ const filters = {
   channel: "",
   priority: "",
   slaState: "",
-  search: ""
+  search: "",
+  branchState: "",
+  branchSearch: ""
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -33,8 +35,8 @@ const roleCatalog = {
   supervisor: ["reasignar conversaciones", "pausar chats", "editar FAQs", "ver reportes"],
   agent: ["tomar conversaciones", "responder clientes", "devolver al bot"],
   marketplace: ["atender Amazon", "atender MercadoLibre", "atender marketplaces"],
-  wholesale: ["atender mayoreo", "ver contactos de directorio", "canalizar sucursal"],
-  viewer: ["ver bandeja", "ver FAQs", "ver directorio"]
+  wholesale: ["atender mayoreo", "ver contactos de sucursales", "canalizar sucursal"],
+  viewer: ["ver bandeja", "ver FAQs", "ver sucursales"]
 };
 
 const integrationDefinitions = [
@@ -432,20 +434,50 @@ function renderRouting() {
 }
 
 function renderBranches() {
-  $("#branches-list").innerHTML = state.data.branches
+  const branches = state.data.branches || [];
+  const states = [...new Set(branches.map((branch) => branch.state || branch.city).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }));
+  const stateSelect = $("#branch-state-filter");
+  const selectedState = filters.branchState;
+  stateSelect.innerHTML = `<option value="">Todos los estados</option>` + states
+    .map((item) => `<option value="${esc(item)}"${item === selectedState ? " selected" : ""}>${esc(item)}</option>`)
+    .join("");
+  const query = filters.branchSearch.toLowerCase();
+  const filtered = branches.filter((branch) => {
+    const haystack = [
+      branch.name,
+      branch.state,
+      branch.city,
+      branch.municipality,
+      branch.colony,
+      branch.address,
+      branch.phone,
+      branch.whatsapp,
+      branch.email,
+      (branch.services || []).join(" ")
+    ].join(" ").toLowerCase();
+    return (!filters.branchState || branch.state === filters.branchState || branch.city === filters.branchState) &&
+      (!query || haystack.includes(query));
+  });
+
+  $("#branches-list").innerHTML = filtered
     .map((branch) => `
       <article class="card">
         <strong>${esc(branch.name)}</strong>
-        <p>${esc(branch.city)} - ${esc(branch.hours)}</p>
-        <p class="meta">${esc(branch.phone)} - ${esc(branch.whatsapp)}</p>
-        <p class="meta">Mayoristas: ${esc(branch.wholesaleContact)}</p>
+        <p>${esc([branch.colony, branch.municipality, branch.state || branch.city].filter(Boolean).join(" - "))}</p>
+        <p class="meta">${esc(branch.address || "Direccion pendiente")}</p>
+        <p class="meta">WhatsApp: ${esc(branch.whatsapp || "sin dato")} ${branch.phone ? `- Tel: ${esc(branch.phone)}` : ""}</p>
+        ${branch.email ? `<p class="meta">Email: ${esc(branch.email)}</p>` : ""}
+        <p class="meta">Horario: ${esc(branch.hours || "sin horario")}</p>
+        ${(branch.services || []).map((service) => `<span class="tag">${esc(service)}</span>`).join("")}
+        ${branch.wholesaleContact ? `<p class="meta">Mayoristas: ${esc(branch.wholesaleContact)}</p>` : ""}
         <div class="row-actions">
           <button data-edit="branches" data-id="${esc(branch.id)}">Editar</button>
           <button data-delete="branches" data-id="${esc(branch.id)}">Eliminar</button>
         </div>
       </article>
     `)
-    .join("");
+    .join("") || `<article class="card"><p class="meta">No hay sucursales con esos filtros.</p></article>`;
 }
 
 function renderIntegrations() {
@@ -694,6 +726,24 @@ function bindStaticEvents() {
     await refresh();
   });
   $("#faq-search").addEventListener("input", (event) => renderFaqs(event.target.value));
+  $("#branch-state-filter").addEventListener("change", (event) => {
+    filters.branchState = event.target.value;
+    renderBranches();
+    applyPermissions();
+  });
+  $("#branch-search").addEventListener("input", (event) => {
+    filters.branchSearch = event.target.value;
+    renderBranches();
+    applyPermissions();
+  });
+  $("#clear-branch-filters").addEventListener("click", () => {
+    filters.branchState = "";
+    filters.branchSearch = "";
+    $("#branch-state-filter").value = "";
+    $("#branch-search").value = "";
+    renderBranches();
+    applyPermissions();
+  });
   $("#logout-button").addEventListener("click", async () => {
     await logout();
     window.location.hash = "#dashboard";
@@ -1047,6 +1097,13 @@ function bindEditors() {
       event.preventDefault();
       const collection = form.dataset.editor;
       const payload = formPayload(form);
+      if (collection === "branches" && !payload.hours) {
+        payload.hours = [
+          payload.weekdayHours ? `Lun-Vie ${payload.weekdayHours}` : "",
+          payload.saturdayHours ? `Sab ${payload.saturdayHours}` : "",
+          payload.sundayHours ? `Dom ${payload.sundayHours}` : ""
+        ].filter(Boolean).join("; ");
+      }
       const id = payload.id;
       delete payload.id;
       await api(`/api/${collection}${id ? `/${id}` : ""}`, {

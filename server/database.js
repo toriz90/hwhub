@@ -124,6 +124,7 @@ function csv(value) {
 }
 
 function branchFromRow(row) {
+  const details = row.business_hours || {};
   return {
     id: row.id,
     name: row.name,
@@ -133,7 +134,28 @@ function branchFromRow(row) {
     address: row.address,
     services: row.services || [],
     wholesaleContact: row.wholesale_contact,
-    hours: row.business_hours?.label || row.business_hours?.hours || ""
+    hours: details.label || details.hours || "",
+    state: details.state || "",
+    municipality: details.municipality || "",
+    colony: details.colony || "",
+    email: details.email || "",
+    weekdayHours: details.weekdayHours || "",
+    saturdayHours: details.saturdayHours || "",
+    sundayHours: details.sundayHours || "",
+    active: row.is_active ?? true
+  };
+}
+
+function branchHoursPayload(branch = {}) {
+  return {
+    label: branch.hours || "",
+    state: branch.state || "",
+    municipality: branch.municipality || "",
+    colony: branch.colony || "",
+    email: branch.email || "",
+    weekdayHours: branch.weekdayHours || "",
+    saturdayHours: branch.saturdayHours || "",
+    sundayHours: branch.sundayHours || ""
   };
 }
 
@@ -273,9 +295,32 @@ async function seedDatabase(pool, defaults) {
           branch.phone,
           branch.whatsapp,
           branch.address,
-          { label: branch.hours },
+          branchHoursPayload(branch),
           branch.services,
           branch.wholesaleContact
+        ]
+      );
+    }
+  } else {
+    for (const branch of defaults.branches) {
+      await pool.query(
+        `insert into branches (name, city, phone, whatsapp, address, business_hours, services, wholesale_contact, is_active)
+         select $1, $2, $3, $4, $5, $6, $7, $8, $9
+         where not exists (
+           select 1 from branches
+           where lower(name) = lower($1)
+             and coalesce(address, '') = coalesce($5, '')
+         )`,
+        [
+          branch.name,
+          branch.city,
+          branch.phone || "",
+          branch.whatsapp || "",
+          branch.address || "",
+          branchHoursPayload(branch),
+          branch.services || [],
+          branch.wholesaleContact || "",
+          branch.active !== false
         ]
       );
     }
@@ -1033,7 +1078,15 @@ function normalizePayload(name, payload) {
       address: payload.address || "",
       services: csv(payload.services),
       wholesaleContact: payload.wholesaleContact || payload.wholesale_contact || "",
-      hours: payload.hours || ""
+      hours: payload.hours || "",
+      state: payload.state || "",
+      municipality: payload.municipality || "",
+      colony: payload.colony || "",
+      email: payload.email || "",
+      weekdayHours: payload.weekdayHours || "",
+      saturdayHours: payload.saturdayHours || "",
+      sundayHours: payload.sundayHours || "",
+      active: Boolean(payload.active ?? true)
     };
   }
   if (name === "agents") {
@@ -1097,9 +1150,9 @@ async function updateFaq(pool, id, payload) {
 async function createBranch(pool, payload) {
   const item = normalizePayload("branches", payload);
   const { rows } = await pool.query(
-    `insert into branches (name, city, phone, whatsapp, address, business_hours, services, wholesale_contact)
-     values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
-    [item.name, item.city, item.phone, item.whatsapp, item.address, { label: item.hours }, item.services, item.wholesaleContact]
+    `insert into branches (name, city, phone, whatsapp, address, business_hours, services, wholesale_contact, is_active)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
+    [item.name, item.city, item.phone, item.whatsapp, item.address, branchHoursPayload(item), item.services, item.wholesaleContact, item.active]
   );
   return branchFromRow(rows[0]);
 }
@@ -1108,8 +1161,8 @@ async function updateBranch(pool, id, payload) {
   const item = normalizePayload("branches", payload);
   const { rows } = await pool.query(
     `update branches set name=$2, city=$3, phone=$4, whatsapp=$5, address=$6,
-      business_hours=$7, services=$8, wholesale_contact=$9 where id=$1 returning *`,
-    [id, item.name, item.city, item.phone, item.whatsapp, item.address, { label: item.hours }, item.services, item.wholesaleContact]
+      business_hours=$7, services=$8, wholesale_contact=$9, is_active=$10 where id=$1 returning *`,
+    [id, item.name, item.city, item.phone, item.whatsapp, item.address, branchHoursPayload(item), item.services, item.wholesaleContact, item.active]
   );
   return rows[0] ? branchFromRow(rows[0]) : null;
 }
