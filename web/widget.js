@@ -297,6 +297,17 @@
     serviceSelect.innerHTML = `<option value="">Seleccionar</option>` + (appointmentOptions.services || [])
       .map((item) => `<option value="${esc(item.id)}">${esc(item.name)}</option>`)
       .join("");
+    const dateInput = appointmentForm.querySelector('[data-appointment-field="appointmentDate"]');
+    if (appointmentOptions.settings?.minimumAdvanceBooking) {
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() + Number(appointmentOptions.settings.minimumAdvanceBooking));
+      dateInput.min = minDate.toISOString().slice(0, 10);
+    }
+    if (appointmentOptions.settings?.futureBookingLimit) {
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + Number(appointmentOptions.settings.futureBookingLimit));
+      dateInput.max = maxDate.toISOString().slice(0, 10);
+    }
     fillAppointmentForm();
   }
 
@@ -364,7 +375,8 @@
     const payload = {
       serviceId: session.profile.appointmentServiceId,
       providerId: session.profile.appointmentProviderId,
-      date: session.profile.appointmentDate
+      date: session.profile.appointmentDate,
+      email: session.profile.email
     };
     const response = await fetch(`${api}/api/appointments/prevalidate`, {
       method: "POST",
@@ -382,6 +394,10 @@
     }
     timeSelect.innerHTML = `<option value="">Sin horarios</option>`;
     const next = result.nextAvailable;
+    if (result.reason === "existing_appointment") {
+      appointmentError.textContent = `${result.message} Cita actual: ${result.existingAppointment?.start || "sin fecha visible"}.`;
+      return;
+    }
     if (next?.date) {
       appointmentError.textContent = `${result.message} Proxima fecha disponible: ${next.date}.`;
       appointmentForm.querySelector('[data-appointment-field="appointmentDate"]').value = next.date;

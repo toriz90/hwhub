@@ -20,105 +20,49 @@ function easyHeaders(config = {}) {
   return token ? { authorization: `Bearer ${token}` } : {};
 }
 
-const defaultAppointmentCatalogs = {
-  sources: {
-    marketplace: [
-      "Amazon",
-      "Mercado Libre",
-      "Walmart",
-      "Coppel",
-      "Elektra",
-      "TikTok Shop",
-      "Temu",
-      "Shein",
-      "Liverpool",
-      "Sears",
-      "Claro Shop",
-      "Cyberpuerta",
-      "Pagina oficial",
-      "WhatsApp",
-      "Otro"
-    ],
-    sucursal: [
-      "Genova",
-      "Londres",
-      "Izazaga",
-      "Dr. Jose Maria Vertiz",
-      "Centro Historico",
-      "Zona Rosa",
-      "Otro"
-    ],
-    distribuidor: [
-      "Distribuidor autorizado",
-      "Mayorista",
-      "Tienda departamental",
-      "Marketplace externo",
-      "Revendedor",
-      "Venta corporativa",
-      "Otro"
-    ]
-  },
-  equipmentModels: [
-    "H4",
-    "H3",
-    "H2",
-    "U1S",
-    "U1",
-    "ZL Wolf",
-    "ZL Lion",
-    "ZL X",
-    "KC Cool",
-    "E9 Max",
-    "E9 Pro",
-    "E9",
-    "BK05",
-    "BK03",
-    "T5",
-    "T4A",
-    "T4",
-    "T3",
-    "M1 Lite",
-    "M1",
-    "M2",
-    "M3",
-    "B1",
-    "B2",
-    "B3",
-    "S1",
-    "S2",
-    "A1",
-    "A2",
-    "Pro Max",
-    "Mini",
-    "Otro"
-  ]
-};
+const easyCache = new Map();
+const EASY_CACHE_TTL_MS = 10 * 60 * 1000;
 
-function csvList(value) {
-  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
-  if (typeof value !== "string") return [];
-  return value.split(/[\n,;]/).map((item) => item.trim()).filter(Boolean);
+async function fetchEasyJson(config, path, { cache = true } = {}) {
+  const endpoint = endpointFrom(config);
+  const headers = easyHeaders(config);
+  const key = `${endpoint}${path}`;
+  const cached = easyCache.get(key);
+  if (cache && cached && Date.now() - cached.time < EASY_CACHE_TTL_MS) return cached.data;
+  const data = await fetchJson(key, { headers });
+  if (cache) easyCache.set(key, { time: Date.now(), data });
+  return data;
 }
 
-function appointmentCatalogs(config = {}) {
-  const catalogs = config.catalogs || config.appointmentCatalogs || {};
-  const sourceAliases = {
-    marketplace: ["marketplaces", "appointmentMarketplaces"],
-    sucursal: ["branches", "sucursales", "appointmentBranches"],
-    distribuidor: ["distributors", "distribuidores", "appointmentDistributors"]
-  };
-  const sources = Object.fromEntries(Object.entries(defaultAppointmentCatalogs.sources).map(([key, fallback]) => {
-    const configured = csvList(catalogs[key] || sourceAliases[key].map((alias) => config[alias]).find(Boolean));
-    const values = [...configured, ...fallback];
-    return [key, [...new Set(values)]];
-  }));
-  const equipmentModels = [
-    ...csvList(catalogs.models || catalogs.equipmentModels || config.models || config.equipmentModels || config.appointmentModels),
-    ...defaultAppointmentCatalogs.equipmentModels
-  ];
+function cleanCatalogValue(value) {
+  const text = String(value ?? "").trim();
+  if (!text || /^n\/?a$/i.test(text)) return "";
+  return text;
+}
+
+function uniqueSorted(values = []) {
+  return [...new Set(values.map(cleanCatalogValue).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }));
+}
+
+function settingsMap(settings = []) {
+  return Object.fromEntries((Array.isArray(settings) ? settings : []).map((item) => [item.name, item.value]));
+}
+
+function numberSetting(settings, key, fallback) {
+  const value = Number(settings[key]);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function appointmentCatalogsFromCustomers(customers = []) {
+  const rows = Array.isArray(customers) ? customers : [];
   return {
-    sources,
-    equipmentModels: [...new Set(equipmentModels)]
+    sources: {
+      marketplace: uniqueSorted(rows.map((item) => item.customField1)),
+      sucursal: uniqueSorted(rows.map((item) => item.customField3)),
+      distribuidor: uniqueSorted(rows.map((item) => item.customField4))
+    },
+    equipmentModels: uniqueSorted(rows.map((item) => item.customField5))
   };
 }
 
@@ -349,13 +293,14 @@ async function fetchEasyAppointmentServices(config) {
 
 export async function getEasyAppointmentOptions(store) {
   const config = await store.integrationConfig?.("easyappointments");
-  if (!config) return { services: [], providers: [], ...appointmentCatalogs() };
-  const endpoint = endpointFrom(config);
-  const headers = easyHeaders(config);
-  const [servicesData, providersData] = await Promise.all([
-    fetchJson(`${endpoint}/index.php/api/v1/services`, { headers }),
-    fetchJson(`${endpoint}/index.php/api/v1/providers`, { headers })
+  if (!config) return { services: [], providers: [], sources: { marketplace: [], sucursal: [], distribuidor: [] }, equipmentModels: [] };
+  const [servicesData, providersData, settingsData, customersData] = await Promise.all([
+    fetchEasyJson(config, "/index.php/api/v1/services"),
+    fetchEasyJson(config, "/index.php/api/v1/providers"),
+    fetchEasyJson(config, "/index.php/api/v1/settings?length=1000"),
+    fetchEasyJson(config, "/index.php/api/v1/customers?length=1000")
   ]);
+  const settings = settingsMap(settingsData);
   const services = (Array.isArray(servicesData) ? servicesData : []).map((service) => ({
     id: service.id,
     name: service.name,
@@ -371,15 +316,32 @@ export async function getEasyAppointmentOptions(store) {
     services: provider.services || [],
     workingPlan: provider.settings?.workingPlan || {}
   }));
-  return { services, providers, ...appointmentCatalogs(config) };
+  return {
+    services,
+    providers,
+    ...appointmentCatalogsFromCustomers(customersData),
+    settings: {
+      futureBookingLimit: numberSetting(settings, "future_booking_limit", 90),
+      minimumAdvanceBooking: numberSetting(settings, "minimum_advance_booking", 1),
+      requireAdvanceBookingDays: numberSetting(settings, "require_advance_booking_days", 1),
+      defaultTimezone: settings.default_timezone || "America/Mexico_City"
+    }
+  };
 }
 
-function isoDate(value = new Date()) {
-  return new Date(value).toISOString().slice(0, 10);
+function isoDate(value = new Date(), timezone = "America/Mexico_City") {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(value));
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
 }
 
 function addDays(date, days) {
-  const next = new Date(date);
+  const next = typeof date === "string" ? new Date(`${date}T12:00:00Z`) : new Date(date);
   next.setDate(next.getDate() + days);
   return next;
 }
@@ -390,47 +352,96 @@ function normalizeSlots(data) {
   return Array.isArray(list) ? list.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean) : [];
 }
 
+async function findFutureAppointmentByEmail(config, email, today) {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!normalizedEmail) return null;
+  const [customers, appointments] = await Promise.all([
+    fetchEasyJson(config, "/index.php/api/v1/customers?length=1000"),
+    fetchEasyJson(config, "/index.php/api/v1/appointments?length=1000", { cache: false })
+  ]);
+  const customerIds = new Set((Array.isArray(customers) ? customers : [])
+    .filter((customer) => String(customer.email || "").trim().toLowerCase() === normalizedEmail)
+    .map((customer) => customer.id));
+  if (!customerIds.size) return null;
+  const future = (Array.isArray(appointments) ? appointments : [])
+    .filter((appointment) => customerIds.has(appointment.customerId))
+    .filter((appointment) => String(appointment.start || "").slice(0, 10) >= today)
+    .filter((appointment) => !/cancel/i.test(String(appointment.status || "")))
+    .sort((left, right) => String(left.start).localeCompare(String(right.start)))[0];
+  return future ? {
+    appointmentId: future.id,
+    start: future.start,
+    status: future.status,
+    serviceId: future.serviceId,
+    providerId: future.providerId
+  } : null;
+}
+
 export async function prevalidateEasyAppointment(store, payload = {}) {
   const config = await store.integrationConfig?.("easyappointments");
   if (!config) return { ok: false, reason: "missing_integration", message: "Easy!Appointments no esta configurado." };
+  const settings = settingsMap(await fetchEasyJson(config, "/index.php/api/v1/settings?length=1000"));
+  const timezone = settings.default_timezone || "America/Mexico_City";
+  const minimumAdvanceBooking = numberSetting(settings, "minimum_advance_booking", 1);
+  const futureBookingLimit = numberSetting(settings, "future_booking_limit", 90);
   const serviceId = Number(payload.serviceId);
   const providerId = Number(payload.providerId);
   const date = String(payload.date || "");
   if (!serviceId || !providerId || !date) {
     return { ok: false, reason: "missing_fields", message: "Faltan servicio, proveedor o fecha." };
   }
-  const today = isoDate();
-  if (date <= today) {
-    const next = await findNextAvailability(config, serviceId, providerId, addDays(new Date(), 1));
+  const today = isoDate(new Date(), timezone);
+  const minDate = isoDate(addDays(today, minimumAdvanceBooking), timezone);
+  const maxDate = isoDate(addDays(today, futureBookingLimit), timezone);
+  const existingAppointment = await findFutureAppointmentByEmail(config, payload.email, today);
+  if (existingAppointment) {
+    return {
+      ok: false,
+      reason: "existing_appointment",
+      message: "Ya existe una cita futura asociada a este correo. Para evitar duplicados, podemos ayudarte a reagendar la cita existente.",
+      existingAppointment,
+      limits: { minDate, maxDate, futureBookingLimit, minimumAdvanceBooking }
+    };
+  }
+  if (date < minDate) {
+    const next = await findNextAvailability(config, serviceId, providerId, minDate, maxDate);
     return {
       ok: false,
       reason: "same_day_blocked",
-      message: "No se pueden agendar citas para el mismo dia.",
+      message: `No se pueden agendar citas con menos de ${minimumAdvanceBooking} dia de anticipacion.`,
       nextAvailable: next
     };
   }
+  if (date > maxDate) {
+    return {
+      ok: false,
+      reason: "future_limit",
+      message: `Solo se pueden agendar citas dentro de los proximos ${futureBookingLimit} dias.`,
+      nextAvailable: null,
+      limits: { minDate, maxDate, futureBookingLimit, minimumAdvanceBooking }
+    };
+  }
   const slots = await fetchEasyAvailabilities(config, serviceId, providerId, date);
-  if (slots.length) return { ok: true, date, slots };
-  const next = await findNextAvailability(config, serviceId, providerId, addDays(new Date(date), 1));
+  if (slots.length) return { ok: true, date, slots, limits: { minDate, maxDate, futureBookingLimit, minimumAdvanceBooking } };
+  const next = await findNextAvailability(config, serviceId, providerId, isoDate(addDays(date, 1), timezone), maxDate);
   return {
     ok: false,
     reason: "no_slots",
     message: "No hay horarios disponibles para esa fecha.",
-    nextAvailable: next
+    nextAvailable: next,
+    limits: { minDate, maxDate, futureBookingLimit, minimumAdvanceBooking }
   };
 }
 
 async function fetchEasyAvailabilities(config, serviceId, providerId, date) {
-  const endpoint = endpointFrom(config);
-  const headers = easyHeaders(config);
   const params = new URLSearchParams({ serviceId: String(serviceId), providerId: String(providerId), date });
-  const data = await fetchJson(`${endpoint}/index.php/api/v1/availabilities?${params}`, { headers });
+  const data = await fetchEasyJson(config, `/index.php/api/v1/availabilities?${params}`);
   return normalizeSlots(data);
 }
 
-async function findNextAvailability(config, serviceId, providerId, startDate) {
-  for (let index = 0; index < 30; index += 1) {
-    const date = isoDate(addDays(startDate, index));
+async function findNextAvailability(config, serviceId, providerId, startDate, maxDate) {
+  for (let cursor = String(startDate); cursor <= String(maxDate); cursor = isoDate(addDays(cursor, 1))) {
+    const date = cursor;
     const slots = await fetchEasyAvailabilities(config, serviceId, providerId, date);
     if (slots.length) return { date, slots };
   }
