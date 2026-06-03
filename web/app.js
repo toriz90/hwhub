@@ -344,10 +344,10 @@ function renderConversations() {
           <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
           <span class="priority ${esc(item.priority)}">${priorityLabel(item.priority)} · ${item.waitingMinutes || 0} min</span>
           <div class="row-actions">
-            <button data-quick-conversation-action="take" data-id="${esc(item.id)}">Tomar</button>
-            <button data-quick-conversation-action="pause" data-id="${esc(item.id)}">Pausar</button>
-            <button data-quick-conversation-action="bot" data-id="${esc(item.id)}">Bot</button>
-            <button data-quick-conversation-action="close" data-id="${esc(item.id)}">Cerrar</button>
+            <button data-quick-conversation-action="take" data-id="${esc(item.id)}" title="Asignar a agente y detener respuestas automaticas">Tomar chat</button>
+            <button data-quick-conversation-action="pause" data-id="${esc(item.id)}" title="Pausar respuestas automaticas">Pausar bot</button>
+            <button data-quick-conversation-action="bot" data-id="${esc(item.id)}" title="Reactivar respuestas automaticas">Activar bot</button>
+            <button data-quick-conversation-action="close" data-id="${esc(item.id)}" title="Cerrar la conversacion">Cerrar chat</button>
           </div>
         </article>
       `;

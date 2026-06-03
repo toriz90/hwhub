@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-appointment-closed">
+    <link rel="stylesheet" href="/styles.css?v=20260603-actions-link">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -176,10 +176,10 @@
             </header>
             <div id="conversation-detail" class="detail-empty">Selecciona una conversacion para ver mensajes y acciones.</div>
             <div class="conversation-actions">
-              <button data-conversation-action="take">Tomar</button>
-              <button data-conversation-action="pause">Pausar</button>
-              <button data-conversation-action="bot">Bot</button>
-              <button data-conversation-action="close">Cerrar</button>
+              <button data-conversation-action="take" title="Asignar esta conversacion a un agente y detener respuestas automaticas">Tomar chat</button>
+              <button data-conversation-action="pause" title="Pausar respuestas automaticas hasta reactivar el bot">Pausar bot</button>
+              <button data-conversation-action="bot" title="Devolver la conversacion al bot">Activar bot</button>
+              <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
             </div>
             <form id="agent-reply-form" class="reply-form">
               <input id="agent-reply" placeholder="Respuesta del agente">
@@ -469,7 +469,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-appointment-closed"></script>
-    <script src="/widget.js?v=20260603-appointment-closed" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-actions-link"></script>
+    <script src="/widget.js?v=20260603-actions-link" data-channel="official_site"></script>
   </body>
 </html>

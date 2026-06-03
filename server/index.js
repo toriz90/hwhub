@@ -814,8 +814,15 @@ const server = createServer(async (req, res) => {
     currentState.chatbotSettings = mergeChatbotSettings(await store.settings?.("chatbot"));
     const routed = routeMessage({ text: body.message || "", channel, currentState });
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
+    const manualControl = existingConversation && ["agent_active", "paused", "closed"].includes(savedConversation.status);
     const missingProfilePrompt = profilePrompt(mergedProfile);
-    if (missingProfilePrompt && !existingConversation) {
+    if (manualControl) {
+      ai = {
+        provider: "manual_control",
+        reply: "",
+        usedContext: { status: savedConversation.status }
+      };
+    } else if (missingProfilePrompt && !existingConversation) {
       ai = {
         provider: "profile",
         reply: missingProfilePrompt,
@@ -864,10 +871,10 @@ const server = createServer(async (req, res) => {
         customer: mergedProfile.name || undefined,
         customerPhone: mergedProfile.phone || undefined,
         externalConversationId: visitorId || undefined,
-        status: savedConversation.status === "closed" ? savedConversation.status : routed.status,
+        status: manualControl ? savedConversation.status : routed.status,
         intent: routed.intent,
         marketplace: routed.marketplace,
-        assignedAgentId: routed.assignedAgent?.id,
+        assignedAgentId: manualControl ? savedConversation.assignedAgentId : routed.assignedAgent?.id,
         metadata: { customerProfile: mergedProfile, visitorId, wooCustomerId: mergedProfile.wooCustomerId }
       }) || savedConversation;
       emit("conversation.updated", savedConversation);
@@ -926,13 +933,22 @@ const server = createServer(async (req, res) => {
       sendJson(res, { error: "Unsupported conversation action" }, 400);
       return;
     }
-    const updated = await store.updateConversationStatus(id, nextStatus);
+    const assignedAgentId = action === "take" ? (req.user.agentId || conversation.assignedAgentId || null) : (
+      action === "bot" ? null : conversation.assignedAgentId || null
+    );
+    const updated = await store.updateConversationStatus(id, nextStatus, { assignedAgentId });
+    const actionLabels = {
+      pause: "pauso el bot y dejo la conversacion en espera",
+      take: "tomo la conversacion para atencion humana",
+      bot: "activo el bot para esta conversacion",
+      close: "cerro la conversacion"
+    };
     await store.addEvent(id, {
       eventType: `conversation.${action}`,
       actorType: "user",
       actorId: req.user.id,
-      body: `${req.user.name} ejecuto accion: ${action}`,
-      metadata: { action, status: nextStatus, userEmail: req.user.email }
+      body: `${req.user.name} ${actionLabels[action] || `ejecuto accion: ${action}`}`,
+      metadata: { action, status: nextStatus, userEmail: req.user.email, assignedAgentId }
     });
     emit("conversation.updated", updated);
     sendJson(res, updated);

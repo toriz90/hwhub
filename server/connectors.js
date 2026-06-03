@@ -371,7 +371,7 @@ function appointmentDateTime(date, time) {
 
 function appointmentPublicUrl(config = {}, hash) {
   const endpoint = endpointFrom(config);
-  return hash && endpoint ? `${endpoint}/index.php/appointments/index/${encodeURIComponent(hash)}` : "";
+  return hash && endpoint ? `${endpoint}/index.php/booking/reschedule/${encodeURIComponent(hash)}` : "";
 }
 
 function normalizeSlots(data) {

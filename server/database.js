@@ -485,17 +485,20 @@ function createMemoryStore(state) {
       });
       return message;
     },
-    async updateConversationStatus(id, status) {
+    async updateConversationStatus(id, status, options = {}) {
       const conversation = state.conversations.find((item) => item.id === id);
       if (!conversation) return null;
       const previousStatus = conversation.status;
       conversation.status = status;
+      if (Object.prototype.hasOwnProperty.call(options, "assignedAgentId")) {
+        conversation.assignedAgentId = options.assignedAgentId || null;
+      }
       conversation.updatedAt = new Date().toISOString();
       await this.addEvent(id, {
         eventType: "conversation.status_changed",
         actorType: "system",
         body: `Estado cambiado de ${previousStatus} a ${status}`,
-        metadata: { previousStatus, status }
+        metadata: { previousStatus, status, assignedAgentId: conversation.assignedAgentId || null }
       });
       return conversation;
     },
@@ -817,19 +820,22 @@ function createPostgresStore(pool, fallbackState) {
       });
       return messageFromRow(rows[0]);
     },
-    async updateConversationStatus(id, status) {
-      const previous = await pool.query("select status from conversations where id = $1", [id]);
+    async updateConversationStatus(id, status, options = {}) {
+      const previous = await pool.query("select status, assigned_agent_id from conversations where id = $1", [id]);
       const previousStatus = previous.rows[0]?.status || null;
+      const assignedAgentId = Object.prototype.hasOwnProperty.call(options, "assignedAgentId")
+        ? (isUuid(options.assignedAgentId) ? options.assignedAgentId : null)
+        : previous.rows[0]?.assigned_agent_id || null;
       const { rows } = await pool.query(
-        "update conversations set status = $2, updated_at = now() where id = $1 returning *",
-        [id, status]
+        "update conversations set status = $2, assigned_agent_id = $3, updated_at = now() where id = $1 returning *",
+        [id, status, assignedAgentId]
       );
       if (rows[0]) {
         await addConversationEvent(pool, id, {
           eventType: "conversation.status_changed",
           actorType: "system",
           body: `Estado cambiado de ${previousStatus || "sin estado"} a ${status}`,
-          metadata: { previousStatus, status }
+          metadata: { previousStatus, status, assignedAgentId }
         });
       }
       return rows[0] ? conversationFromRow(rows[0]) : null;
