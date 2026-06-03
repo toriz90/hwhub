@@ -749,6 +749,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     const session = await store.createSession(user.id);
+    if (user.agentId) emit("agents.updated", { agentId: user.agentId, source: "login", userId: user.id });
     res.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
       "set-cookie": sessionCookie(session)
@@ -758,7 +759,9 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/logout" && req.method === "POST") {
+    const user = req.user;
     await store.deleteSession(req.sessionId);
+    if (user?.agentId) emit("agents.updated", { agentId: user.agentId, source: "logout", userId: user.id });
     res.writeHead(200, {
       "content-type": "application/json; charset=utf-8",
       "set-cookie": sessionCookie(null, true)

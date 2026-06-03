@@ -410,7 +410,9 @@ function renderAgents() {
         <strong>${esc(agent.name)}</strong>
         <p>${esc(agent.role)}</p>
         <p class="meta">${agent.online ? "Activo" : "Fuera de linea"} - ${agent.activeConversations}/${agent.maxConversations} chats</p>
+        ${agent.linkedUser ? `<p class="meta">Usuario: ${esc(agent.linkedUser.name || agent.linkedUser.email)}${agent.loginControlled ? " - controlado por sesion" : " - control manual disponible"}</p>` : `<p class="meta">Sin usuario vinculado - control manual</p>`}
         ${(agent.skills || []).map((skill) => `<span class="tag">${esc(skill)}</span>`).join("")}
+        ${agent.loginControlled ? `<span class="tag tag-session">Sesion activa</span>` : `<span class="tag">Manual</span>`}
         <div class="row-actions">
           <button data-edit="agents" data-id="${esc(agent.id)}">Editar</button>
           <button data-delete="agents" data-id="${esc(agent.id)}">Eliminar</button>
@@ -1243,6 +1245,11 @@ function bindEditors() {
         body: JSON.stringify(payload)
       });
       form.reset();
+      if (collection === "agents") {
+        if (form.elements.online) form.elements.online.disabled = false;
+        const note = $("#agent-presence-note");
+        if (note) note.textContent = "";
+      }
       await refresh();
     });
   }
@@ -1274,6 +1281,16 @@ function fillForm(collection, item) {
     else input.value = Array.isArray(value) ? value.join(", ") : value ?? "";
   }
   form.elements.id.value = item.id;
+  if (collection === "agents") {
+    const onlineInput = form.elements.online;
+    const note = $("#agent-presence-note");
+    if (onlineInput) onlineInput.disabled = Boolean(item.loginControlled);
+    if (note) {
+      note.textContent = item.loginControlled
+        ? `Activo por sesion iniciada de ${item.linkedUser?.name || item.linkedUser?.email || "usuario vinculado"}. No se puede modificar manualmente hasta cerrar sesion.`
+        : "Sin sesion activa vinculada: puedes activar o desactivar manualmente.";
+    }
+  }
   form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
@@ -1349,6 +1366,9 @@ function bindRealtime() {
   events.addEventListener("message.created", async (event) => {
     const message = JSON.parse(event.data);
     if (message.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
+  });
+  events.addEventListener("agents.updated", async () => {
+    await refresh();
   });
 }
 

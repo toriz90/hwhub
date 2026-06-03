@@ -182,13 +182,21 @@ function branchHoursPayload(branch = {}) {
 }
 
 function agentFromRow(row) {
+  const activeSession = Boolean(row.active_session);
   return {
     id: row.id,
     name: row.name,
     role: row.role,
     skills: row.skills || [],
     channels: row.channels || [],
-    online: row.is_online,
+    online: activeSession || row.is_online,
+    manualOnline: row.is_online,
+    loginControlled: activeSession,
+    linkedUser: row.linked_user_id ? {
+      id: row.linked_user_id,
+      name: row.linked_user_name || "",
+      email: row.linked_user_email || ""
+    } : null,
     activeConversations: row.active_conversations,
     maxConversations: row.max_conversations
   };
@@ -518,6 +526,23 @@ function createMemoryStore(state) {
       };
     },
     async collection(name) {
+      if (name === "agents") {
+        return (state.agents || []).map((agent) => {
+          const linkedUser = (state.users || []).find((user) => user.agentId === agent.id && user.isActive);
+          const activeSession = linkedUser ? (state.sessions || []).some((session) => session.userId === linkedUser.id && session.expiresAt > new Date()) : false;
+          return {
+            ...agent,
+            online: activeSession || Boolean(agent.online),
+            manualOnline: Boolean(agent.online),
+            loginControlled: activeSession,
+            linkedUser: linkedUser ? {
+              id: linkedUser.id,
+              name: linkedUser.name,
+              email: linkedUser.email
+            } : null
+          };
+        });
+      }
       return state[name] || [];
     },
     async create(name, payload) {
@@ -809,7 +834,30 @@ function createPostgresStore(pool, fallbackState) {
         return rows.map(contactFromRow);
       }
       if (name === "agents") {
-        const { rows } = await pool.query("select * from agents order by created_at desc");
+        const { rows } = await pool.query(`
+          select
+            a.*,
+            u.id as linked_user_id,
+            u.name as linked_user_name,
+            u.email as linked_user_email,
+            exists (
+              select 1
+              from users su
+              join sessions s on s.user_id = su.id
+              where su.agent_id = a.id
+                and su.is_active = true
+                and s.expires_at > now()
+            ) as active_session
+          from agents a
+          left join lateral (
+            select id, name, email
+            from users
+            where agent_id = a.id and is_active = true
+            order by created_at desc
+            limit 1
+          ) u on true
+          order by a.created_at desc
+        `);
         return rows.map(agentFromRow);
       }
       if (name === "faqs") {
@@ -1128,7 +1176,8 @@ function createPostgresStore(pool, fallbackState) {
       return publicUser(rows[0]);
     },
     async deleteSession(sessionId) {
-      if (sessionId) await pool.query("delete from sessions where id = $1", [sessionId]);
+      if (!sessionId) return;
+      await pool.query("delete from sessions where id = $1", [sessionId]);
     },
     async users() {
       const { rows } = await pool.query(
@@ -1363,8 +1412,26 @@ async function createAgent(pool, payload) {
 async function updateAgent(pool, id, payload) {
   const item = normalizePayload("agents", payload);
   const { rows } = await pool.query(
-    `update agents set name=$2, role=$3, skills=$4, channels=$5, is_online=$6,
-      active_conversations=$7, max_conversations=$8 where id=$1 returning *`,
+    `update agents
+     set name=$2,
+         role=$3,
+         skills=$4,
+         channels=$5,
+         is_online=case
+           when exists (
+             select 1
+             from users u
+             join sessions s on s.user_id = u.id
+             where u.agent_id = agents.id
+               and u.is_active = true
+               and s.expires_at > now()
+           ) then is_online
+           else $6
+         end,
+         active_conversations=$7,
+         max_conversations=$8
+     where id=$1
+     returning *`,
     [id, item.name, item.role, item.skills, item.channels, item.online, item.activeConversations, item.maxConversations]
   );
   return rows[0] ? agentFromRow(rows[0]) : null;

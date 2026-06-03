@@ -988,6 +988,12 @@ textarea {
   background: rgba(247, 181, 0, 0.12);
 }
 
+.tag-session {
+  color: #065f46;
+  border-color: rgba(19, 164, 107, 0.45);
+  background: rgba(19, 164, 107, 0.12);
+}
+
 .hwhub-widget-button {
   position: fixed;
   right: 22px;
