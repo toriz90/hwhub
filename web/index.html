@@ -7,9 +7,12 @@
     <script>
       document.documentElement.dataset.theme = localStorage.getItem("hwhub-theme") || "light";
     </script>
-    <link rel="stylesheet" href="/styles.css?v=20260603-theme-switch">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650;9..144,750&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css?v=20260603-wh-shell">
   </head>
-  <body>
+  <body class="wh-app">
     <section id="login-screen" class="login-screen">
       <form id="login-form" class="login-card">
         <span class="brand-mark">HW</span>
@@ -30,36 +33,50 @@
       </form>
     </section>
 
-    <aside class="sidebar hidden">
-      <div class="brand">
+    <aside class="sidebar wh-sidebar hidden">
+      <div class="brand wh-brand">
         <span class="brand-mark">HW</span>
         <div>
           <strong>WhaleHub</strong>
           <small>Atencion + IA</small>
         </div>
       </div>
-      <nav>
-        <a href="#dashboard" class="active" data-view-link="dashboard">Dashboard</a>
-        <a href="#conversations" data-view-link="conversations">Conversaciones</a>
-        <a href="#chatbot" data-view-link="chatbot">Chatbot</a>
-        <a href="#agents" data-view-link="agents">Agentes</a>
-        <a href="#knowledge" data-view-link="knowledge">FAQs</a>
-        <a href="#branches" data-view-link="branches">Sucursales</a>
-        <a href="#directory" data-view-link="directory">Directorio</a>
-        <a href="#routing" data-view-link="routing">Ruteo</a>
-        <a href="#integrations" data-view-link="integrations">APIs</a>
-        <a href="#users" data-view-link="users">Usuarios</a>
-        <a href="#roles" data-view-link="roles">Roles</a>
+      <nav class="wh-nav" aria-label="Modulos principales">
+        <div class="wh-nav-group">
+          <span>Operacion</span>
+          <a href="#dashboard" class="active" data-view-link="dashboard">Dashboard</a>
+          <a href="#conversations" data-view-link="conversations">Conversaciones</a>
+          <a href="#agents" data-view-link="agents">Agentes</a>
+        </div>
+        <div class="wh-nav-group">
+          <span>Configuracion IA</span>
+          <a href="#chatbot" data-view-link="chatbot">Chatbot</a>
+          <a href="#routing" data-view-link="routing">Ruteo</a>
+          <a href="#integrations" data-view-link="integrations">APIs</a>
+        </div>
+        <div class="wh-nav-group">
+          <span>Datos operativos</span>
+          <a href="#knowledge" data-view-link="knowledge">FAQs</a>
+          <a href="#branches" data-view-link="branches">Sucursales</a>
+          <a href="#directory" data-view-link="directory">Directorio</a>
+        </div>
+        <div class="wh-nav-group">
+          <span>Sistema</span>
+          <a href="#users" data-view-link="users">Usuarios</a>
+          <a href="#roles" data-view-link="roles">Roles</a>
+        </div>
       </nav>
     </aside>
 
-    <main class="hidden">
-      <section class="topbar">
+    <main class="wh-main hidden">
+      <section class="topbar wh-topbar">
         <div>
-          <p class="eyebrow">Operaciones en tiempo real</p>
-          <h1>WhaleHub operativo</h1>
+          <p id="topbar-eyebrow" class="eyebrow">Operaciones en tiempo real</p>
+          <h1 id="topbar-title">WhaleHub operativo</h1>
+          <p id="topbar-subtitle" class="wh-topbar-subtitle">Panel central de atencion, IA y operaciones Honey Whale.</p>
         </div>
         <div class="top-actions">
+          <span class="wh-live-pill" aria-label="Conexion en vivo">Live</span>
           <label class="role-switch">
             Rol
             <select id="active-role">
@@ -156,12 +173,13 @@
       </div>
 
       <div class="view" data-view="conversations">
-        <section class="conversation-workspace">
-          <div class="panel conversations" id="conversations">
-            <header>
+        <section class="conversation-workspace wh-inbox" aria-label="Bandeja de conversaciones">
+          <div class="panel conversations wh-inbox-list" id="conversations">
+            <header class="wh-inbox-col-head">
               <div>
                 <p class="eyebrow">Bandeja</p>
                 <h2>Conversaciones</h2>
+                <p class="section-note">Chats abiertos y pendientes de atencion.</p>
               </div>
               <span id="live-pill">SSE conectado</span>
             </header>
@@ -193,29 +211,53 @@
               </select>
               <button id="clear-conversation-filters" type="button">Limpiar</button>
             </div>
-            <div id="conversation-list" class="list"></div>
+            <div id="conversation-list" class="list wh-conversation-list" role="list"></div>
           </div>
 
-          <div class="panel conversation-detail">
-            <header>
-              <div>
+          <div class="panel conversation-detail wh-inbox-thread">
+            <header class="wh-thread-header">
+              <div id="conversation-thread-heading">
                 <p class="eyebrow">Atencion</p>
-                <h2>Detalle de conversacion</h2>
+                <h2>Selecciona un chat</h2>
+                <p class="section-note">El hilo aparecera aqui con acciones de agente.</p>
               </div>
               <span id="conversation-status" class="status">Sin seleccion</span>
             </header>
-            <div id="conversation-detail" class="detail-empty">Selecciona una conversacion para ver mensajes y acciones.</div>
-            <div class="conversation-actions">
-              <button data-conversation-action="take" title="Asignar esta conversacion a un agente y detener respuestas automaticas">Tomar chat</button>
-              <button data-conversation-action="pause" title="Pausar respuestas automaticas hasta reactivar el bot">Pausar bot</button>
-              <button data-conversation-action="bot" title="Devolver la conversacion al bot">Activar bot</button>
-              <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
+            <div id="conversation-detail" class="detail-empty wh-thread-body" aria-live="polite">Selecciona una conversacion para ver mensajes y acciones.</div>
+            <div class="wh-thread-composer">
+              <div class="conversation-actions" aria-label="Acciones de conversacion">
+                <button data-conversation-action="take" title="Asignar esta conversacion a un agente y detener respuestas automaticas">Tomar chat</button>
+                <button data-conversation-action="pause" title="Pausar respuestas automaticas hasta reactivar el bot">Pausar bot</button>
+                <button data-conversation-action="bot" title="Devolver la conversacion al bot">Activar bot</button>
+                <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
+              </div>
+              <div class="wh-quick-replies" aria-label="Respuestas rapidas">
+                <button type="button" data-quick-reply="Puedo ayudarte a revisar el estado de tu pedido. Compárteme tu número de pedido o teléfono.">Estado de pedido</button>
+                <button type="button" data-quick-reply="Te comparto la sucursal o centro de servicio más cercano con la información disponible.">Sucursal cercana</button>
+                <button type="button" data-quick-reply="Activo nuevamente el bot para que continúe con la atención automática.">Devolver al bot</button>
+              </div>
+              <p id="conversation-action-status" class="action-feedback" aria-live="polite"></p>
+              <form id="agent-reply-form" class="reply-form">
+                <textarea id="agent-reply" rows="1" placeholder="Respuesta del agente"></textarea>
+                <button>Enviar</button>
+              </form>
             </div>
-            <p id="conversation-action-status" class="action-feedback" aria-live="polite"></p>
-            <form id="agent-reply-form" class="reply-form">
-              <input id="agent-reply" placeholder="Respuesta del agente">
-              <button>Enviar</button>
-            </form>
+          </aside>
+
+          <aside class="panel wh-inbox-context">
+            <header class="wh-inbox-col-head">
+              <div>
+                <p class="eyebrow">Contexto</p>
+                <h2>Cliente</h2>
+                <p class="section-note">Perfil, actividad y datos operativos disponibles.</p>
+              </div>
+            </header>
+            <div id="conversation-context-panel" class="wh-context-body">
+              <article class="wh-empty-state">
+                <strong>Sin conversacion seleccionada</strong>
+                <p>Abre un chat para ver identidad, canal, historial y contexto WooCommerce disponible.</p>
+              </article>
+            </div>
           </div>
         </section>
       </div>

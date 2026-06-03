@@ -85,6 +85,64 @@ const roleCatalog = {
   viewer: ["ver bandeja", "ver FAQs", "ver sucursales", "ver directorio"]
 };
 
+const viewMeta = {
+  dashboard: {
+    eyebrow: "Operacion en tiempo real",
+    title: "WhaleHub operativo",
+    subtitle: "Panel central de atencion, IA y operaciones Honey Whale."
+  },
+  conversations: {
+    eyebrow: "Inbox multicanal",
+    title: "Conversaciones",
+    subtitle: "Atiende chats del widget, WhatsApp, WooCommerce y marketplaces desde una bandeja viva."
+  },
+  chatbot: {
+    eyebrow: "Configuracion IA",
+    title: "Chatbot",
+    subtitle: "Prompt, comportamiento, apariencia del widget, instalacion y pruebas de ruteo."
+  },
+  agents: {
+    eyebrow: "Multiagente",
+    title: "Agentes",
+    subtitle: "Gestiona disponibilidad, skills, canales y capacidad operativa del equipo."
+  },
+  knowledge: {
+    eyebrow: "Base de conocimiento",
+    title: "FAQs",
+    subtitle: "Preguntas, respuestas y etiquetas que alimentan la asistencia del bot y los agentes."
+  },
+  branches: {
+    eyebrow: "Datos operativos",
+    title: "Sucursales",
+    subtitle: "Directorio de ubicaciones, horarios, canales y servicios por zona."
+  },
+  directory: {
+    eyebrow: "Canalizacion",
+    title: "Directorio",
+    subtitle: "Contactos por area, marketplace, skill e intencion para fallback y escalamiento."
+  },
+  routing: {
+    eyebrow: "Motor de decision",
+    title: "Ruteo",
+    subtitle: "Reglas que deciden si responde el bot, se pausa o se canaliza con agentes."
+  },
+  integrations: {
+    eyebrow: "Conectores",
+    title: "APIs",
+    subtitle: "Credenciales, pruebas de conexion y estado de integraciones externas."
+  },
+  users: {
+    eyebrow: "Sistema",
+    title: "Usuarios",
+    subtitle: "Cuentas, roles, estado y relacion con agentes del backoffice."
+  },
+  roles: {
+    eyebrow: "Permisos",
+    title: "Roles",
+    subtitle: "Capacidades por rol y pruebas de comportamiento de acceso."
+  }
+};
+
 const integrationDefinitions = [
   {
     provider: "openai",
@@ -187,6 +245,66 @@ function statusLabel(status) {
     paused: "Pausado",
     closed: "Cerrado"
   }[status] || status;
+}
+
+function statusShortLabel(status) {
+  return {
+    bot_active: "BOT",
+    waiting_for_agent: "BOT -> AGENTE",
+    agent_active: "AGENTE",
+    paused: "PAUSADO",
+    closed: "RESUELTO"
+  }[status] || String(status || "SIN ESTADO").toUpperCase();
+}
+
+function channelLabel(channel) {
+  return {
+    whatsapp_cloud: "WhatsApp",
+    web_widget: "Widget",
+    woocommerce: "WooCommerce",
+    official_site: "Pagina oficial",
+    evolution_api: "Evolution",
+    telnyx: "Telnyx",
+    plivo: "Plivo"
+  }[channel] || channel || "Canal";
+}
+
+function channelClass(channel, marketplace = "") {
+  const value = String(marketplace || channel || "").toLowerCase();
+  if (value.includes("mercado")) return "mercadolibre";
+  if (value.includes("amazon")) return "amazon";
+  if (String(channel || "").includes("whatsapp")) return "whatsapp";
+  return "web";
+}
+
+function initials(name = "") {
+  const parts = String(name || "Cliente").trim().split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] || "C").concat(parts[1]?.[0] || "").toUpperCase();
+}
+
+function formatShortTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  return sameDay
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString([], { day: "2-digit", month: "short" });
+}
+
+function formatMessageTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function dayLabel(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString([], { weekday: "long", day: "2-digit", month: "long" });
 }
 
 function roleCan(permission) {
@@ -366,7 +484,75 @@ function renderDashboard() {
   $("#metric-sla-risk").textContent = appState.conversations.filter((item) => ["at_risk", "breached"].includes(item.slaState)).length;
 }
 
+function renderConversationInbox() {
+  const appState = state.data;
+  const conversations = appState.conversations.filter((item) => {
+    const profile = item.metadata?.customerProfile || {};
+    const haystack = [
+      item.customer,
+      item.customerPhone,
+      item.channel,
+      item.marketplace,
+      item.intent,
+      item.lastMessage,
+      profile.email,
+      profile.orderNumber,
+      profile.phone
+    ].join(" ").toLowerCase();
+    return (
+      (!filters.status || item.status === filters.status) &&
+      (!filters.channel || item.channel === filters.channel) &&
+      (!filters.priority || item.priority === filters.priority) &&
+      (!filters.slaState || item.slaState === filters.slaState || (filters.slaState === "at_risk" && item.slaState === "breached")) &&
+      (!filters.search || haystack.includes(filters.search.toLowerCase()))
+    );
+  });
+
+  $("#conversation-list").innerHTML = conversations
+    .map((item) => {
+      const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
+      const channel = channelLabel(item.channel);
+      const avatarClass = channelClass(item.channel, item.marketplace);
+      const statusText = item.status === "agent_active" && agent ? `AGENTE - ${agent.name}` : statusShortLabel(item.status);
+      const tags = [
+        `<span class="wh-conv-tag status-${esc(item.status)}">${esc(statusText)}</span>`,
+        item.priority === "urgent" ? `<span class="wh-conv-tag is-urgent">URGENTE</span>` : "",
+        item.intent ? `<span class="wh-conv-tag">${esc(item.intent)}</span>` : "",
+        item.marketplace && item.marketplace !== "official" ? `<span class="wh-conv-tag">${esc(item.marketplace)}</span>` : ""
+      ].filter(Boolean).join("");
+      return `
+        <article class="item conversation-card wh-conv ${state.selectedConversationId === item.id ? "selected" : ""}" data-open-conversation="${esc(item.id)}" role="listitem" tabindex="0">
+          <div class="wh-conv-avatar is-${esc(avatarClass)}">${esc(initials(item.customer))}</div>
+          <div class="wh-conv-main">
+            <div class="conversation-card-head">
+              <strong>${esc(item.customer)}</strong>
+              <span>${esc(channel)} - ${esc(formatShortTime(item.updatedAt))}</span>
+            </div>
+            <p>${esc(item.lastMessage || "Sin mensajes recientes")}</p>
+            <div class="wh-conv-tags">${tags}</div>
+          </div>
+          ${item.priority === "urgent" ? `<strong class="wh-unread-dot" aria-label="Urgente">!</strong>` : ""}
+        </article>
+      `;
+    })
+    .join("") || `<article class="item wh-empty-state"><strong>Sin resultados</strong><p>No hay conversaciones con esos filtros.</p></article>`;
+
+  for (const item of $$(".conversation-card")) {
+    item.onclick = (event) => {
+      if (event.target.closest("button")) return;
+      openConversation(item.dataset.openConversation);
+    };
+    item.onkeydown = (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openConversation(item.dataset.openConversation);
+      }
+    };
+  }
+}
+
 function renderConversations() {
+  return renderConversationInbox();
   const appState = state.data;
   const conversations = appState.conversations.filter((item) => {
     const haystack = `${item.customer || ""} ${item.lastMessage || ""} ${item.intent || ""}`.toLowerCase();
@@ -831,6 +1017,13 @@ function showView(view) {
   const selected = view || "dashboard";
   for (const section of $$("[data-view]")) section.classList.toggle("active", section.dataset.view === selected);
   for (const link of $$("[data-view-link]")) link.classList.toggle("active", link.dataset.viewLink === selected);
+  const meta = viewMeta[selected] || viewMeta.dashboard;
+  const eyebrow = $("#topbar-eyebrow");
+  const title = $("#topbar-title");
+  const subtitle = $("#topbar-subtitle");
+  if (eyebrow) eyebrow.textContent = meta.eyebrow;
+  if (title) title.textContent = meta.title;
+  if (subtitle) subtitle.textContent = meta.subtitle;
 }
 
 function bindStaticEvents() {
@@ -1326,13 +1519,131 @@ function renderMessageRichContent(blocks = []) {
   }).join("");
 }
 
+function renderThreadMessages(messages = [], conversationId = "") {
+  if (!messages.length) {
+    return `<article class="wh-empty-state"><strong>Sin mensajes</strong><p>Esta conversacion todavia no tiene mensajes registrados.</p></article>`;
+  }
+  let currentDay = "";
+  const html = [];
+  for (const message of messages) {
+    const nextDay = dayLabel(message.createdAt);
+    if (nextDay && nextDay !== currentDay) {
+      currentDay = nextDay;
+      html.push(`<div class="daysep">${esc(nextDay)}</div>`);
+    }
+    const type = message.senderType === "customer" ? "them" : message.senderType === "bot" ? "bot" : message.senderType === "system" ? "system" : "me";
+    const senderLabel = {
+      customer: "Cliente",
+      bot: "WhaleBot",
+      agent: "Agente",
+      system: "Sistema"
+    }[message.senderType] || message.senderType;
+    html.push(`
+      <div class="message ${esc(message.senderType)} msg ${esc(type)}">
+        ${message.senderType === "bot" ? `<span class="wh-bot-flag">WhaleBot - automatico</span>` : ""}
+        <div class="message-body">${renderRichText(message.body)}</div>
+        ${renderMessageRichContent(message.metadata?.richContent)}
+        <small>${esc(senderLabel)} - ${esc(formatMessageTime(message.createdAt))}</small>
+      </div>
+    `);
+  }
+  if (state.typing[conversationId]?.bot) html.push(`<div class="message bot msg bot typing"><p>Bot escribiendo...</p></div>`);
+  if (state.typing[conversationId]?.agent) html.push(`<div class="message agent msg me typing"><p>Agente escribiendo...</p></div>`);
+  return `<div class="message-list wh-thread-messages">${html.join("")}</div>`;
+}
+
+function renderConversationContext(data, currentAgent) {
+  const conversation = data.conversation;
+  const profile = conversation.metadata?.customerProfile || {};
+  const wooVerified = profile.wooCustomerId && profile.wooCustomerToken;
+  const events = data.events || [];
+  const lastRichProducts = [...(data.messages || [])]
+    .reverse()
+    .flatMap((message) => message.metadata?.richContent || [])
+    .find((block) => block.type === "products");
+  return `
+    <section class="wh-context-section">
+      <p class="eyebrow">Identidad</p>
+      <div class="wh-kv">
+        <span>Cliente</span><strong>${esc(conversation.customer || "Visitante")}</strong>
+        <span>Telefono</span><strong>${esc(conversation.customerPhone || profile.phone || "No registrado")}</strong>
+        <span>Email</span><strong>${esc(profile.email || "No registrado")}</strong>
+        <span>Canal</span><strong>${esc(channelLabel(conversation.channel))}</strong>
+        <span>Login Woo</span><strong>${wooVerified ? "Verificado" : "Sin verificar"}</strong>
+      </div>
+    </section>
+    <section class="wh-context-section">
+      <p class="eyebrow">Operacion</p>
+      <div class="wh-kv">
+        <span>Estado</span><strong>${esc(statusLabel(conversation.status))}</strong>
+        <span>Agente</span><strong>${currentAgent ? esc(currentAgent.name) : "Sin asignar"}</strong>
+        <span>Intencion</span><strong>${esc(conversation.intent || "Sin intencion")}</strong>
+        <span>Marketplace</span><strong>${esc(conversation.marketplace || "official")}</strong>
+        <span>SLA</span><strong>${esc(conversation.slaState || "ok")} - ${esc(conversation.waitingMinutes || 0)} min</strong>
+      </div>
+    </section>
+    <section class="wh-context-section">
+      <p class="eyebrow">Pedido WooCommerce</p>
+      ${profile.orderNumber ? `
+        <article class="wh-order-card">
+          <strong>#${esc(profile.orderNumber)}</strong>
+          <span class="wh-conv-tag">${esc(profile.appointmentStart ? "Con cita" : "Referencia cliente")}</span>
+          <p>Contexto tomado del perfil de conversacion.</p>
+        </article>
+      ` : `
+        <article class="wh-empty-state compact">
+          <strong>Sin pedido vinculado</strong>
+          <p>TODO(backend): GET /api/conversations/:id/context para perfil + ultimo pedido Woo via HMAC.</p>
+        </article>
+      `}
+      ${lastRichProducts ? renderMessageRichContent([lastRichProducts]) : ""}
+    </section>
+    <section class="wh-context-section">
+      <p class="eyebrow">Sugerencia IA</p>
+      <article class="wh-empty-state compact">
+        <strong>Proximamente</strong>
+        <p>TODO(backend): POST /api/conversations/:id/suggest para generar una respuesta sin enviarla.</p>
+      </article>
+    </section>
+    <section class="wh-context-section">
+      <p class="eyebrow">Actividad</p>
+      <div class="timeline">
+        ${events.slice(-8).map((event) => `
+          <article class="timeline-event">
+            <strong>${esc(event.body)}</strong>
+            <p class="meta">${esc(event.eventType)} - ${esc(event.actorType)}</p>
+            <p class="meta">${new Date(event.createdAt).toLocaleString()}</p>
+          </article>
+        `).join("") || `<article class="timeline-event"><p class="meta">Sin eventos registrados.</p></article>`}
+      </div>
+    </section>
+  `;
+}
+
 async function openConversation(id) {
   state.selectedConversationId = id;
   setConversationActionStatus();
   const data = await api(`/api/conversations/${id}`);
   const currentAgent = state.data.agents.find((agent) => agent.id === data.conversation.assignedAgentId);
+  const heading = $("#conversation-thread-heading");
+  if (heading) {
+    heading.innerHTML = `
+      <p class="eyebrow">${esc(channelLabel(data.conversation.channel))}</p>
+      <h2>${esc(data.conversation.customer || "Cliente")}</h2>
+      <p class="section-note">${esc(data.conversation.customerPhone || "Sin telefono")} - ${esc(data.conversation.intent || "sin intencion")} - ${currentAgent ? `Agente: ${esc(currentAgent.name)}` : "sin agente"}</p>
+    `;
+  }
   $("#conversation-status").textContent = statusLabel(data.conversation.status);
   $("#conversation-status").className = `status ${data.conversation.status}`;
+  $("#conversation-detail").className = "wh-thread-body";
+  $("#conversation-detail").innerHTML = renderThreadMessages(data.messages, id);
+  const contextPanel = $("#conversation-context-panel");
+  if (contextPanel) contextPanel.innerHTML = renderConversationContext(data, currentAgent);
+  renderConversations();
+  const threadMessageList = $("#conversation-detail .message-list");
+  if (threadMessageList) threadMessageList.scrollTop = threadMessageList.scrollHeight;
+  applyConversationActionAvailability(data.conversation.status);
+  return;
   $("#conversation-detail").className = "";
   $("#conversation-detail").innerHTML = `
     <section class="conversation-shell">
@@ -1427,6 +1738,21 @@ function bindConversationActions() {
       }
     });
   }
+  for (const button of $$("[data-quick-reply]")) {
+    button.addEventListener("click", () => {
+      const input = $("#agent-reply");
+      if (!input || input.disabled) return;
+      input.value = button.dataset.quickReply || "";
+      input.focus();
+      input.dispatchEvent(new Event("input"));
+      notify("Respuesta rapida insertada", "info");
+    });
+  }
+  $("#agent-reply")?.addEventListener("input", (event) => {
+    const input = event.currentTarget;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+  });
   $("#agent-reply-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!state.selectedConversationId) return;
