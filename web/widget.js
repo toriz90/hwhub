@@ -248,7 +248,6 @@
       panel.style.setProperty("--hwhub-widget-accent", widgetConfig.accentColor || "#e84c70");
       panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f6f4");
       panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#111b25");
-      button.style.background = widgetConfig.accentColor || "#e84c70";
       renderMessages();
     } catch {}
   }
@@ -343,11 +342,11 @@
     providerSelect.innerHTML = optionList(providers.map((provider) => ({ value: provider.id, label: provider.name })), currentValue);
   }
 
-  function updateSourceValueOptions(selectedValue = "") {
+  function updateSourceValueOptions(selectedValue) {
     if (!appointmentOptions) return;
     const type = appointmentForm.querySelector('[data-appointment-field="sourceType"]').value;
     const sourceSelect = appointmentForm.querySelector('[data-appointment-field="sourceValue"]');
-    const currentValue = selectedValue || sourceSelect.value || session.profile.sourceValue || "";
+    const currentValue = selectedValue !== undefined ? selectedValue : sourceSelect.value || session.profile.sourceValue || "";
     const values = type ? appointmentOptions.sources?.[type] || [] : [];
     sourceSelect.disabled = !type;
     sourceSelect.innerHTML = type ? optionList(values, currentValue) : `<option value="">Selecciona origen primero</option>`;
@@ -454,6 +453,7 @@
     }
     if (event.target?.dataset?.appointmentField === "sourceType") {
       session.profile.sourceValue = "";
+      event.target.closest("form").querySelector('[data-appointment-field="sourceValue"]').value = "";
       updateSourceValueOptions("");
     }
     if (["appointmentServiceId", "appointmentProviderId", "appointmentDate"].includes(event.target?.dataset?.appointmentField)) {
