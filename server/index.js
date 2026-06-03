@@ -818,7 +818,12 @@ const server = createServer(async (req, res) => {
       sendUnauthorized(res);
       return;
     }
-    sendJson(res, await store.bootstrap());
+    const data = await store.bootstrap();
+    data.settings = {
+      ...(data.settings || {}),
+      chatbot: mergeChatbotSettings(data.settings?.chatbot)
+    };
+    sendJson(res, data);
     return;
   }
 
