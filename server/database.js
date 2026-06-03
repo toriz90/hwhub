@@ -327,15 +327,13 @@ async function seedDatabase(pool, defaults) {
         await pool.query(
           `update branches
            set city = case when city = 'Por clasificar' or city = '' then $2 else city end,
-               business_hours = business_hours || $6::jsonb
+               business_hours = business_hours || $4::jsonb
            where lower(name) = lower($1)
-             and coalesce(address, '') = coalesce($5, '')
+             and coalesce(address, '') = coalesce($3, '')
              and coalesce(business_hours->>'state', '') = ''`,
           [
             branch.name,
             branch.city,
-            branch.phone || "",
-            branch.whatsapp || "",
             branch.address || "",
             branchHoursPayload(branch)
           ]
