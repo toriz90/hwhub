@@ -983,6 +983,54 @@ textarea:disabled {
   padding: 0.55rem 0.7rem;
 }
 
+.conversation-actions button.is-active-action {
+  background: var(--gold);
+  color: #151c24;
+  border-color: var(--gold);
+}
+
+.conversation-actions button.is-loading {
+  opacity: 0.82;
+}
+
+.action-feedback {
+  min-height: 1.15rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.action-feedback:not(:empty) {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.55rem 0.7rem;
+  background: #fbfcfd;
+}
+
+.action-feedback.is-info {
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.action-feedback.is-ok {
+  color: #047857;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.action-feedback.is-warning {
+  color: #92400e;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.action-feedback.is-error {
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
 .reply-form input {
   flex: 1;
 }

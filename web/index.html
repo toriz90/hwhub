@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-directory">
+    <link rel="stylesheet" href="/styles.css?v=20260603-actions-feedback">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -182,6 +182,7 @@
               <button data-conversation-action="bot" title="Devolver la conversacion al bot">Activar bot</button>
               <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
             </div>
+            <p id="conversation-action-status" class="action-feedback" aria-live="polite"></p>
             <form id="agent-reply-form" class="reply-form">
               <input id="agent-reply" placeholder="Respuesta del agente">
               <button>Enviar</button>
@@ -548,7 +549,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-directory"></script>
-    <script src="/widget.js?v=20260603-directory" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-actions-feedback"></script>
+    <script src="/widget.js?v=20260603-actions-feedback" data-channel="official_site"></script>
   </body>
 </html>

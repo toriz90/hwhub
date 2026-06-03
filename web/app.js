@@ -1031,6 +1031,36 @@ function priorityLabel(priority) {
   }[priority] || "Normal";
 }
 
+const conversationActionLabels = {
+  take: {
+    busy: "Tomando...",
+    done: "Chat tomado. El bot queda detenido y la conversacion pasa a agente.",
+    button: "Tomar chat"
+  },
+  pause: {
+    busy: "Pausando...",
+    done: "Bot pausado. No respondera en automatico hasta reactivarlo.",
+    button: "Pausar bot"
+  },
+  bot: {
+    busy: "Activando...",
+    done: "Bot activado. La conversacion vuelve a respuestas automaticas.",
+    button: "Activar bot"
+  },
+  close: {
+    busy: "Cerrando...",
+    done: "Chat cerrado correctamente.",
+    button: "Cerrar chat"
+  }
+};
+
+function setConversationActionStatus(message = "", type = "info") {
+  const note = $("#conversation-action-status");
+  if (!note) return;
+  note.textContent = message;
+  note.className = `action-feedback ${message ? `is-${type}` : ""}`;
+}
+
 function safeExternalUrl(value) {
   try {
     const url = new URL(String(value || ""), location.origin);
@@ -1137,6 +1167,7 @@ function renderMessageRichContent(blocks = []) {
 
 async function openConversation(id) {
   state.selectedConversationId = id;
+  setConversationActionStatus();
   const data = await api(`/api/conversations/${id}`);
   const currentAgent = state.data.agents.find((agent) => agent.id === data.conversation.assignedAgentId);
   $("#conversation-status").textContent = statusLabel(data.conversation.status);
@@ -1184,15 +1215,52 @@ async function openConversation(id) {
   renderConversations();
   const messageList = $("#conversation-detail .message-list");
   if (messageList) messageList.scrollTop = messageList.scrollHeight;
+  applyConversationActionAvailability(data.conversation.status);
+}
+
+function applyConversationActionAvailability(status) {
+  const activeActionByStatus = {
+    bot_active: "bot",
+    paused: "pause",
+    agent_active: "take",
+    closed: "close"
+  };
+  const activeAction = activeActionByStatus[status];
+  for (const button of $$("[data-conversation-action]")) {
+    button.classList.toggle("is-active-action", button.dataset.conversationAction === activeAction);
+  }
 }
 
 function bindConversationActions() {
   for (const button of $$("[data-conversation-action]")) {
     button.addEventListener("click", async () => {
-      if (!state.selectedConversationId) return;
-      await api(`/api/conversations/${state.selectedConversationId}/${button.dataset.conversationAction}`, { method: "POST" });
-      await refresh();
-      await openConversation(state.selectedConversationId);
+      if (!state.selectedConversationId) {
+        setConversationActionStatus("Selecciona una conversacion antes de aplicar acciones.", "warning");
+        return;
+      }
+      const action = button.dataset.conversationAction;
+      const labels = conversationActionLabels[action] || { busy: "Aplicando...", done: "Accion aplicada.", button: button.textContent };
+      const previousText = button.textContent;
+      for (const item of $$("[data-conversation-action]")) item.disabled = true;
+      button.textContent = labels.busy;
+      button.classList.add("is-loading");
+      setConversationActionStatus(labels.busy, "info");
+      try {
+        const updated = await api(`/api/conversations/${state.selectedConversationId}/${action}`, { method: "POST" });
+        $("#conversation-status").textContent = statusLabel(updated.status);
+        $("#conversation-status").className = `status ${updated.status}`;
+        applyConversationActionAvailability(updated.status);
+        setConversationActionStatus(labels.done, "ok");
+        await refresh();
+        await openConversation(state.selectedConversationId);
+        setConversationActionStatus(labels.done, "ok");
+      } catch (error) {
+        setConversationActionStatus(error.message || "No se pudo aplicar la accion.", "error");
+      } finally {
+        button.textContent = labels.button || previousText;
+        button.classList.remove("is-loading");
+        for (const item of $$("[data-conversation-action]")) item.disabled = !roleCan("conversation");
+      }
     });
   }
   $("#agent-reply-form").addEventListener("submit", async (event) => {
