@@ -435,7 +435,10 @@ function customerProfileFromBody(body = {}) {
     equipmentModel: body.equipmentModel || customer.equipmentModel || "",
     serialNumber: body.serialNumber || customer.serialNumber || "",
     orderNumber: body.orderNumber || customer.orderNumber || "",
-    details: body.details || customer.details || ""
+    details: body.details || customer.details || "",
+    appointmentConfirmedAt: body.appointmentConfirmedAt || customer.appointmentConfirmedAt || "",
+    appointmentId: body.appointmentId || customer.appointmentId || "",
+    appointmentStart: body.appointmentStart || customer.appointmentStart || ""
   };
 }
 
@@ -452,7 +455,10 @@ function mergeCustomerProfile(conversation, profile) {
     equipmentModel: profile.equipmentModel || current.equipmentModel || "",
     serialNumber: profile.serialNumber || current.serialNumber || "",
     orderNumber: profile.orderNumber || current.orderNumber || "",
-    details: profile.details || current.details || ""
+    details: profile.details || current.details || "",
+    appointmentConfirmedAt: profile.appointmentConfirmedAt || current.appointmentConfirmedAt || "",
+    appointmentId: profile.appointmentId || current.appointmentId || "",
+    appointmentStart: profile.appointmentStart || current.appointmentStart || ""
   };
 }
 
@@ -465,8 +471,19 @@ function profilePrompt(profile) {
 }
 
 function appointmentState(profile, text = "", history = []) {
+  const currentText = String(text || "").toLowerCase();
+  const currentWantsAppointment = ["cita", "agenda", "agendar", "reservar", "centro de servicio", "servicio"].some((term) => currentText.includes(term));
+  if (profile.appointmentConfirmedAt && !currentWantsAppointment) {
+    return {
+      confirmed: true,
+      canCreate: false,
+      missing: [],
+      appointmentId: profile.appointmentId || null,
+      appointmentStart: profile.appointmentStart || null
+    };
+  }
   const fullText = [...history.map((item) => item.body), text].join("\n").toLowerCase();
-  const wantsAppointment = ["cita", "agenda", "agendar", "reservar", "centro de servicio", "servicio"].some((term) => fullText.includes(term));
+  const wantsAppointment = currentWantsAppointment || ["cita", "agenda", "agendar", "reservar", "centro de servicio", "servicio"].some((term) => fullText.includes(term));
   if (!wantsAppointment) return null;
   const hasDateTime = /\b(hoy|mañana|\d{1,2}[\/-]\d{1,2}|\d{1,2}:\d{2}|\d{1,2}\s*(am|pm))\b/i.test(fullText);
   const missing = [];

@@ -289,7 +289,7 @@
   }
 
   function resetAppointmentSelection() {
-    for (const key of ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime"]) {
+    for (const key of ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime", "appointmentConfirmedAt", "appointmentId", "appointmentStart"]) {
       session.profile[key] = "";
     }
     saveSession();
@@ -618,6 +618,9 @@
       `Fecha y hora: ${createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`}`,
       "Revisa tu correo electronico; ahi recibiras la confirmacion con el PDF adjunto y tu folio de cita."
     ].join("\n");
+    session.profile.appointmentConfirmedAt = new Date().toISOString();
+    session.profile.appointmentId = createResult.appointment?.id || "";
+    session.profile.appointmentStart = createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`;
     pendingAppointmentMessage = "";
     setScreen("chat");
     session.messages.push({ senderType: "customer", body: message, createdAt: new Date().toISOString() });
