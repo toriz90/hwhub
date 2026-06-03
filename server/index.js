@@ -916,6 +916,33 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/chat/sync" && req.method === "GET") {
+    const conversationId = url.searchParams.get("conversationId") || "";
+    const visitorId = url.searchParams.get("visitorId") || "";
+    const channel = url.searchParams.get("channel") || "web_widget";
+    if (!visitorId) {
+      sendJson(res, { error: "visitorId required" }, 403);
+      return;
+    }
+    let conversation = conversationId ? await store.conversationById?.(conversationId) : null;
+    if (!conversation) conversation = await store.activeConversationByExternalId?.(visitorId, channel);
+    if (!conversation) {
+      sendJson(res, { conversation: null, messages: [] });
+      return;
+    }
+    if (conversation.externalConversationId !== visitorId || conversation.channel !== channel) {
+      sendJson(res, { error: "Conversation does not belong to this visitor" }, 403);
+      return;
+    }
+    sendJson(res, {
+      conversation,
+      conversationId: conversation.id,
+      visitorId,
+      messages: await store.messages(conversation.id)
+    });
+    return;
+  }
+
   if (url.pathname.startsWith("/api/") && !req.user) {
     sendUnauthorized(res);
     return;
@@ -996,6 +1023,8 @@ const server = createServer(async (req, res) => {
       metadata: { userEmail: req.user.email }
     });
     emit("message.created", message);
+    const updated = await store.conversationById?.(id);
+    if (updated) emit("conversation.updated", updated);
     sendJson(res, message, 201);
     return;
   }

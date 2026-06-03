@@ -272,6 +272,8 @@
   let appointmentOptions = null;
   let pendingAppointmentMessage = "";
   let appointmentBusy = false;
+  let syncInFlight = false;
+  let syncTimer = null;
 
   async function loadWidgetConfig() {
     try {
@@ -510,6 +512,72 @@
     badge.hidden = !session.unread;
   }
 
+  function normalizeMessages(items = []) {
+    return items.map((item) => ({
+      id: item.id || "",
+      conversationId: item.conversationId || "",
+      senderType: item.senderType,
+      senderId: item.senderId || "",
+      body: item.body,
+      metadata: item.metadata || {},
+      createdAt: item.createdAt || new Date().toISOString()
+    }));
+  }
+
+  function sameMessageSet(nextMessages = []) {
+    if (nextMessages.length !== session.messages.length) return false;
+    return nextMessages.every((message, index) => {
+      const current = session.messages[index] || {};
+      if (message.id || current.id) return message.id === current.id;
+      return message.senderType === current.senderType &&
+        message.body === current.body &&
+        message.createdAt === current.createdAt;
+    });
+  }
+
+  async function syncConversation() {
+    if (!session.conversationId || !session.visitorId || syncInFlight) return;
+    syncInFlight = true;
+    try {
+      const params = new URLSearchParams({
+        conversationId: session.conversationId,
+        visitorId: session.visitorId,
+        channel
+      });
+      const response = await fetch(`${api}/api/chat/sync?${params}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data.conversationId || !Array.isArray(data.messages)) return;
+      const previousIds = new Set(session.messages.map((message) => message.id).filter(Boolean));
+      const nextMessages = normalizeMessages(data.messages);
+      if (sameMessageSet(nextMessages)) return;
+      const incoming = nextMessages.filter((message) =>
+        message.id &&
+        !previousIds.has(message.id) &&
+        !["customer", "system"].includes(message.senderType)
+      );
+      session.conversationId = data.conversationId;
+      session.messages = nextMessages;
+      if (panel.hidden && incoming.length) {
+        session.unread = (session.unread || 0) + incoming.length;
+      } else if (!panel.hidden) {
+        session.unread = 0;
+      }
+      saveSession();
+      renderMessages();
+      updateBadge();
+    } catch {
+      // La sincronizacion es silenciosa para no interrumpir al cliente si hay red lenta.
+    } finally {
+      syncInFlight = false;
+    }
+  }
+
+  function startSyncLoop() {
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = setInterval(syncConversation, 3500);
+  }
+
   function renderMessages() {
     const items = session.messages.length ? session.messages : [
       { senderType: "bot", body: widgetConfig.welcome || "Hola, completa tus datos y cuentame en que puedo ayudarte.", createdAt: new Date().toISOString() }
@@ -720,12 +788,7 @@
       if (!response.ok) throw new Error(data.error || "No se pudo enviar el mensaje");
       session.conversationId = data.conversationId || data.conversation?.id || session.conversationId;
       session.visitorId = data.visitorId || session.visitorId;
-      session.messages = (data.messages || []).map((item) => ({
-        senderType: item.senderType,
-        body: item.body,
-        metadata: item.metadata || {},
-        createdAt: item.createdAt || new Date().toISOString()
-      }));
+      session.messages = normalizeMessages(data.messages || []);
       if (panel.hidden) session.unread = (session.unread || 0) + 1;
       saveSession();
       renderMessages();
@@ -755,5 +818,7 @@
   updateBadge();
   setScreen(session.profileComplete ? "chat" : "profile");
   loadWidgetConfig();
+  startSyncLoop();
+  syncConversation();
   saveSession();
 })();
