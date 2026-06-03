@@ -323,6 +323,24 @@ async function seedDatabase(pool, defaults) {
           branch.active !== false
         ]
       );
+      if (branch.state) {
+        await pool.query(
+          `update branches
+           set city = case when city = 'Por clasificar' or city = '' then $2 else city end,
+               business_hours = business_hours || $6::jsonb
+           where lower(name) = lower($1)
+             and coalesce(address, '') = coalesce($5, '')
+             and coalesce(business_hours->>'state', '') = ''`,
+          [
+            branch.name,
+            branch.city,
+            branch.phone || "",
+            branch.whatsapp || "",
+            branch.address || "",
+            branchHoursPayload(branch)
+          ]
+        );
+      }
     }
   }
 
