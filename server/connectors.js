@@ -378,9 +378,10 @@ function normalizeSlots(data) {
 async function findFutureAppointmentByEmail(config, email, today) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!normalizedEmail) return null;
+  const customerSearch = encodeURIComponent(normalizedEmail);
   const [customers, appointments] = await Promise.all([
-    fetchEasyJson(config, "/index.php/api/v1/customers?length=1000"),
-    fetchEasyJson(config, "/index.php/api/v1/appointments?length=1000", { cache: false })
+    fetchEasyJson(config, `/index.php/api/v1/customers?q=${customerSearch}&sort=-id&length=50`, { cache: false }),
+    fetchEasyJson(config, "/index.php/api/v1/appointments?sort=-id&length=1000", { cache: false })
   ]);
   const customerIds = new Set((Array.isArray(customers) ? customers : [])
     .filter((customer) => String(customer.email || "").trim().toLowerCase() === normalizedEmail)
@@ -481,7 +482,8 @@ function appointmentNotes(payload = {}) {
 async function findCustomerByEmail(config, email) {
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!normalizedEmail) return null;
-  const customers = await fetchEasyJson(config, "/index.php/api/v1/customers?length=1000", { cache: false });
+  const customerSearch = encodeURIComponent(normalizedEmail);
+  const customers = await fetchEasyJson(config, `/index.php/api/v1/customers?q=${customerSearch}&sort=-id&length=50`, { cache: false });
   return (Array.isArray(customers) ? customers : [])
     .find((customer) => String(customer.email || "").trim().toLowerCase() === normalizedEmail) || null;
 }
