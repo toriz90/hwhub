@@ -223,6 +223,82 @@ h2 {
   gap: 1rem;
 }
 
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ops-brief,
+.ops-panel {
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1rem, 1.6vw, 1.25rem);
+}
+
+.ops-brief {
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(214, 161, 29, 0.22), transparent 36%),
+    #101010;
+}
+
+.ops-brief .eyebrow {
+  color: #d8bd6e;
+}
+
+.ops-brief h2 {
+  margin-top: 0.25rem;
+  font-size: clamp(1.3rem, 2vw, 2rem);
+}
+
+.ops-brief-grid,
+.ops-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.ops-brief-grid span,
+.ops-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.ops-brief-grid span {
+  border: 1px solid rgba(214, 161, 29, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff7db;
+}
+
+.ops-status {
+  border: 1px solid transparent;
+}
+
+.ops-status.ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.ops-status.warn {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.ops-status.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 .metrics article,
 .panel {
   background: var(--white);
@@ -1785,6 +1861,37 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.form-panel .editor {
+  grid-template-columns: 1fr;
+}
+
+.form-panel .editor input,
+.form-panel .editor select,
+.form-panel .editor textarea {
+  min-width: 0;
+}
+
+.list-panel .filters {
+  grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr) auto;
+}
+
+#branches .list-panel .filters,
+#directory .list-panel .filters {
+  align-items: end;
+}
+
+.list-panel .card,
+.list-panel .faq,
+.list-panel .rule {
+  min-width: 0;
+}
+
+.list-panel .card strong,
+.list-panel .faq strong,
+.list-panel .rule strong {
+  overflow-wrap: anywhere;
+}
+
 #integrations .list-panel .cards,
 #users-list.cards {
   grid-template-columns: 1fr;
@@ -1865,10 +1972,47 @@ textarea {
 
 .conversations {
   background: #fbfbfb;
+  padding-right: 0.8rem;
 }
 
 .conversation-detail {
   background: #fff;
+}
+
+.conversations header,
+.conversation-detail header {
+  margin-bottom: 0.8rem;
+}
+
+.conversations .filters {
+  position: sticky;
+  top: 84px;
+  z-index: 2;
+  background: rgba(248, 249, 251, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+#conversation-list {
+  padding: 0.15rem 0.35rem 0.15rem 0;
+}
+
+.conversation-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.conversation-card .meta {
+  line-height: 1.35;
+}
+
+.conversation-card .row-actions {
+  margin-top: 0.15rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(17, 17, 17, 0.07);
+}
+
+.conversation-card .row-actions button {
+  min-height: 30px;
 }
 
 .filters,
@@ -1998,6 +2142,11 @@ button.danger {
 
 .reply-form {
   align-items: stretch;
+  margin-top: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: var(--radius);
+  background: #fbfbfb;
 }
 
 .reply-form input {
@@ -2157,6 +2306,7 @@ button.danger {
 
   .metrics,
   .status-metrics,
+  .dashboard-hero,
   .workspace,
   .module-grid,
   .conversation-workspace,
@@ -2250,6 +2400,23 @@ button.danger {
 
   .topbar {
     margin-bottom: 0.85rem;
+  }
+
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-panel {
+    order: -1;
+  }
+
+  .conversations .filters {
+    position: static;
+    backdrop-filter: none;
+  }
+
+  .list-panel .filters {
+    grid-template-columns: 1fr;
   }
 
   .metrics,
