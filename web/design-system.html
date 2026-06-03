@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WhaleHub UI System</title>
+    <style>
+      :root {
+        --ink: #1f2a37;
+        --ink-2: #313b47;
+        --ink-soft: #344456;
+        --gold: #f5b301;
+        --gold-2: #d99a00;
+        --paper: #f3f5f8;
+        --surface: #ffffff;
+        --surface-2: #f8fafc;
+        --line: #d9dee6;
+        --muted: #6b7788;
+        --green: #0f9d73;
+        --red: #c73535;
+        --orange: #d97706;
+        --blue: #276ef1;
+        --radius: 8px;
+        --shadow: 0 16px 40px rgba(23, 34, 49, 0.12);
+        --shadow-soft: 0 8px 24px rgba(23, 34, 49, 0.08);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(180deg, rgba(245, 180, 0, 0.08), transparent 260px),
+          var(--paper);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        min-height: 40px;
+        border: 0;
+        border-radius: 6px;
+        padding: 0.65rem 1rem;
+        background: var(--ink);
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-soft);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button.secondary {
+        background: #eef2f6;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      button.gold {
+        background: var(--gold);
+        color: #111;
+      }
+
+      button.danger {
+        background: #fde8e8;
+        color: var(--red);
+      }
+
+      button.icon {
+        width: 40px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        padding: 0.7rem 0.8rem;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(245, 180, 0, 0.22);
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      label {
+        display: grid;
+        gap: 0.35rem;
+        color: var(--ink-soft);
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 252px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: grid;
+        align-content: start;
+        gap: 1.6rem;
+        padding: 1.2rem;
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .brand {
+        display: grid;
+        grid-template-columns: 46px 1fr;
+        gap: 0.85rem;
+        align-items: center;
+      }
+
+      .brand-mark {
+        width: 46px;
+        height: 46px;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #fff, var(--gold));
+        color: var(--ink);
+        font-weight: 950;
+        letter-spacing: 0.04em;
+      }
+
+      .brand strong {
+        display: block;
+        letter-spacing: 0.08em;
+      }
+
+      .brand small {
+        color: #b9c2cf;
+      }
+
+      .nav {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .nav a {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-height: 42px;
+        border-radius: 6px;
+        padding: 0 0.75rem;
+        color: #dbe2ea;
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .nav a.active {
+        background: var(--gold);
+        color: #111;
+      }
+
+      .nav a:hover:not(.active) {
+        background: var(--ink-2);
+        color: #fff;
+      }
+
+      .main {
+        min-width: 0;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        min-height: 68px;
+        padding: 0.8rem 1.4rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+      }
+
+      .topbar h1 {
+        margin: 0;
+        font-size: clamp(1.25rem, 2vw, 1.75rem);
+        letter-spacing: 0.02em;
+      }
+
+      .topbar small {
+        display: block;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .topbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        justify-content: flex-end;
+      }
+
+      .content {
+        display: grid;
+        gap: 1.1rem;
+        padding: 1.2rem;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .panel,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .panel {
+        padding: 1rem;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.9rem;
+      }
+
+      .eyebrow {
+        margin: 0 0 0.15rem;
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .panel h2,
+      .panel h3 {
+        margin: 0;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.8rem;
+      }
+
+      .stat {
+        padding: 1rem;
+      }
+
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 0.35rem;
+        font-size: 1.7rem;
+      }
+
+      .stat.ok {
+        border-left: 4px solid var(--green);
+      }
+
+      .stat.warn {
+        border-left: 4px solid var(--orange);
+      }
+
+      .stat.gold {
+        border-left: 4px solid var(--gold);
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: minmax(240px, 1fr) 160px 160px auto;
+        gap: 0.7rem;
+        align-items: end;
+      }
+
+      .tabs {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .tabs button {
+        min-height: 36px;
+        border-radius: 0;
+        background: transparent;
+        color: var(--ink-soft);
+        box-shadow: none;
+      }
+
+      .tabs button.active {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 860px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #e7ebf0;
+        padding: 0.85rem 0.7rem;
+        text-align: left;
+        vertical-align: middle;
+      }
+
+      th {
+        color: #111;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      tbody tr:hover {
+        background: #fbf6e5;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        background: #e8eef5;
+        color: var(--ink);
+        font-size: 0.75rem;
+        font-weight: 900;
+      }
+
+      .badge.ok {
+        background: #dff8ed;
+        color: #08714d;
+      }
+
+      .badge.warn {
+        background: #fff2cc;
+        color: #8a5b00;
+      }
+
+      .badge.error {
+        background: #fde8e8;
+        color: var(--red);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+
+      .switch-row {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        cursor: pointer;
+      }
+
+      .switch-row input {
+        width: 46px;
+        height: 26px;
+        appearance: none;
+        position: relative;
+        border: 1px solid #b9c1cb;
+        border-radius: 999px;
+        background: #d8dee6;
+        cursor: pointer;
+        transition: background 0.16s ease, border-color 0.16s ease;
+      }
+
+      .switch-row input::after {
+        content: "";
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 7px rgba(23, 34, 49, 0.25);
+        transition: transform 0.16s ease;
+      }
+
+      .switch-row input:checked {
+        border-color: var(--gold);
+        background: var(--gold);
+      }
+
+      .switch-row input:checked::after {
+        transform: translateX(20px);
+        background: #111;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+      }
+
+      .toast-stack {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .toast {
+        border: 1px solid var(--line);
+        border-left: 5px solid var(--blue);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 0.75rem 0.9rem;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .toast strong {
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+
+      .toast p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .toast.ok {
+        border-left-color: var(--green);
+      }
+
+      .toast.warn {
+        border-left-color: var(--orange);
+      }
+
+      .toast.error {
+        border-left-color: var(--red);
+      }
+
+      .conversation-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+        gap: 1rem;
+      }
+
+      .conversation-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .conversation-item {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        padding: 0.8rem;
+        background: #fff;
+      }
+
+      .conversation-item.active {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(245, 180, 0, 0.2);
+      }
+
+      .conversation-item strong {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .conversation-item p {
+        margin: 0.35rem 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .chat-window {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 570px;
+        overflow: hidden;
+      }
+
+      .chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chat-body {
+        display: grid;
+        align-content: start;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: #f8fafc;
+      }
+
+      .day-divider {
+        justify-self: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--muted);
+        padding: 0.25rem 0.7rem;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .message {
+        max-width: min(680px, 82%);
+        border-radius: 8px;
+        padding: 0.75rem 0.85rem;
+        box-shadow: 0 2px 8px rgba(23, 34, 49, 0.07);
+      }
+
+      .message.bot {
+        justify-self: start;
+        background: #e8f5f3;
+      }
+
+      .message.agent {
+        justify-self: start;
+        background: #fff6d8;
+        border: 1px solid #f4d77d;
+      }
+
+      .message.customer {
+        justify-self: end;
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .message p {
+        margin: 0;
+        line-height: 1.45;
+      }
+
+      .message time {
+        display: block;
+        margin-top: 0.35rem;
+        opacity: 0.72;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .chat-composer {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.7rem;
+        padding: 1rem;
+        border-top: 1px solid var(--line);
+        background: #fff;
+      }
+
+      .product-card {
+        display: grid;
+        grid-template-columns: 86px 1fr auto;
+        gap: 0.8rem;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.65rem;
+        background: #fff;
+      }
+
+      .product-img {
+        width: 86px;
+        aspect-ratio: 1;
+        border-radius: 7px;
+        background:
+          linear-gradient(135deg, rgba(245, 180, 0, 0.85), rgba(23, 34, 49, 0.94)),
+          #ddd;
+      }
+
+      .product-card h4 {
+        margin: 0;
+      }
+
+      .product-card p {
+        margin: 0.2rem 0 0;
+        color: var(--muted);
+      }
+
+      .price {
+        color: var(--green);
+        font-size: 1.1rem;
+        font-weight: 950;
+      }
+
+      .footer-note {
+        color: var(--muted);
+        font-size: 0.86rem;
+        text-align: center;
+      }
+
+      .prototype-toast-region {
+        position: fixed;
+        right: 1rem;
+        top: 5rem;
+        z-index: 30;
+        display: grid;
+        gap: 0.6rem;
+        width: min(360px, calc(100vw - 2rem));
+        pointer-events: none;
+      }
+
+      .prototype-toast-region .toast {
+        animation: toastIn 0.18s ease;
+      }
+
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 1120px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          height: auto;
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .hero,
+        .conversation-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .topbar,
+        .toolbar,
+        .form-grid,
+        .chat-composer {
+          grid-template-columns: 1fr;
+        }
+
+        .grid-4 {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .nav {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .content {
+          padding: 0.8rem;
+        }
+
+        .message {
+          max-width: 94%;
+        }
+
+        .product-card {
+          grid-template-columns: 64px 1fr;
+        }
+
+        .product-card .price {
+          grid-column: 2;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .grid-4 {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar-actions,
+        .actions {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="prototype-toast-region" id="prototype-toasts" aria-live="polite"></div>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">HW</div>
+          <div>
+            <strong>HONEY WHALE</strong>
+            <small>WhaleHub UI System</small>
+          </div>
+        </div>
+        <nav class="nav" aria-label="Modulos">
+          <a class="active" href="#dashboard"><span>01</span>Dashboard</a>
+          <a href="#conversaciones"><span>02</span>Conversaciones</a>
+          <a href="#chatbot"><span>03</span>Chatbot</a>
+          <a href="#catalogos"><span>04</span>Catalogos</a>
+          <a href="#apis"><span>05</span>APIs</a>
+          <a href="#usuarios"><span>06</span>Usuarios</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <small>Operaciones en tiempo real</small>
+            <h1>Hub multicanal para ventas, citas y soporte</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="secondary">Exportar</button>
+            <button class="gold" data-toast="ok">Guardar vista</button>
+            <button data-toast="info">Probar widget</button>
+          </div>
+        </header>
+
+        <div class="content">
+          <section class="hero" id="dashboard">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Resumen</p>
+                  <h2>Estado operativo</h2>
+                </div>
+                <span class="badge ok">Sistema activo</span>
+              </div>
+              <div class="grid-4">
+                <article class="card stat ok">
+                  <span>Conversaciones</span>
+                  <strong>128</strong>
+                </article>
+                <article class="card stat gold">
+                  <span>Citas creadas</span>
+                  <strong>36</strong>
+                </article>
+                <article class="card stat warn">
+                  <span>SLA en riesgo</span>
+                  <strong>7</strong>
+                </article>
+                <article class="card stat">
+                  <span>Agentes activos</span>
+                  <strong>12</strong>
+                </article>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Notificaciones</p>
+                  <h2>Feedback esperado</h2>
+                </div>
+              </div>
+              <div class="toast-stack">
+                <article class="toast ok">
+                  <strong>Guardado correctamente</strong>
+                  <p>La configuracion quedo sincronizada con el servidor.</p>
+                </article>
+                <article class="toast warn">
+                  <strong>Falta probar conexion</strong>
+                  <p>Prueba la API antes de guardar los cambios.</p>
+                </article>
+                <article class="toast error">
+                  <strong>No se pudo completar</strong>
+                  <p>Revisa credenciales, permisos o disponibilidad del servicio.</p>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Controles</p>
+                <h2>Filtros y acciones principales</h2>
+              </div>
+              <div class="tabs" role="tablist" aria-label="Rango">
+                <button class="active">Hoy</button>
+                <button>Manana</button>
+                <button>Semana</button>
+              </div>
+            </div>
+            <div class="toolbar">
+              <label>
+                Buscar
+                <input placeholder="Folio, nombre, telefono o correo">
+              </label>
+              <label>
+                Centro
+                <select>
+                  <option>Todos</option>
+                  <option>Centro de Servicio</option>
+                  <option>Londres 112</option>
+                </select>
+              </label>
+              <label>
+                Estado
+                <select>
+                  <option>Todos</option>
+                  <option>Confirmada</option>
+                  <option>Pendiente</option>
+                </select>
+              </label>
+              <button class="gold" data-toast="ok">Aplicar</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Tabla</p>
+                <h2>Gestion de citas</h2>
+              </div>
+              <div class="actions">
+                <button class="secondary">Imprimir</button>
+                <button class="secondary">CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Folio</th>
+                    <th>Fecha y hora</th>
+                    <th>Cliente</th>
+                    <th>Telefono</th>
+                    <th>Centro</th>
+                    <th>Equipo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>CSVER-00227</td>
+                    <td>08/06/2026 · 14:15</td>
+                    <td>Prueba WhaleHub Codex</td>
+                    <td>5500000603</td>
+                    <td>Centro de Servicio</td>
+                    <td>H4</td>
+                    <td><span class="badge ok">Confirmada</span></td>
+                    <td><button class="icon secondary" aria-label="Configurar">...</button></td>
+                  </tr>
+                  <tr>
+                    <td>CSLON-00017</td>
+                    <td>08/06/2026 · 15:00</td>
+                    <td>Victor Toriz</td>
+                    <td>5536956659</td>
+                    <td>Londres 112</td>
+                    <td>ZL Wolf</td>
+                    <td><span class="badge warn">Pendiente</span></td>
+                    <td><button class="icon secondary" aria-label="Configurar">...</button></td>
+                  </tr>
+                  <tr>
+                    <td>CSIZA-00028</td>
+                    <td>09/06/2026 · 10:30</td>
+                    <td>Cliente Marketplace</td>
+                    <td>5512345678</td>
+                    <td>Izazaga 1</td>
+                    <td>U1S</td>
+                    <td><span class="badge error">Revisar</span></td>
+                    <td><button class="icon secondary" aria-label="Configurar">...</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="conversation-layout" id="conversaciones">
+            <div class="panel">
+              <div class="panel-header">
+                <div>
+                  <p class="eyebrow">Bandeja</p>
+                  <h2>Conversaciones</h2>
+                </div>
+              </div>
+              <div class="conversation-list">
+                <article class="conversation-item active">
+                  <strong>Victor Toriz <span class="badge ok">Bot activo</span></strong>
+                  <p>Necesito agendar una cita para revision...</p>
+                </article>
+                <article class="conversation-item">
+                  <strong>Cliente Amazon <span class="badge warn">Canalizar</span></strong>
+                  <p>Compre en Amazon y necesito soporte...</p>
+                </article>
+                <article class="conversation-item">
+                  <strong>Cliente pagina <span class="badge">Pedido</span></strong>
+                  <p>Quiero conocer el estado de mi pedido...</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="panel chat-window">
+              <div class="chat-header">
+                <div>
+                  <p class="eyebrow">Atencion</p>
+                  <h2>Victor Toriz</h2>
+                </div>
+                <div class="actions">
+                  <button class="gold" data-toast="ok">Tomar chat</button>
+                  <button class="secondary" data-toast="warn">Pausar bot</button>
+                  <button class="secondary">Cerrar</button>
+                </div>
+              </div>
+              <div class="chat-body">
+                <div class="day-divider">Hoy, 3 de junio</div>
+                <article class="message customer">
+                  <p>Hola, quiero agendar una cita.</p>
+                  <time>11:30 a.m.</time>
+                </article>
+                <article class="message bot">
+                  <p>Claro. Primero selecciona servicio, proveedor, fecha y horario disponible.</p>
+                  <time>11:30 a.m.</time>
+                </article>
+                <article class="message agent">
+                  <p>Un agente esta revisando tu caso. El bot queda pausado mientras continuamos.</p>
+                  <time>11:32 a.m.</time>
+                </article>
+                <article class="product-card">
+                  <div class="product-img" aria-hidden="true"></div>
+                  <div>
+                    <h4>Honey Whale ZL Wolf</h4>
+                    <p>Disponible en tienda oficial. Enlace enriquecido para producto o pedido.</p>
+                  </div>
+                  <strong class="price">$2,499</strong>
+                </article>
+              </div>
+              <form class="chat-composer">
+                <input placeholder="Escribe una respuesta clara para el cliente">
+                <button>Enviar</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="panel" id="chatbot">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Configuracion</p>
+                <h2>Chatbot y widget</h2>
+              </div>
+              <span class="badge ok">Widget conectado</span>
+            </div>
+            <div class="form-grid">
+              <label>
+                Titulo del widget
+                <input value="Honey Whale">
+              </label>
+              <label>
+                Subtitulo
+                <input value="Atencion por chatbot y agentes">
+              </label>
+              <label>
+                Color cabecera
+                <input type="color" value="#1f2a37">
+              </label>
+              <label>
+                Color acento
+                <input type="color" value="#f5b301">
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" checked>
+                Widget activo
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" checked>
+                Notificar mensajes nuevos
+              </label>
+              <label class="full">
+                Prompt general
+                <textarea>Responde como asistente de Honey Whale. Usa FAQs, sucursales, directorio, WooCommerce y agenda antes de pedir datos adicionales. Si un agente toma el chat, el bot debe quedar pausado.</textarea>
+              </label>
+              <label class="full">
+                Codigo para incrustar
+                <textarea readonly>&lt;script src="https://whalehub.victortoriz.cc/widget.js" data-hwhub-api="https://whalehub.victortoriz.cc" data-channel="official_site" async&gt;&lt;/script&gt;</textarea>
+              </label>
+              <div class="actions full">
+                <button class="gold" data-toast="ok">Guardar configuracion</button>
+                <button class="secondary" data-toast="info">Copiar codigo</button>
+                <button class="secondary" data-toast="warn">Probar ruteo</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="catalogos">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Catalogos</p>
+                <h2>Sucursales, directorio y APIs</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>
+                Nombre
+                <input placeholder="Centro de Servicio">
+              </label>
+              <label>
+                Canal
+                <select>
+                  <option>Pagina oficial</option>
+                  <option>Amazon</option>
+                  <option>Mercado Libre</option>
+                  <option>Marketplace</option>
+                </select>
+              </label>
+              <label>
+                Prioridad
+                <input type="number" value="10">
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" checked>
+                Activo
+              </label>
+              <label class="full">
+                Mensaje fallback
+                <textarea>Por el momento no hay agentes activos para este canal. Puedes comunicarte al area correspondiente del directorio.</textarea>
+              </label>
+            </div>
+          </section>
+
+          <p class="footer-note">Este archivo es una propuesta visual independiente para aprobar estilo antes de aplicarlo al panel completo.</p>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const toastRegion = document.querySelector("#prototype-toasts");
+      const messages = {
+        ok: ["Accion completada", "La informacion se guardo correctamente."],
+        warn: ["Revision requerida", "Falta validar un dato antes de continuar."],
+        error: ["No se pudo completar", "Intenta de nuevo o revisa la configuracion."],
+        info: ["Prueba ejecutada", "El resultado quedo listo para revisar."]
+      };
+
+      function showPrototypeToast(type = "info") {
+        const toast = document.createElement("article");
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<strong>${messages[type][0]}</strong><p>${messages[type][1]}</p>`;
+        toastRegion.append(toast);
+        window.setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transform = "translateY(-8px)";
+          window.setTimeout(() => toast.remove(), 180);
+        }, 3200);
+      }
+
+      document.querySelectorAll("[data-toast]").forEach((button) => {
+        button.addEventListener("click", () => showPrototypeToast(button.dataset.toast));
+      });
+    </script>
+    <script src="https://whalehub.victortoriz.cc/widget.js" data-hwhub-api="https://whalehub.victortoriz.cc" data-channel="official_site" async></script>
+  </body>
+</html>

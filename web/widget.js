@@ -170,6 +170,481 @@
     return new Date(value).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
   }
 
+  function injectWidgetStyles() {
+    if (document.getElementById("hwhub-widget-style")) return;
+    const style = document.createElement("style");
+    style.id = "hwhub-widget-style";
+    style.textContent = `
+      .hwhub-widget-button,
+      .hwhub-widget-panel,
+      .hwhub-widget-panel * {
+        box-sizing: border-box;
+      }
+
+      .hwhub-widget-button {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        z-index: 2147483000;
+        width: 60px;
+        height: 60px;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 999px;
+        background: var(--hwhub-widget-header, #1f2a37);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24);
+        transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
+        transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .hwhub-widget-button:hover {
+        background: #313b47;
+        box-shadow: 0 20px 46px rgba(31, 42, 55, 0.3);
+      }
+
+      .hwhub-widget-button span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .hwhub-widget-button::before {
+        content: "";
+        width: 27px;
+        height: 20px;
+        display: block;
+        border: 3px solid currentColor;
+        border-radius: 9px;
+      }
+
+      .hwhub-widget-button::after {
+        content: "";
+        position: absolute;
+        left: 20px;
+        top: 36px;
+        width: 10px;
+        height: 10px;
+        background: currentColor;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+      }
+
+      .hwhub-widget-button strong {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--hwhub-widget-accent, #f5b301);
+        color: #111;
+        font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .hwhub-widget-panel {
+        position: fixed;
+        right: 22px;
+        bottom: 92px;
+        z-index: 2147483000;
+        width: min(430px, calc(100vw - 24px));
+        max-height: min(820px, calc(100vh - 112px));
+        display: grid;
+        overflow: hidden;
+        border: 1px solid #d9dee6;
+        border-radius: 8px;
+        background: #fff;
+        color: #1f2a37;
+        box-shadow: 0 24px 70px rgba(31, 42, 55, 0.22);
+        font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
+      }
+
+      .hwhub-widget-panel[hidden] {
+        display: none !important;
+      }
+
+      .hwhub-widget-panel header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 15px 16px;
+        background: var(--hwhub-widget-header, #1f2a37);
+        color: #fff;
+      }
+
+      .hwhub-widget-panel header strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .hwhub-widget-panel header p {
+        margin: 2px 0 0;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .hwhub-widget-panel header button,
+      .hwhub-widget-panel button {
+        min-height: 38px;
+        border: 0;
+        border-radius: 6px;
+        padding: 9px 12px;
+        background: #1f2a37;
+        color: #fff;
+        font: 800 14px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        cursor: pointer;
+      }
+
+      .hwhub-widget-panel header button {
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: #313b47;
+      }
+
+      .hwhub-widget-panel button:hover:not(:disabled) {
+        background: #313b47;
+      }
+
+      .hwhub-widget-panel button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .hwhub-widget-body {
+        display: grid;
+        gap: 12px;
+        max-height: calc(min(820px, 100vh - 112px) - 70px);
+        overflow-y: auto;
+        padding: 16px;
+        background: #fff;
+      }
+
+      .hwhub-widget-profile-screen,
+      .hwhub-widget-chat-screen {
+        display: grid;
+        gap: 12px;
+      }
+
+      .hwhub-widget-profile-screen[hidden],
+      .hwhub-widget-chat-screen[hidden] {
+        display: none !important;
+      }
+
+      .hwhub-widget-profile-screen h3,
+      .hwhub-widget-profile-screen p {
+        margin: 0;
+      }
+
+      .hwhub-widget-profile-screen h3 {
+        font-size: 16px;
+      }
+
+      .hwhub-widget-profile-screen p {
+        color: #566273;
+      }
+
+      .hwhub-widget-profile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .hwhub-widget-profile-screen label {
+        display: grid;
+        gap: 5px;
+        color: #566273;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .hwhub-widget-profile-screen input,
+      .hwhub-widget-profile-screen select,
+      .hwhub-widget-profile-screen textarea,
+      .hwhub-widget-compose textarea {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid #d9dee6;
+        border-radius: 6px;
+        background: #fff;
+        color: #1f2a37;
+        padding: 9px 10px;
+        font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        outline: none;
+      }
+
+      .hwhub-widget-profile-screen input:focus,
+      .hwhub-widget-profile-screen select:focus,
+      .hwhub-widget-profile-screen textarea:focus,
+      .hwhub-widget-compose textarea:focus {
+        border-color: var(--hwhub-widget-accent, #f5b301);
+        box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.22);
+      }
+
+      .hwhub-widget-profile-screen textarea,
+      .hwhub-widget-compose textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+
+      .hwhub-widget-error {
+        min-height: 0;
+        margin: 0;
+        color: #991b1b;
+        font-size: 12px;
+      }
+
+      .hwhub-widget-error:not(:empty) {
+        padding: 8px 10px;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        background: #fef2f2;
+      }
+
+      .hwhub-widget-error.is-ok:not(:empty) {
+        color: #065f46;
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+      }
+
+      .hwhub-widget-error.is-warning:not(:empty) {
+        color: #92400e;
+        border-color: #fcd34d;
+        background: #fffbeb;
+      }
+
+      .hwhub-widget-error a {
+        color: inherit;
+        font-weight: 900;
+      }
+
+      .hwhub-widget-form-actions {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+      }
+
+      .hwhub-widget-form-actions button:first-child {
+        border: 1px solid #d9dee6;
+        background: #eef2f6;
+        color: #1f2a37;
+      }
+
+      .hwhub-widget-messages {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        max-height: min(390px, 46vh);
+        overflow-y: auto;
+        padding: 10px;
+        border: 1px solid #e6ebf1;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .hwhub-widget-date {
+        justify-self: center;
+        padding: 4px 10px;
+        border: 1px solid #d9dee6;
+        border-radius: 999px;
+        background: #fff;
+        color: #6b7788;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: capitalize;
+      }
+
+      .hwhub-widget-message {
+        max-width: 86%;
+        padding: 9px 11px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #1f2a37;
+        box-shadow: 0 2px 8px rgba(31, 42, 55, 0.07);
+      }
+
+      .hwhub-widget-message p {
+        margin: 0;
+      }
+
+      .hwhub-widget-message time {
+        display: block;
+        margin-top: 5px;
+        color: rgba(31, 42, 55, 0.55);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .hwhub-widget-message.customer {
+        justify-self: end;
+        background: var(--hwhub-widget-user, #1f2a37);
+        color: #fff;
+      }
+
+      .hwhub-widget-message.customer time {
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .hwhub-widget-message.bot {
+        justify-self: start;
+        background: var(--hwhub-widget-bot, #e8f5f3);
+        border-color: #cbe7e2;
+      }
+
+      .hwhub-widget-message.agent {
+        justify-self: start;
+        background: #fff6d8;
+        border-color: rgba(245, 179, 1, 0.45);
+      }
+
+      .hwhub-widget-message.system {
+        justify-self: center;
+        background: #fef2f2;
+        color: #991b1b;
+      }
+
+      .hwhub-widget-message a,
+      .hwhub-rich-link,
+      .hwhub-link-list a {
+        color: #1f2a37;
+        font-weight: 900;
+        text-decoration-color: var(--hwhub-widget-accent, #f5b301);
+      }
+
+      .hwhub-message-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .hwhub-rich-block {
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .hwhub-product-list,
+      .hwhub-link-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .hwhub-product-card {
+        display: grid;
+        grid-template-columns: 66px 1fr;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid #d9dee6;
+        border-radius: 8px;
+        background: #fff;
+        padding: 8px;
+      }
+
+      .hwhub-product-card img,
+      .hwhub-product-empty {
+        width: 66px;
+        aspect-ratio: 1;
+        border-radius: 7px;
+        object-fit: cover;
+      }
+
+      .hwhub-product-empty {
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #f5b301, #1f2a37);
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .hwhub-product-card h4,
+      .hwhub-product-card p {
+        margin: 0;
+      }
+
+      .hwhub-product-price {
+        color: #0f9d73;
+        font-weight: 950;
+      }
+
+      .hwhub-product-regular,
+      .hwhub-product-stock {
+        color: #6b7788;
+        font-size: 12px;
+      }
+
+      .hwhub-widget-typing {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .hwhub-widget-typing span {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+        animation: hwhubTyping 0.9s infinite ease-in-out;
+      }
+
+      .hwhub-widget-typing span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+
+      .hwhub-widget-typing span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+
+      @keyframes hwhubTyping {
+        0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+        40% { opacity: 1; transform: translateY(-2px); }
+      }
+
+      .hwhub-widget-compose {
+        display: grid;
+        gap: 10px;
+      }
+
+      .hwhub-widget-compose button,
+      .hwhub-widget-profile-screen > button,
+      .hwhub-widget-form-actions button:last-child {
+        background: var(--hwhub-widget-header, #1f2a37);
+      }
+
+      @media (max-width: 520px) {
+        .hwhub-widget-panel {
+          right: 8px;
+          left: 8px;
+          bottom: 78px;
+          width: auto;
+          max-height: calc(100vh - 92px);
+        }
+
+        .hwhub-widget-profile-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hwhub-widget-form-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .hwhub-widget-form-actions button {
+          width: 100%;
+        }
+
+        .hwhub-widget-button {
+          right: 14px;
+          bottom: 14px;
+          width: 56px;
+          height: 56px;
+        }
+      }
+    `;
+    document.head.append(style);
+  }
+
   function isProfileComplete() {
     return requiredFields.every((key) => String(session.profile[key] || "").trim());
   }
@@ -180,14 +655,15 @@
     subtitle: "Atencion por chatbot y agentes",
     welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
     buttonLabel: "Chat",
-    headerColor: "#111b25",
-    accentColor: "#e84c70",
-    botBubbleColor: "#e8f6f4",
-    userBubbleColor: "#111b25",
+    headerColor: "#1f2a37",
+    accentColor: "#f5b301",
+    botBubbleColor: "#e8f5f3",
+    userBubbleColor: "#1f2a37",
     positionHorizontal: "right",
     positionVertical: "bottom"
   };
   session.profileComplete = session.profileComplete && isProfileComplete();
+  injectWidgetStyles();
 
   const button = document.createElement("button");
   button.className = "hwhub-widget-button";
@@ -285,10 +761,14 @@
       button.querySelector("span").textContent = widgetConfig.buttonLabel || "Chat";
       title.textContent = widgetConfig.title || "Honey Whale";
       subtitle.textContent = widgetConfig.subtitle || "";
-      panel.style.setProperty("--hwhub-widget-header", widgetConfig.headerColor || "#111b25");
-      panel.style.setProperty("--hwhub-widget-accent", widgetConfig.accentColor || "#e84c70");
-      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f6f4");
-      panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#111b25");
+      const headerColor = widgetConfig.headerColor || "#1f2a37";
+      const accentColor = widgetConfig.accentColor || "#f5b301";
+      panel.style.setProperty("--hwhub-widget-header", headerColor);
+      panel.style.setProperty("--hwhub-widget-accent", accentColor);
+      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f5f3");
+      panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#1f2a37");
+      button.style.setProperty("--hwhub-widget-header", headerColor);
+      button.style.setProperty("--hwhub-widget-accent", accentColor);
       applyWidgetPosition();
       renderMessages();
     } catch {}

@@ -751,9 +751,16 @@ function renderChatbotSettings() {
   const widget = settings.widget || {};
   form.elements.prompt.value = settings.prompt || "";
   form.elements.temperature.value = settings.temperature ?? 0.3;
-  const defaults = { positionHorizontal: "right", positionVertical: "bottom" };
+  const defaults = {
+    headerColor: "#1f2a37",
+    accentColor: "#f5b301",
+    botBubbleColor: "#e8f5f3",
+    userBubbleColor: "#1f2a37",
+    positionHorizontal: "right",
+    positionVertical: "bottom"
+  };
   for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "accentColor", "botBubbleColor", "userBubbleColor", "positionHorizontal", "positionVertical"]) {
-    if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || (form.elements[key].type === "color" ? "#111b25" : "");
+    if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || "";
   }
   updateWidgetEmbedCode();
   updateWidgetPreview();
@@ -779,10 +786,10 @@ function updateWidgetPreview() {
     subtitle: form.elements.subtitle.value || "Atencion por chatbot y agentes",
     buttonLabel: form.elements.buttonLabel.value || "Chat",
     welcome: form.elements.welcome.value || "Hola, en que puedo ayudarte?",
-    headerColor: form.elements.headerColor.value || "#111b25",
-    accentColor: form.elements.accentColor.value || "#087f7b",
-    botBubbleColor: form.elements.botBubbleColor.value || "#e5f6f3",
-    userBubbleColor: form.elements.userBubbleColor.value || "#111b25"
+    headerColor: form.elements.headerColor.value || "#1f2a37",
+    accentColor: form.elements.accentColor.value || "#f5b301",
+    botBubbleColor: form.elements.botBubbleColor.value || "#e8f5f3",
+    userBubbleColor: form.elements.userBubbleColor.value || "#1f2a37"
   };
   for (const key of ["title", "subtitle", "buttonLabel", "welcome"]) {
     const target = preview.querySelector(`[data-preview="${key}"]`);
