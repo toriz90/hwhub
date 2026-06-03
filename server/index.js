@@ -495,6 +495,69 @@ function detectMarketplace(text = "", channel = "web_widget") {
   return null;
 }
 
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function moneyLabel(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value || "");
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(number);
+}
+
+function stockLabel(item = {}) {
+  if (Number.isFinite(Number(item.stockQuantity))) return `${item.stockQuantity} disponibles`;
+  if (item.stockStatus === "instock") return "Disponible";
+  if (item.stockStatus === "outofstock") return "Sin stock";
+  return item.stockStatus || "";
+}
+
+function linksFromText(text = "", knownUrls = new Set()) {
+  const matches = String(text).match(/https?:\/\/[^\s<>"']+/gi) || [];
+  return matches
+    .map((value) => value.replace(/[),.;]+$/, ""))
+    .filter((value) => safeExternalUrl(value) && !knownUrls.has(safeExternalUrl(value)))
+    .slice(0, 4)
+    .map((url) => {
+      const parsed = new URL(url);
+      return { title: parsed.hostname.replace(/^www\./, ""), url: parsed.href };
+    });
+}
+
+function richContentFromContext(connectorContext = {}, reply = "") {
+  const blocks = [];
+  const knownUrls = new Set();
+  const productItems = (connectorContext.products?.items || []).slice(0, 5).map((item) => {
+    const url = safeExternalUrl(item.permalink);
+    if (url) knownUrls.add(url);
+    return {
+      id: item.id,
+      title: item.name,
+      price: moneyLabel(item.salePrice || item.price || item.regularPrice),
+      regularPrice: item.salePrice && item.regularPrice ? moneyLabel(item.regularPrice) : "",
+      stock: stockLabel(item),
+      image: safeExternalUrl(item.image),
+      imageAlt: item.imageAlt || item.name,
+      url
+    };
+  });
+  if (productItems.length) {
+    blocks.push({
+      type: "products",
+      title: connectorContext.products.query ? `Productos para "${connectorContext.products.query}"` : "Productos disponibles",
+      items: productItems
+    });
+  }
+  const links = linksFromText(reply, knownUrls);
+  if (links.length) blocks.push({ type: "links", title: "Enlaces utiles", items: links });
+  return blocks;
+}
+
 function findAgent(requiredSkill, currentState) {
   return currentState.agents
     .filter((agent) => agent.online && agent.activeConversations < agent.maxConversations)
@@ -750,6 +813,7 @@ const server = createServer(async (req, res) => {
         if (savedConversation) emit("conversation.typing", { conversationId: savedConversation.id, senderType: "bot", typing: false });
       }
     }
+    const richContent = richContentFromContext(connectorContext, ai.reply || "");
     if (!savedConversation) {
       savedConversation = await store.createConversation({
         id: `conv-${Date.now()}`,
@@ -790,7 +854,7 @@ const server = createServer(async (req, res) => {
         senderType: "bot",
         senderId: null,
         body: ai.reply,
-        metadata: { provider: ai.provider, model: ai.model, usedContext: ai.usedContext, error: ai.error || null }
+        metadata: { provider: ai.provider, model: ai.model, usedContext: ai.usedContext, error: ai.error || null, richContent }
       });
     }
     const messages = await store.messages(savedConversation.id);
@@ -801,6 +865,7 @@ const server = createServer(async (req, res) => {
       messages,
       reply: ai.reply,
       assignedAgent: routed.assignedAgent,
+      richContent,
       ai: {
         provider: ai.provider,
         model: ai.model || null,

@@ -203,7 +203,9 @@ async function fetchWooProducts(config, search) {
       salePrice: product.sale_price,
       stockStatus: product.stock_status,
       stockQuantity: product.stock_quantity,
-      permalink: product.permalink
+      permalink: product.permalink,
+      image: product.images?.[0]?.src || null,
+      imageAlt: product.images?.[0]?.alt || product.name || null
     }))
   };
 }

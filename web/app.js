@@ -880,6 +880,76 @@ function priorityLabel(priority) {
   }[priority] || "Normal";
 }
 
+function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value || ""), location.origin);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function renderRichText(value = "") {
+  const source = String(value || "");
+  const urlPattern = /https?:\/\/[^\s<>"']+/gi;
+  const parts = [];
+  let lastIndex = 0;
+  for (const match of source.matchAll(urlPattern)) {
+    const raw = match[0].replace(/[),.;]+$/, "");
+    parts.push(esc(source.slice(lastIndex, match.index)));
+    const href = safeExternalUrl(raw);
+    parts.push(href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(new URL(href).hostname.replace(/^www\./, ""))}</a>` : esc(raw));
+    lastIndex = (match.index || 0) + match[0].length;
+  }
+  parts.push(esc(source.slice(lastIndex)));
+  return parts.join("").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+}
+
+function renderMessageRichContent(blocks = []) {
+  if (!Array.isArray(blocks) || !blocks.length) return "";
+  return blocks.map((block) => {
+    if (block.type === "products") {
+      return `
+        <section class="rich-block">
+          <strong>${esc(block.title || "Productos")}</strong>
+          <div class="product-list">
+            ${(block.items || []).map((item) => {
+              const productUrl = safeExternalUrl(item.url);
+              const imageUrl = safeExternalUrl(item.image);
+              return `
+                <article class="product-card">
+                  ${imageUrl ? `<img src="${esc(imageUrl)}" alt="${esc(item.imageAlt || item.title || "Producto")}" loading="lazy">` : `<div class="product-empty">HW</div>`}
+                  <div>
+                    <h4>${esc(item.title)}</h4>
+                    ${item.price ? `<p class="product-price">${esc(item.price)}</p>` : ""}
+                    ${item.regularPrice ? `<p class="product-regular">${esc(item.regularPrice)}</p>` : ""}
+                    ${item.stock ? `<p class="product-stock">${esc(item.stock)}</p>` : ""}
+                    ${productUrl ? `<a class="rich-link" href="${esc(productUrl)}" target="_blank" rel="noopener noreferrer">Ver producto</a>` : ""}
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        </section>
+      `;
+    }
+    if (block.type === "links") {
+      return `
+        <section class="rich-block">
+          <strong>${esc(block.title || "Enlaces")}</strong>
+          <div class="link-list">
+            ${(block.items || []).map((item) => {
+              const url = safeExternalUrl(item.url);
+              return url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(item.title || item.url)}</a>` : "";
+            }).join("")}
+          </div>
+        </section>
+      `;
+    }
+    return "";
+  }).join("");
+}
+
 async function openConversation(id) {
   state.selectedConversationId = id;
   const data = await api(`/api/conversations/${id}`);
@@ -900,7 +970,8 @@ async function openConversation(id) {
           ${data.messages
             .map((message) => `
               <div class="message ${esc(message.senderType)}">
-                <p>${esc(message.body)}</p>
+                <p>${renderRichText(message.body)}</p>
+                ${renderMessageRichContent(message.metadata?.richContent)}
                 <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
               </div>
             `)

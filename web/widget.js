@@ -60,6 +60,68 @@
       .replaceAll('"', "&quot;");
   }
 
+  function safeUrl(value) {
+    try {
+      const url = new URL(String(value || ""), location.origin);
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function renderText(value = "") {
+    const urlPattern = /https?:\/\/[^\s<>"']+/gi;
+    const parts = [];
+    let lastIndex = 0;
+    for (const match of String(value).matchAll(urlPattern)) {
+      const raw = match[0].replace(/[),.;]+$/, "");
+      parts.push(esc(String(value).slice(lastIndex, match.index)));
+      const href = safeUrl(raw);
+      parts.push(href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(new URL(href).hostname.replace(/^www\./, ""))}</a>` : esc(raw));
+      lastIndex = (match.index || 0) + match[0].length;
+    }
+    parts.push(esc(String(value).slice(lastIndex)));
+    return parts.join("").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+  }
+
+  function renderRichContent(blocks = []) {
+    if (!Array.isArray(blocks) || !blocks.length) return "";
+    return blocks.map((block) => {
+      if (block.type === "products") {
+        return `
+          <section class="hwhub-rich-block">
+            <strong>${esc(block.title || "Productos")}</strong>
+            <div class="hwhub-product-list">
+              ${(block.items || []).map((item) => `
+                <article class="hwhub-product-card">
+                  ${item.image ? `<img src="${esc(safeUrl(item.image))}" alt="${esc(item.imageAlt || item.title || "Producto")}" loading="lazy">` : `<div class="hwhub-product-empty">HW</div>`}
+                  <div>
+                    <h4>${esc(item.title)}</h4>
+                    ${item.price ? `<p class="hwhub-product-price">${esc(item.price)}</p>` : ""}
+                    ${item.regularPrice ? `<p class="hwhub-product-regular">${esc(item.regularPrice)}</p>` : ""}
+                    ${item.stock ? `<p class="hwhub-product-stock">${esc(item.stock)}</p>` : ""}
+                    ${safeUrl(item.url) ? `<a class="hwhub-rich-link" href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer">Ver producto</a>` : ""}
+                  </div>
+                </article>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }
+      if (block.type === "links") {
+        return `
+          <section class="hwhub-rich-block">
+            <strong>${esc(block.title || "Enlaces")}</strong>
+            <div class="hwhub-link-list">
+              ${(block.items || []).map((item) => safeUrl(item.url) ? `<a href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer">${esc(item.title || item.url)}</a>` : "").join("")}
+            </div>
+          </section>
+        `;
+      }
+      return "";
+    }).join("");
+  }
+
   function dateKey(value) {
     const date = value ? new Date(value) : new Date();
     return date.toISOString().slice(0, 10);
@@ -350,7 +412,8 @@
       return `
         ${separator}
         <article class="hwhub-widget-message ${esc(message.senderType)}">
-          <p>${esc(message.body)}</p>
+          <p>${renderText(message.body)}</p>
+          ${renderRichContent(message.metadata?.richContent)}
           <time>${esc(timeLabel(createdAt))}</time>
         </article>
       `;
@@ -485,6 +548,7 @@
       session.messages = (data.messages || []).map((item) => ({
         senderType: item.senderType,
         body: item.body,
+        metadata: item.metadata || {},
         createdAt: item.createdAt || new Date().toISOString()
       }));
       if (panel.hidden) session.unread = (session.unread || 0) + 1;
