@@ -134,8 +134,8 @@
             <option value="sucursal">Sucursal</option>
             <option value="distribuidor">Distribuidor</option>
           </select></label>
-          <label>Valor del origen *<input data-appointment-field="sourceValue" required placeholder="Amazon, Genova, distribuidor..."></label>
-          <label>Modelo del equipo *<input data-appointment-field="equipmentModel" required></label>
+          <label>Valor del origen *<select data-appointment-field="sourceValue" required></select></label>
+          <label>Modelo del equipo *<select data-appointment-field="equipmentModel" required></select></label>
           <label>Numero de pedido<input data-appointment-field="orderNumber"></label>
           <label>Numero de serie<input data-appointment-field="serialNumber"></label>
         </div>
@@ -236,15 +236,17 @@
     serviceSelect.innerHTML = `<option value="">Seleccionar</option>` + (appointmentOptions.services || [])
       .map((item) => `<option value="${esc(item.id)}">${esc(item.name)}</option>`)
       .join("");
-    providerSelect.innerHTML = `<option value="">Seleccionar servicio primero</option>`;
     fillAppointmentForm();
   }
 
   function fillAppointmentForm() {
     for (const input of appointmentForm.querySelectorAll("[data-appointment-field]")) {
+      if (["appointmentProviderId", "sourceValue", "equipmentModel"].includes(input.dataset.appointmentField)) continue;
       input.value = session.profile[input.dataset.appointmentField] || "";
     }
-    updateProviderOptions();
+    updateProviderOptions(session.profile.appointmentProviderId || "");
+    updateSourceValueOptions(session.profile.sourceValue || "");
+    updateModelOptions(session.profile.equipmentModel || "");
   }
 
   function syncAppointmentFromForm() {
@@ -258,14 +260,42 @@
     saveSession();
   }
 
-  function updateProviderOptions() {
+  function optionList(items = [], selectedValue = "") {
+    const values = items.map((item) => typeof item === "string" ? { value: item, label: item } : {
+      value: item.value ?? item.id ?? item.name ?? "",
+      label: item.label ?? item.name ?? item.value ?? item.id ?? ""
+    }).filter((item) => String(item.value).trim());
+    const hasSelected = selectedValue && !values.some((item) => String(item.value) === String(selectedValue));
+    const normalized = hasSelected ? [{ value: selectedValue, label: selectedValue }, ...values] : values;
+    return `<option value="">Seleccionar</option>` + normalized
+      .map((item) => `<option value="${esc(item.value)}"${String(item.value) === String(selectedValue) ? " selected" : ""}>${esc(item.label)}</option>`)
+      .join("");
+  }
+
+  function updateProviderOptions(selectedValue = "") {
     if (!appointmentOptions) return;
     const serviceId = Number(appointmentForm.querySelector('[data-appointment-field="appointmentServiceId"]').value);
     const providerSelect = appointmentForm.querySelector('[data-appointment-field="appointmentProviderId"]');
+    const currentValue = selectedValue || providerSelect.value || session.profile.appointmentProviderId || "";
     const providers = (appointmentOptions.providers || []).filter((provider) => !serviceId || (provider.services || []).includes(serviceId));
-    providerSelect.innerHTML = `<option value="">Seleccionar</option>` + providers
-      .map((provider) => `<option value="${esc(provider.id)}">${esc(provider.name)}</option>`)
-      .join("");
+    providerSelect.innerHTML = optionList(providers.map((provider) => ({ value: provider.id, label: provider.name })), currentValue);
+  }
+
+  function updateSourceValueOptions(selectedValue = "") {
+    if (!appointmentOptions) return;
+    const type = appointmentForm.querySelector('[data-appointment-field="sourceType"]').value;
+    const sourceSelect = appointmentForm.querySelector('[data-appointment-field="sourceValue"]');
+    const currentValue = selectedValue || sourceSelect.value || session.profile.sourceValue || "";
+    const values = type ? appointmentOptions.sources?.[type] || [] : [];
+    sourceSelect.disabled = !type;
+    sourceSelect.innerHTML = type ? optionList(values, currentValue) : `<option value="">Selecciona origen primero</option>`;
+  }
+
+  function updateModelOptions(selectedValue = "") {
+    if (!appointmentOptions) return;
+    const modelSelect = appointmentForm.querySelector('[data-appointment-field="equipmentModel"]');
+    const currentValue = selectedValue || modelSelect.value || session.profile.equipmentModel || "";
+    modelSelect.innerHTML = optionList(appointmentOptions.equipmentModels || [], currentValue);
   }
 
   async function prevalidateAppointment() {
@@ -358,6 +388,10 @@
   appointmentForm.addEventListener("change", async (event) => {
     if (event.target?.dataset?.appointmentField === "appointmentServiceId") {
       updateProviderOptions();
+    }
+    if (event.target?.dataset?.appointmentField === "sourceType") {
+      session.profile.sourceValue = "";
+      updateSourceValueOptions("");
     }
     if (["appointmentServiceId", "appointmentProviderId", "appointmentDate"].includes(event.target?.dataset?.appointmentField)) {
       const serviceId = appointmentForm.querySelector('[data-appointment-field="appointmentServiceId"]').value;

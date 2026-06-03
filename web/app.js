@@ -108,7 +108,11 @@ const integrationDefinitions = [
     fields: [
       { key: "baseUrl", label: "URL de agenda", type: "url", required: true, placeholder: "https://agenda.tudominio.com" },
       { key: "apiKey", label: "API key/token", type: "password" },
-      { key: "testPath", label: "Ruta de prueba", type: "text", required: true, value: "/index.php/api/v1/services" }
+      { key: "testPath", label: "Ruta de prueba", type: "text", required: true, value: "/index.php/api/v1/services" },
+      { key: "appointmentMarketplaces", label: "Marketplaces", type: "textarea", placeholder: "Amazon, Mercado Libre, Walmart..." },
+      { key: "appointmentBranches", label: "Sucursales", type: "textarea", placeholder: "Genova..." },
+      { key: "appointmentDistributors", label: "Distribuidores", type: "textarea", placeholder: "Distribuidor 1, Distribuidor 2..." },
+      { key: "appointmentModels", label: "Modelos de equipo", type: "textarea", placeholder: "H4, U1S, ZL Wolf..." }
     ]
   },
   {
@@ -169,6 +173,17 @@ function renderIntegrationFields(provider, values = {}, keepSecrets = false) {
           <label class="check integration-field">
             <input type="checkbox" data-config-field="${esc(field.key)}" ${value ? "checked" : ""}>
             ${esc(field.label)}
+          </label>
+        `;
+      }
+      if (field.type === "textarea") {
+        return `
+          <label class="integration-field integration-field-wide">
+            ${esc(field.label)}${field.required ? " *" : ""}
+            <textarea
+              data-config-field="${esc(field.key)}"
+              placeholder="${esc(field.placeholder || field.value || "")}"
+              ${required}>${esc(value)}</textarea>
           </label>
         `;
       }

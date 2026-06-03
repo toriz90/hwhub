@@ -20,6 +20,58 @@ function easyHeaders(config = {}) {
   return token ? { authorization: `Bearer ${token}` } : {};
 }
 
+const defaultAppointmentCatalogs = {
+  sources: {
+    marketplace: ["Amazon", "Mercado Libre", "Walmart", "Coppel", "Elektra", "TikTok", "Temu", "Pagina oficial", "Otro"],
+    sucursal: ["Genova", "Otro"],
+    distribuidor: ["Distribuidor autorizado", "Mayorista", "Tienda departamental", "Otro"]
+  },
+  equipmentModels: [
+    "H4",
+    "U1S",
+    "ZL Wolf",
+    "KC Cool",
+    "E9 Max",
+    "BK05",
+    "T5",
+    "M1 Lite",
+    "T4A",
+    "ZL X",
+    "E9",
+    "H3",
+    "H2",
+    "Otro"
+  ]
+};
+
+function csvList(value) {
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (typeof value !== "string") return [];
+  return value.split(/[\n,;]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function appointmentCatalogs(config = {}) {
+  const catalogs = config.catalogs || config.appointmentCatalogs || {};
+  const sourceAliases = {
+    marketplace: ["marketplaces", "appointmentMarketplaces"],
+    sucursal: ["branches", "sucursales", "appointmentBranches"],
+    distribuidor: ["distributors", "distribuidores", "appointmentDistributors"]
+  };
+  const sources = Object.fromEntries(Object.entries(defaultAppointmentCatalogs.sources).map(([key, fallback]) => {
+    const configured = csvList(catalogs[key] || sourceAliases[key].map((alias) => config[alias]).find(Boolean));
+    const values = [...configured, ...fallback];
+    return [key, [...new Set(values)]];
+  }));
+  const equipmentModels = [
+    ...csvList(catalogs.models || catalogs.equipmentModels || config.models || config.equipmentModels || config.appointmentModels),
+    ...defaultAppointmentCatalogs.equipmentModels
+  ];
+  return {
+    sources,
+    equipmentModels: [...new Set(equipmentModels)]
+  };
+}
+
 function productSearchTerm(text = "") {
   return String(text)
     .toLowerCase()
@@ -245,7 +297,7 @@ async function fetchEasyAppointmentServices(config) {
 
 export async function getEasyAppointmentOptions(store) {
   const config = await store.integrationConfig?.("easyappointments");
-  if (!config) return { services: [], providers: [] };
+  if (!config) return { services: [], providers: [], ...appointmentCatalogs() };
   const endpoint = endpointFrom(config);
   const headers = easyHeaders(config);
   const [servicesData, providersData] = await Promise.all([
@@ -267,7 +319,7 @@ export async function getEasyAppointmentOptions(store) {
     services: provider.services || [],
     workingPlan: provider.settings?.workingPlan || {}
   }));
-  return { services, providers };
+  return { services, providers, ...appointmentCatalogs(config) };
 }
 
 function isoDate(value = new Date()) {
