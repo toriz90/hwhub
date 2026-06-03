@@ -2760,3 +2760,259 @@ textarea:focus {
   background: #f5b301;
   color: #111;
 }
+
+/* Light / dark theme system */
+html[data-theme="light"] {
+  color-scheme: light;
+  --app-bg: #f3f5f8;
+  --app-bg-glow: rgba(245, 179, 1, 0.07);
+  --panel-bg: #ffffff;
+  --panel-bg-soft: #f8fafc;
+  --text: #1f2a37;
+  --text-strong: #111827;
+  --text-muted: #667085;
+  --border: #d9dee6;
+  --input-bg: #ffffff;
+  --input-text: #1f2a37;
+  --table-hover: #fff8dc;
+  --message-bg: #f8fafc;
+  --bot-bg: #e8f5f3;
+  --agent-bg: #fff6d8;
+  --toast-bg: #ffffff;
+  --topbar-bg: rgba(255, 255, 255, 0.92);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --app-bg: #111827;
+  --app-bg-glow: rgba(245, 179, 1, 0.08);
+  --panel-bg: #17212d;
+  --panel-bg-soft: #101826;
+  --text: #e7edf5;
+  --text-strong: #ffffff;
+  --text-muted: #a6b1bf;
+  --border: #2f3b49;
+  --input-bg: #101826;
+  --input-text: #eef4fb;
+  --table-hover: rgba(245, 179, 1, 0.08);
+  --message-bg: #101826;
+  --bot-bg: #173733;
+  --agent-bg: #3a2f12;
+  --toast-bg: #17212d;
+  --topbar-bg: rgba(17, 24, 39, 0.92);
+}
+
+body {
+  color: var(--text);
+  background:
+    linear-gradient(180deg, var(--app-bg-glow), transparent 270px),
+    var(--app-bg);
+}
+
+h1,
+h2,
+h3,
+strong,
+.metrics strong,
+.status-metrics strong,
+.topbar h1 {
+  color: var(--text-strong);
+}
+
+p,
+.meta,
+.form-note,
+.user-pill,
+.metrics span,
+.status-metrics span,
+.section-note,
+.toast small {
+  color: var(--text-muted);
+}
+
+.topbar {
+  background: var(--topbar-bg);
+  border-bottom-color: var(--border);
+}
+
+.panel,
+.metrics article,
+.status-metrics button,
+.chatbot-block,
+.widget-preview-panel,
+.chatbot-test-box,
+.embed-box,
+.item,
+.card,
+.rule,
+.faq,
+.conversation-card,
+.conversation-detail,
+.conversations,
+.login-card,
+.toast {
+  border-color: var(--border);
+  background: var(--panel-bg);
+  color: var(--text);
+}
+
+.filters,
+.editor,
+.reply-form,
+.conversation-context article,
+.chatbot-block,
+.widget-preview-panel,
+.chatbot-test-box,
+.embed-box,
+.message-list,
+.hwhub-widget-messages {
+  border-color: var(--border);
+  background: var(--panel-bg-soft);
+}
+
+input,
+select,
+textarea,
+.user-pill {
+  border-color: var(--border);
+  background: var(--input-bg);
+  color: var(--input-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--text-muted) 74%, transparent);
+}
+
+table th,
+table td {
+  border-bottom-color: var(--border);
+}
+
+tbody tr:hover {
+  background: var(--table-hover);
+}
+
+.message-list,
+.chat-body {
+  background: var(--message-bg);
+}
+
+.message.bot,
+.hwhub-widget-message.bot {
+  background: var(--bot-bg);
+  border-color: color-mix(in srgb, var(--bot-bg) 72%, var(--border));
+}
+
+.message.agent,
+.hwhub-widget-message.agent {
+  background: var(--agent-bg);
+  border-color: rgba(245, 179, 1, 0.45);
+}
+
+.message.customer,
+.hwhub-widget-message.customer {
+  background: #1f2a37;
+  color: #fff;
+}
+
+.toast {
+  background: var(--toast-bg);
+}
+
+.status-metrics button:hover:not(:disabled),
+.conversation-card:hover,
+.conversation-card.selected {
+  background: color-mix(in srgb, var(--gold) 9%, var(--panel-bg));
+}
+
+.theme-switch {
+  min-height: 48px;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.65rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.theme-switch span:first-child {
+  grid-column: 1 / -1;
+}
+
+.theme-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.theme-slider {
+  grid-column: 1 / -1;
+  width: 48px;
+  height: 26px;
+  position: relative;
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #d8dee6;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-slider::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(31, 42, 55, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.theme-switch input:checked + .theme-slider {
+  border-color: #f5b301;
+  background: #f5b301;
+}
+
+.theme-switch input:checked + .theme-slider::after {
+  transform: translateX(22px);
+  background: #1f2a37;
+}
+
+html[data-theme="dark"] .sidebar {
+  background: #1f2a37;
+}
+
+html[data-theme="dark"] .brand-mark {
+  background: linear-gradient(135deg, #f5b301, #1f2a37);
+  color: #fff;
+}
+
+html[data-theme="dark"] button.secondary,
+html[data-theme="dark"] .filters button,
+html[data-theme="dark"] .row-actions button,
+html[data-theme="dark"] .form-actions button:first-child,
+html[data-theme="dark"] .hwhub-widget-form-actions button:first-child {
+  border-color: var(--border);
+  background: #233142;
+  color: var(--text);
+}
+
+html[data-theme="dark"] .login-screen {
+  background:
+    linear-gradient(180deg, rgba(245, 179, 1, 0.08), transparent 46%),
+    #111827;
+}
+
+html[data-theme="dark"] .login-card {
+  background: #17212d;
+}

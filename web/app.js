@@ -22,6 +22,21 @@ const filters = {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
+const themeStorageKey = "hwhub-theme";
+
+function normalizeTheme(theme) {
+  return theme === "dark" ? "dark" : "light";
+}
+
+function setTheme(theme, persist = true) {
+  const selected = normalizeTheme(theme);
+  document.documentElement.dataset.theme = selected;
+  const toggle = $("#theme-toggle");
+  if (toggle) toggle.checked = selected === "dark";
+  if (persist) localStorage.setItem(themeStorageKey, selected);
+}
+
+setTheme(localStorage.getItem(themeStorageKey) || document.documentElement.dataset.theme || "light", false);
 
 function notify(message, type = "ok", detail = "") {
   const region = $("#toast-region");
@@ -820,6 +835,14 @@ function showView(view) {
 function bindStaticEvents() {
   for (const link of $$("[data-view-link]")) link.addEventListener("click", () => showView(link.dataset.viewLink));
   showView(window.location.hash.replace("#", "") || "dashboard");
+  const themeToggle = $("#theme-toggle");
+  if (themeToggle) {
+    themeToggle.addEventListener("change", () => {
+      setTheme(themeToggle.checked ? "dark" : "light");
+      notify(themeToggle.checked ? "Tema oscuro activo" : "Tema claro activo", "info");
+    });
+    setTheme(localStorage.getItem(themeStorageKey) || "light", false);
+  }
 
   $("#chat-form").addEventListener("submit", async (event) => {
     event.preventDefault();

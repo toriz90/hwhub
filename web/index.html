@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>WhaleHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-approved-ui">
+    <script>
+      document.documentElement.dataset.theme = localStorage.getItem("hwhub-theme") || "light";
+    </script>
+    <link rel="stylesheet" href="/styles.css?v=20260603-theme-switch">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -67,6 +70,11 @@
               <option value="wholesale">Mayoristas</option>
               <option value="viewer">Solo lectura</option>
             </select>
+          </label>
+          <label class="theme-switch" title="Cambiar tema">
+            <span>Tema oscuro</span>
+            <input id="theme-toggle" type="checkbox" aria-label="Activar tema oscuro">
+            <span class="theme-slider"></span>
           </label>
           <span id="active-user" class="user-pill"></span>
           <button id="logout-button" type="button">Salir</button>
@@ -686,7 +694,7 @@
     </main>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="/app.js?v=20260603-approved-ui"></script>
-    <script src="/widget.js?v=20260603-approved-ui" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-theme-switch"></script>
+    <script src="/widget.js?v=20260603-theme-switch" data-channel="official_site"></script>
   </body>
 </html>
