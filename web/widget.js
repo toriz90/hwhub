@@ -183,7 +183,9 @@
     headerColor: "#111b25",
     accentColor: "#e84c70",
     botBubbleColor: "#e8f6f4",
-    userBubbleColor: "#111b25"
+    userBubbleColor: "#111b25",
+    positionHorizontal: "right",
+    positionVertical: "bottom"
   };
   session.profileComplete = session.profileComplete && isProfileComplete();
 
@@ -287,8 +289,40 @@
       panel.style.setProperty("--hwhub-widget-accent", widgetConfig.accentColor || "#e84c70");
       panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f6f4");
       panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#111b25");
+      applyWidgetPosition();
       renderMessages();
     } catch {}
+  }
+
+  function applyWidgetPosition() {
+    const horizontal = ["left", "center", "right"].includes(widgetConfig.positionHorizontal) ? widgetConfig.positionHorizontal : "right";
+    const vertical = ["top", "center", "bottom"].includes(widgetConfig.positionVertical) ? widgetConfig.positionVertical : "bottom";
+    const x = {
+      left: { left: "22px", right: "auto", shift: "0" },
+      center: { left: "50%", right: "auto", shift: "-50%" },
+      right: { left: "auto", right: "22px", shift: "0" }
+    }[horizontal];
+    const buttonY = {
+      top: { top: "22px", bottom: "auto", shift: "0" },
+      center: { top: "50%", bottom: "auto", shift: "-50%" },
+      bottom: { top: "auto", bottom: "22px", shift: "0" }
+    }[vertical];
+    const panelY = {
+      top: { top: "92px", bottom: "auto", shift: "0" },
+      center: { top: "50%", bottom: "auto", shift: "-50%" },
+      bottom: { top: "auto", bottom: "92px", shift: "0" }
+    }[vertical];
+    for (const item of [button, panel]) {
+      item.style.left = x.left;
+      item.style.right = x.right;
+      item.style.setProperty("--hwhub-x-shift", x.shift);
+    }
+    button.style.top = buttonY.top;
+    button.style.bottom = buttonY.bottom;
+    button.style.setProperty("--hwhub-y-shift", buttonY.shift);
+    panel.style.top = panelY.top;
+    panel.style.bottom = panelY.bottom;
+    panel.style.setProperty("--hwhub-y-shift", panelY.shift);
   }
 
   function fillProfileForm() {

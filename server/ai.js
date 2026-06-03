@@ -91,6 +91,18 @@ function buildContext({ text, routed, currentState }) {
     wholesaleContact: branch.wholesaleContact,
     hours: branch.hours
   }));
+  const directoryContacts = selectRelevantContacts(currentState.directoryContacts || [], normalized).map((contact) => ({
+    area: contact.area,
+    name: contact.name,
+    whatsapp: contact.whatsapp,
+    email: contact.email,
+    schedule: contact.schedule,
+    description: contact.description,
+    channels: contact.channels,
+    intents: contact.intents,
+    marketplaces: contact.marketplaces,
+    skills: contact.skills
+  }));
   const rules = currentState.routingRules.slice(0, 6).map((rule) => ({
     name: rule.name,
     intent: rule.intent,
@@ -115,6 +127,7 @@ function buildContext({ text, routed, currentState }) {
       rules: rules.length,
       products: connectorContext.products?.total || 0,
       appointmentServices: connectorContext.appointments?.total || 0,
+      directoryContacts: directoryContacts.length,
       order: connectorContext.order?.number || null,
       shipment: connectorContext.shipment?.trackingNumber || null,
       connectorErrors: connectorContext.errors?.length || 0
@@ -150,10 +163,39 @@ function buildContext({ text, routed, currentState }) {
       `Ruteo detectado: ${JSON.stringify(routed)}`,
       `FAQs relevantes: ${JSON.stringify(faqs)}`,
       `Directorio: ${JSON.stringify(branches)}`,
+      `Directorio de contactos por canalizacion: ${JSON.stringify(directoryContacts)}`,
       `Reglas: ${JSON.stringify(rules)}`,
       `Contexto externo de APIs: ${JSON.stringify(connectorContext)}`
     ].join("\n")
   };
+}
+
+function selectRelevantContacts(contacts = [], normalizedText = "") {
+  const terms = normalizedText
+    .split(/[^a-z0-9áéíóúñü]+/i)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 3);
+
+  return [...contacts]
+    .map((contact, index) => {
+      const haystack = [
+        contact.area,
+        contact.name,
+        contact.email,
+        contact.whatsapp,
+        contact.schedule,
+        contact.description,
+        (contact.channels || []).join(" "),
+        (contact.intents || []).join(" "),
+        (contact.marketplaces || []).join(" "),
+        (contact.skills || []).join(" ")
+      ].join(" ").toLowerCase();
+      const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+      return { contact, score, index };
+    })
+    .sort((left, right) => right.score - left.score || Number(left.contact.priority || 100) - Number(right.contact.priority || 100) || left.index - right.index)
+    .slice(0, 12)
+    .map((item) => item.contact);
 }
 
 function selectRelevantBranches(branches = [], normalizedText = "") {

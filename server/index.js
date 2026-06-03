@@ -6,6 +6,7 @@ import { createDataStore } from "./database.js";
 import { generateBotReply } from "./ai.js";
 import { buildConnectorContext, createEasyAppointment, getEasyAppointmentOptions, prevalidateEasyAppointment } from "./connectors.js";
 import { branchSeeds } from "./branchSeeds.js";
+import { contactSeeds } from "./contactSeeds.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
@@ -26,7 +27,9 @@ const defaultChatbotSettings = {
     headerColor: "#111b25",
     accentColor: "#e84c70",
     botBubbleColor: "#e8f6f4",
-    userBubbleColor: "#111b25"
+    userBubbleColor: "#111b25",
+    positionHorizontal: "right",
+    positionVertical: "bottom"
   }
 };
 
@@ -70,6 +73,7 @@ const state = {
       hours: "Lun-Dom 09:00-21:00"
     }
   ],
+  directoryContacts: contactSeeds,
   agents: [
     {
       id: "agent-ana",
@@ -212,6 +216,7 @@ const rolePermissions = {
     "conversation:write",
     "faqs:write",
     "branches:write",
+    "directoryContacts:write",
     "agents:write",
     "routingRules:write",
     "integrations:write"
@@ -419,7 +424,7 @@ function emit(event, payload) {
 
 function detectIntent(text = "") {
   const value = text.toLowerCase();
-  const marketplaceTerms = ["amazon", "mercadolibre", "mercado libre", "walmart", "coppel", "elektra", "tiktok", "temu"];
+  const marketplaceTerms = ["amazon", "mercadolibre", "mercado libre", "walmart", "coppel", "elektra", "liverpool", "marti", "tiktok", "temu"];
   if (marketplaceTerms.some((term) => value.includes(term))) return "marketplace_support";
   if (["mayoreo", "mayorista", "distribuidor", "volumen"].some((term) => value.includes(term))) return "wholesale";
   if (["pedido", "orden", "envio", "paquete", "compra"].some((term) => value.includes(term))) return "order_status";
@@ -513,9 +518,19 @@ function appointmentState(profile, text = "", history = []) {
 
 function detectMarketplace(text = "", channel = "web_widget") {
   const value = text.toLowerCase();
-  const terms = ["amazon", "mercadolibre", "walmart", "coppel", "elektra", "tiktok", "temu"];
-  const found = terms.find((term) => value.includes(term));
-  if (found) return found;
+  const aliases = [
+    ["mercadolibre", ["mercadolibre", "mercado libre"]],
+    ["amazon", ["amazon"]],
+    ["walmart", ["walmart"]],
+    ["coppel", ["coppel"]],
+    ["elektra", ["elektra"]],
+    ["liverpool", ["liverpool"]],
+    ["marti", ["marti", "martí"]],
+    ["tiktok", ["tiktok", "tik tok"]],
+    ["temu", ["temu"]]
+  ];
+  const found = aliases.find(([, terms]) => terms.some((term) => value.includes(term)));
+  if (found) return found[0];
   if (channel === "woocommerce" || channel === "official_site" || channel === "web_widget") return "official";
   return null;
 }
@@ -589,6 +604,43 @@ function findAgent(requiredSkill, currentState) {
     .find((agent) => agent.skills.includes(requiredSkill) || agent.skills.includes("atc"));
 }
 
+function findDirectoryContact({ intent, marketplace, channel, requiredSkill }, currentState) {
+  const contacts = (currentState.directoryContacts || [])
+    .filter((contact) => contact.active !== false)
+    .map((contact, index) => {
+      const channels = contact.channels || [];
+      const intents = contact.intents || [];
+      const marketplaces = contact.marketplaces || [];
+      const skills = contact.skills || [];
+      let score = 0;
+      if (marketplace && marketplaces.includes(marketplace)) score += 8;
+      if (marketplace && marketplace !== "official" && marketplaces.includes("marketplace")) score += 3;
+      if (intent && intents.includes(intent)) score += 4;
+      if (channel && channels.includes(channel)) score += 2;
+      if (requiredSkill && skills.includes(requiredSkill)) score += 2;
+      if (skills.includes("atc")) score += 1;
+      return { contact, score, index };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || Number(left.contact.priority || 100) - Number(right.contact.priority || 100) || left.index - right.index);
+  return contacts[0]?.contact || null;
+}
+
+function directoryFallbackMessage(rule, contact, marketplace) {
+  if (!contact) return rule.fallbackMessage;
+  return [
+    rule.fallbackMessage,
+    "",
+    "**Contacto recomendado**",
+    `- Area: ${contact.area || "Directorio"}`,
+    `- Canal: ${contact.name || marketplace || "Atencion"}`,
+    `- WhatsApp: ${contact.whatsapp || "Dato no registrado"}`,
+    contact.email ? `- Email: ${contact.email}` : "",
+    `- Horario: ${contact.schedule || "Dato no registrado"}`,
+    contact.description ? `- Nota: ${contact.description}` : ""
+  ].filter(Boolean).join("\n");
+}
+
 function routeMessage({ text, channel, currentState }) {
   const intent = detectIntent(text);
   const marketplace = detectMarketplace(text, channel);
@@ -628,12 +680,17 @@ function routeMessage({ text, channel, currentState }) {
     };
   }
 
-  const contact = currentState.branches.find((branch) => branch.services.includes(rule.requiredSkill)) || currentState.branches[1];
+  const contact = findDirectoryContact({
+    intent,
+    marketplace,
+    channel,
+    requiredSkill: rule.requiredSkill
+  }, currentState);
   return {
     intent,
     marketplace,
     status: "paused",
-    reply: `${rule.fallbackMessage} Contacto: ${contact.phone} / WhatsApp ${contact.whatsapp}.`,
+    reply: directoryFallbackMessage(rule, contact, marketplace),
     assignedAgent: null
   };
 }
@@ -1131,7 +1188,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname.startsWith("/api/")) {
     const key = url.pathname.replace("/api/", "");
     const [collection, id] = key.split("/");
-    const allowed = ["faqs", "branches", "agents", "routingRules"];
+    const allowed = ["faqs", "branches", "directoryContacts", "agents", "routingRules"];
     if (allowed.includes(collection) && req.method === "GET") {
       sendJson(res, await store.collection(collection));
       return;

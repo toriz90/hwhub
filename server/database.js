@@ -57,6 +57,28 @@ function sessionExpiry() {
 
 async function ensureAuthSchema(pool) {
   await pool.query(`
+    create table if not exists directory_contacts (
+      id uuid primary key default gen_random_uuid(),
+      area text not null,
+      name text not null,
+      email text not null default '',
+      whatsapp text not null default '',
+      schedule text not null default '',
+      description text not null default '',
+      channels text[] not null default '{}',
+      intents text[] not null default '{}',
+      marketplaces text[] not null default '{}',
+      skills text[] not null default '{}',
+      priority int not null default 100,
+      is_active boolean not null default true,
+      created_at timestamptz not null default now()
+    )
+  `);
+  await pool.query(`
+    create index if not exists directory_contacts_lookup_idx
+    on directory_contacts using gin ((channels || intents || marketplaces || skills))
+  `);
+  await pool.query(`
     create table if not exists conversation_events (
       id uuid primary key default gen_random_uuid(),
       conversation_id uuid not null references conversations(id) on delete cascade,
@@ -198,6 +220,24 @@ function ruleFromRow(row) {
   };
 }
 
+function contactFromRow(row) {
+  return {
+    id: row.id,
+    area: row.area,
+    name: row.name,
+    email: row.email || "",
+    whatsapp: row.whatsapp || "",
+    schedule: row.schedule || "",
+    description: row.description || "",
+    channels: row.channels || [],
+    intents: row.intents || [],
+    marketplaces: row.marketplaces || [],
+    skills: row.skills || [],
+    priority: row.priority ?? 100,
+    active: row.is_active ?? true
+  };
+}
+
 function conversationFromRow(row) {
   return enrichConversation({
     id: row.id,
@@ -278,6 +318,7 @@ async function seedDatabase(pool, defaults) {
   const { rows } = await pool.query(`
     select
       (select count(*)::int from branches) as branches,
+      (select count(*)::int from directory_contacts) as contacts,
       (select count(*)::int from agents) as agents,
       (select count(*)::int from faqs) as faqs,
       (select count(*)::int from routing_rules) as rules
@@ -356,6 +397,57 @@ async function seedDatabase(pool, defaults) {
           agent.online,
           agent.activeConversations,
           agent.maxConversations
+        ]
+      );
+    }
+  }
+
+  if (!counts.contacts) {
+    for (const contact of defaults.directoryContacts || []) {
+      await pool.query(
+        `insert into directory_contacts
+          (area, name, email, whatsapp, schedule, description, channels, intents, marketplaces, skills, priority, is_active)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [
+          contact.area || "",
+          contact.name || "",
+          contact.email || "",
+          contact.whatsapp || "",
+          contact.schedule || "",
+          contact.description || "",
+          contact.channels || [],
+          contact.intents || [],
+          contact.marketplaces || [],
+          contact.skills || [],
+          contact.priority || 100,
+          contact.active !== false
+        ]
+      );
+    }
+  } else {
+    for (const contact of defaults.directoryContacts || []) {
+      await pool.query(
+        `insert into directory_contacts
+          (area, name, email, whatsapp, schedule, description, channels, intents, marketplaces, skills, priority, is_active)
+         select $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+         where not exists (
+           select 1 from directory_contacts
+           where lower(area) = lower($1)
+             and lower(name) = lower($2)
+         )`,
+        [
+          contact.area || "",
+          contact.name || "",
+          contact.email || "",
+          contact.whatsapp || "",
+          contact.schedule || "",
+          contact.description || "",
+          contact.channels || [],
+          contact.intents || [],
+          contact.marketplaces || [],
+          contact.skills || [],
+          contact.priority || 100,
+          contact.active !== false
         ]
       );
     }
@@ -696,20 +788,25 @@ function createPostgresStore(pool, fallbackState) {
   return {
     mode: "postgres",
     async bootstrap() {
-      const [branches, agents, faqs, routingRules, conversations, integrations] = await Promise.all([
+      const [branches, directoryContacts, agents, faqs, routingRules, conversations, integrations] = await Promise.all([
         this.collection("branches"),
+        this.collection("directoryContacts"),
         this.collection("agents"),
         this.collection("faqs"),
         this.collection("routingRules"),
         this.collection("conversations"),
         this.integrations()
       ]);
-      return { branches, agents, faqs, routingRules, conversations, integrations, settings: { chatbot: await this.settings("chatbot") } };
+      return { branches, directoryContacts, agents, faqs, routingRules, conversations, integrations, settings: { chatbot: await this.settings("chatbot") } };
     },
     async collection(name) {
       if (name === "branches") {
         const { rows } = await pool.query("select * from branches where is_active = true order by created_at desc");
         return rows.map(branchFromRow);
+      }
+      if (name === "directoryContacts") {
+        const { rows } = await pool.query("select * from directory_contacts where is_active = true order by priority asc, area asc, name asc");
+        return rows.map(contactFromRow);
       }
       if (name === "agents") {
         const { rows } = await pool.query("select * from agents order by created_at desc");
@@ -740,6 +837,7 @@ function createPostgresStore(pool, fallbackState) {
     async create(name, payload) {
       if (name === "faqs") return createFaq(pool, payload);
       if (name === "branches") return createBranch(pool, payload);
+      if (name === "directoryContacts") return createDirectoryContact(pool, payload);
       if (name === "agents") return createAgent(pool, payload);
       if (name === "routingRules") return createRoutingRule(pool, payload);
       throw new Error(`Unsupported collection: ${name}`);
@@ -747,6 +845,7 @@ function createPostgresStore(pool, fallbackState) {
     async update(name, id, payload) {
       if (name === "faqs") return updateFaq(pool, id, payload);
       if (name === "branches") return updateBranch(pool, id, payload);
+      if (name === "directoryContacts") return updateDirectoryContact(pool, id, payload);
       if (name === "agents") return updateAgent(pool, id, payload);
       if (name === "routingRules") return updateRoutingRule(pool, id, payload);
       throw new Error(`Unsupported collection: ${name}`);
@@ -755,6 +854,7 @@ function createPostgresStore(pool, fallbackState) {
       const table = {
         faqs: "faqs",
         branches: "branches",
+        directoryContacts: "directory_contacts",
         agents: "agents",
         routingRules: "routing_rules"
       }[name];
@@ -1105,6 +1205,22 @@ function normalizePayload(name, payload) {
       active: Boolean(payload.active ?? true)
     };
   }
+  if (name === "directoryContacts") {
+    return {
+      area: payload.area || "",
+      name: payload.name || "",
+      email: payload.email || "",
+      whatsapp: payload.whatsapp || "",
+      schedule: payload.schedule || "",
+      description: payload.description || "",
+      channels: csv(payload.channels),
+      intents: csv(payload.intents),
+      marketplaces: csv(payload.marketplaces),
+      skills: csv(payload.skills),
+      priority: Number(payload.priority || 100),
+      active: Boolean(payload.active ?? true)
+    };
+  }
   if (name === "agents") {
     return {
       name: payload.name || "",
@@ -1181,6 +1297,56 @@ async function updateBranch(pool, id, payload) {
     [id, item.name, item.city, item.phone, item.whatsapp, item.address, branchHoursPayload(item), item.services, item.wholesaleContact, item.active]
   );
   return rows[0] ? branchFromRow(rows[0]) : null;
+}
+
+async function createDirectoryContact(pool, payload) {
+  const item = normalizePayload("directoryContacts", payload);
+  const { rows } = await pool.query(
+    `insert into directory_contacts
+      (area, name, email, whatsapp, schedule, description, channels, intents, marketplaces, skills, priority, is_active)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
+    [
+      item.area,
+      item.name,
+      item.email,
+      item.whatsapp,
+      item.schedule,
+      item.description,
+      item.channels,
+      item.intents,
+      item.marketplaces,
+      item.skills,
+      item.priority,
+      item.active
+    ]
+  );
+  return contactFromRow(rows[0]);
+}
+
+async function updateDirectoryContact(pool, id, payload) {
+  const item = normalizePayload("directoryContacts", payload);
+  const { rows } = await pool.query(
+    `update directory_contacts
+     set area=$2, name=$3, email=$4, whatsapp=$5, schedule=$6, description=$7,
+         channels=$8, intents=$9, marketplaces=$10, skills=$11, priority=$12, is_active=$13
+     where id=$1 returning *`,
+    [
+      id,
+      item.area,
+      item.name,
+      item.email,
+      item.whatsapp,
+      item.schedule,
+      item.description,
+      item.channels,
+      item.intents,
+      item.marketplaces,
+      item.skills,
+      item.priority,
+      item.active
+    ]
+  );
+  return rows[0] ? contactFromRow(rows[0]) : null;
 }
 
 async function createAgent(pool, payload) {

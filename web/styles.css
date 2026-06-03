@@ -479,6 +479,26 @@ textarea:disabled {
   gap: 0.55rem;
 }
 
+.embed-box {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.embed-box textarea {
+  min-height: 72px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.embed-box button {
+  justify-self: start;
+}
+
 .integration-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -635,16 +655,66 @@ textarea:disabled {
 }
 
 .message {
+  position: relative;
   max-width: 82%;
   padding: 0.7rem 0.8rem;
   border-radius: 8px;
   background: #eef4f8;
+  border: 1px solid transparent;
 }
 
-.message.agent,
 .message.bot {
   margin-left: auto;
   background: #e8f7f3;
+  border-color: rgba(8, 127, 123, 0.24);
+}
+
+.message.agent {
+  margin-left: auto;
+  background: #fff7db;
+  border-color: rgba(247, 181, 0, 0.42);
+}
+
+.message.customer {
+  background: #eef4f8;
+  border-color: #dbe4ee;
+}
+
+.message.bot::before,
+.message.agent::before,
+.message.customer::before,
+.message.system::before {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  padding: 0.16rem 0.42rem;
+  border-radius: 4px;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.message.bot::before {
+  content: "BOT";
+  color: #065f5b;
+  background: rgba(8, 127, 123, 0.12);
+}
+
+.message.agent::before {
+  content: "AGENTE";
+  color: #7a5200;
+  background: rgba(247, 181, 0, 0.2);
+}
+
+.message.customer::before {
+  content: "CLIENTE";
+  color: #405164;
+  background: #dfe7ef;
+}
+
+.message.system::before {
+  content: "SISTEMA";
+  color: #991b1b;
+  background: #fee2e2;
 }
 
 .message small {
@@ -912,6 +982,12 @@ textarea {
   font-size: 0.72rem;
 }
 
+.tag-market {
+  color: #7a5200;
+  border-color: rgba(247, 181, 0, 0.5);
+  background: rgba(247, 181, 0, 0.12);
+}
+
 .hwhub-widget-button {
   position: fixed;
   right: 22px;
@@ -923,6 +999,7 @@ textarea {
   background: #050b12;
   color: var(--white);
   box-shadow: 0 18px 42px rgba(5, 11, 18, 0.28);
+  transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
 }
 
 .hwhub-widget-button span {
@@ -984,6 +1061,7 @@ textarea {
   border-radius: 5px;
   background: var(--white);
   box-shadow: var(--shadow);
+  transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
 }
 
 .hwhub-widget-panel header {
@@ -1155,6 +1233,12 @@ textarea {
 .hwhub-widget-message.bot {
   justify-self: start;
   background: var(--hwhub-widget-bot, #e8f6f4);
+}
+
+.hwhub-widget-message.agent {
+  justify-self: start;
+  background: #fff7db;
+  border: 1px solid rgba(247, 181, 0, 0.42);
 }
 
 .hwhub-widget-profile-screen[hidden],

@@ -34,6 +34,26 @@ CREATE TABLE branches (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE directory_contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  area text NOT NULL,
+  name text NOT NULL,
+  email text NOT NULL DEFAULT '',
+  whatsapp text NOT NULL DEFAULT '',
+  schedule text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  channels text[] NOT NULL DEFAULT '{}',
+  intents text[] NOT NULL DEFAULT '{}',
+  marketplaces text[] NOT NULL DEFAULT '{}',
+  skills text[] NOT NULL DEFAULT '{}',
+  priority int NOT NULL DEFAULT 100,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX directory_contacts_lookup_idx
+ON directory_contacts USING gin ((channels || intents || marketplaces || skills));
+
 CREATE TABLE agents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,

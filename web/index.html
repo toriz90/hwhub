@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-widget-sync">
+    <link rel="stylesheet" href="/styles.css?v=20260603-directory">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -42,6 +42,7 @@
         <a href="#agents" data-view-link="agents">Agentes</a>
         <a href="#knowledge" data-view-link="knowledge">FAQs</a>
         <a href="#branches" data-view-link="branches">Sucursales</a>
+        <a href="#directory" data-view-link="directory">Directorio</a>
         <a href="#routing" data-view-link="routing">Ruteo</a>
         <a href="#integrations" data-view-link="integrations">APIs</a>
         <a href="#users" data-view-link="users">Usuarios</a>
@@ -222,9 +223,34 @@
               <label>Color acento<input name="accentColor" type="color"></label>
               <label>Burbuja bot<input name="botBubbleColor" type="color"></label>
               <label>Burbuja cliente<input name="userBubbleColor" type="color"></label>
+              <label>
+                Posicion horizontal
+                <select name="positionHorizontal">
+                  <option value="right">Derecha</option>
+                  <option value="center">Centro</option>
+                  <option value="left">Izquierda</option>
+                </select>
+              </label>
+              <label>
+                Posicion vertical
+                <select name="positionVertical">
+                  <option value="bottom">Abajo</option>
+                  <option value="center">Centro</option>
+                  <option value="top">Arriba</option>
+                </select>
+              </label>
               <button>Guardar configuracion</button>
               <p id="chatbot-settings-status" class="form-note"></p>
             </form>
+            <div class="embed-box">
+              <div>
+                <p class="eyebrow">Codigo de instalacion</p>
+                <h2>Widget para incrustar</h2>
+              </div>
+              <textarea id="widget-embed-code" readonly></textarea>
+              <button id="copy-widget-code" type="button">Copiar codigo</button>
+              <p id="widget-code-status" class="form-note"></p>
+            </div>
             <form id="chat-form" class="chat-test">
               <label>
                 Canal
@@ -333,6 +359,43 @@
               <button id="clear-branch-filters" type="button">Limpiar</button>
             </div>
             <div id="branches-list" class="cards"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view" data-view="directory">
+        <section class="workspace single">
+          <div class="panel" id="directory">
+            <header>
+              <div>
+                <p class="eyebrow">Fallback por canal e intencion</p>
+                <h2>Directorio</h2>
+              </div>
+            </header>
+            <form class="editor" data-editor="directoryContacts">
+              <input type="hidden" name="id">
+              <input name="area" placeholder="Area">
+              <input name="name" placeholder="Nombre visible">
+              <input name="email" placeholder="Email">
+              <input name="whatsapp" placeholder="WhatsApp">
+              <input name="schedule" placeholder="Horario">
+              <input name="priority" type="number" placeholder="Prioridad">
+              <input name="channels" placeholder="Canales separados por coma">
+              <input name="intents" placeholder="Intenciones separadas por coma">
+              <input name="marketplaces" placeholder="Marketplaces separados por coma">
+              <input name="skills" placeholder="Skills separados por coma">
+              <textarea name="description" placeholder="Descripcion interna"></textarea>
+              <label class="check-row"><input name="active" type="checkbox" checked> Activo</label>
+              <button>Guardar contacto</button>
+            </form>
+            <div class="filters">
+              <select id="directory-area-filter">
+                <option value="">Todas las areas</option>
+              </select>
+              <input id="directory-search" class="search" placeholder="Buscar por canal, marketplace, skill o contacto">
+              <button id="clear-directory-filters" type="button">Limpiar</button>
+            </div>
+            <div id="directory-list" class="cards"></div>
           </div>
         </section>
       </div>
@@ -484,7 +547,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-widget-sync"></script>
-    <script src="/widget.js?v=20260603-widget-sync" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-directory"></script>
+    <script src="/widget.js?v=20260603-directory" data-channel="official_site"></script>
   </body>
 </html>

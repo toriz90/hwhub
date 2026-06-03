@@ -15,7 +15,9 @@ const filters = {
   slaState: "",
   search: "",
   branchState: "",
-  branchSearch: ""
+  branchSearch: "",
+  directoryArea: "",
+  directorySearch: ""
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -23,7 +25,7 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const rolePermissions = {
   admin: ["*"],
-  supervisor: ["conversation", "faqs", "branches", "agents", "routingRules", "integrations"],
+  supervisor: ["conversation", "faqs", "branches", "directoryContacts", "agents", "routingRules", "integrations"],
   agent: ["conversation"],
   marketplace: ["conversation"],
   wholesale: ["conversation"],
@@ -32,11 +34,11 @@ const rolePermissions = {
 
 const roleCatalog = {
   admin: ["configurar APIs", "editar reglas", "editar agentes", "cerrar conversaciones", "ver secretos enmascarados"],
-  supervisor: ["reasignar conversaciones", "pausar chats", "editar FAQs", "ver reportes"],
+  supervisor: ["reasignar conversaciones", "pausar chats", "editar FAQs", "editar directorio", "ver reportes"],
   agent: ["tomar conversaciones", "responder clientes", "devolver al bot"],
   marketplace: ["atender Amazon", "atender MercadoLibre", "atender marketplaces"],
   wholesale: ["atender mayoreo", "ver contactos de sucursales", "canalizar sucursal"],
-  viewer: ["ver bandeja", "ver FAQs", "ver sucursales"]
+  viewer: ["ver bandeja", "ver FAQs", "ver sucursales", "ver directorio"]
 };
 
 const integrationDefinitions = [
@@ -374,6 +376,7 @@ function renderAdminCollections() {
   renderAgents();
   renderRouting();
   renderBranches();
+  renderDirectoryContacts();
   renderFaqs();
   bindRowActions();
 }
@@ -478,6 +481,55 @@ function renderBranches() {
       </article>
     `)
     .join("") || `<article class="card"><p class="meta">No hay sucursales con esos filtros.</p></article>`;
+}
+
+function renderDirectoryContacts() {
+  const contacts = state.data.directoryContacts || [];
+  const areas = [...new Set(contacts.map((contact) => contact.area).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right, "es", { sensitivity: "base" }));
+  const areaSelect = $("#directory-area-filter");
+  if (!areaSelect) return;
+  areaSelect.innerHTML = `<option value="">Todas las areas</option>` + areas
+    .map((area) => `<option value="${esc(area)}"${area === filters.directoryArea ? " selected" : ""}>${esc(area)}</option>`)
+    .join("");
+  const query = filters.directorySearch.toLowerCase();
+  const filtered = contacts.filter((contact) => {
+    const haystack = [
+      contact.area,
+      contact.name,
+      contact.email,
+      contact.whatsapp,
+      contact.schedule,
+      contact.description,
+      (contact.channels || []).join(" "),
+      (contact.intents || []).join(" "),
+      (contact.marketplaces || []).join(" "),
+      (contact.skills || []).join(" ")
+    ].join(" ").toLowerCase();
+    return (!filters.directoryArea || contact.area === filters.directoryArea) &&
+      (!query || haystack.includes(query));
+  });
+
+  $("#directory-list").innerHTML = filtered
+    .map((contact) => `
+      <article class="card directory-card">
+        <strong>${esc(contact.name)}</strong>
+        <p>${esc(contact.area || "Sin area")}</p>
+        <p class="meta">WhatsApp: ${esc(contact.whatsapp || "sin dato")}${contact.email ? ` - Email: ${esc(contact.email)}` : ""}</p>
+        <p class="meta">Horario: ${esc(contact.schedule || "sin horario")}</p>
+        ${contact.description ? `<p>${esc(contact.description)}</p>` : ""}
+        <p class="meta">Prioridad ${esc(contact.priority ?? 100)}</p>
+        ${(contact.marketplaces || []).map((item) => `<span class="tag tag-market">${esc(item)}</span>`).join("")}
+        ${(contact.channels || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
+        ${(contact.intents || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
+        ${(contact.skills || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
+        <div class="row-actions">
+          <button data-edit="directoryContacts" data-id="${esc(contact.id)}">Editar</button>
+          <button data-delete="directoryContacts" data-id="${esc(contact.id)}">Eliminar</button>
+        </div>
+      </article>
+    `)
+    .join("") || `<article class="card"><p class="meta">No hay contactos con esos filtros.</p></article>`;
 }
 
 function renderIntegrations() {
@@ -613,7 +665,7 @@ function renderUsers() {
 function applyRoleUi() {
   $("#active-role").value = state.role;
   $("#active-role").disabled = true;
-  const canAdmin = roleCan("faqs") || roleCan("branches") || roleCan("agents") || roleCan("routingRules");
+  const canAdmin = roleCan("faqs") || roleCan("branches") || roleCan("directoryContacts") || roleCan("agents") || roleCan("routingRules");
   for (const form of $$("[data-editor]")) {
     const collection = form.dataset.editor;
     const allowed = roleCan(collection);
@@ -660,9 +712,22 @@ function renderChatbotSettings() {
   const widget = settings.widget || {};
   form.elements.prompt.value = settings.prompt || "";
   form.elements.temperature.value = settings.temperature ?? 0.3;
-  for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "accentColor", "botBubbleColor", "userBubbleColor"]) {
-    if (form.elements[key]) form.elements[key].value = widget[key] || (form.elements[key].type === "color" ? "#111b25" : "");
+  const defaults = { positionHorizontal: "right", positionVertical: "bottom" };
+  for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "accentColor", "botBubbleColor", "userBubbleColor", "positionHorizontal", "positionVertical"]) {
+    if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || (form.elements[key].type === "color" ? "#111b25" : "");
   }
+  updateWidgetEmbedCode();
+}
+
+function widgetEmbedCode() {
+  const origin = window.location.origin;
+  return `<script src="${origin}/widget.js" data-hwhub-api="${origin}" data-channel="official_site" async></script>`;
+}
+
+function updateWidgetEmbedCode() {
+  const output = $("#widget-embed-code");
+  if (!output) return;
+  output.value = widgetEmbedCode();
 }
 
 async function refresh() {
@@ -701,7 +766,9 @@ function bindStaticEvents() {
         headerColor: form.elements.headerColor.value,
         accentColor: form.elements.accentColor.value,
         botBubbleColor: form.elements.botBubbleColor.value,
-        userBubbleColor: form.elements.userBubbleColor.value
+        userBubbleColor: form.elements.userBubbleColor.value,
+        positionHorizontal: form.elements.positionHorizontal.value,
+        positionVertical: form.elements.positionVertical.value
       }
     };
     status.textContent = "Guardando...";
@@ -729,12 +796,12 @@ function bindStaticEvents() {
   $("#branch-state-filter").addEventListener("change", (event) => {
     filters.branchState = event.target.value;
     renderBranches();
-    applyPermissions();
+    applyRoleUi();
   });
   $("#branch-search").addEventListener("input", (event) => {
     filters.branchSearch = event.target.value;
     renderBranches();
-    applyPermissions();
+    applyRoleUi();
   });
   $("#clear-branch-filters").addEventListener("click", () => {
     filters.branchState = "";
@@ -742,7 +809,38 @@ function bindStaticEvents() {
     $("#branch-state-filter").value = "";
     $("#branch-search").value = "";
     renderBranches();
-    applyPermissions();
+    applyRoleUi();
+  });
+  $("#directory-area-filter").addEventListener("change", (event) => {
+    filters.directoryArea = event.target.value;
+    renderDirectoryContacts();
+    applyRoleUi();
+  });
+  $("#directory-search").addEventListener("input", (event) => {
+    filters.directorySearch = event.target.value;
+    renderDirectoryContacts();
+    applyRoleUi();
+  });
+  $("#clear-directory-filters").addEventListener("click", () => {
+    filters.directoryArea = "";
+    filters.directorySearch = "";
+    $("#directory-area-filter").value = "";
+    $("#directory-search").value = "";
+    renderDirectoryContacts();
+    applyRoleUi();
+  });
+  $("#copy-widget-code").addEventListener("click", async () => {
+    const output = $("#widget-embed-code");
+    const status = $("#widget-code-status");
+    updateWidgetEmbedCode();
+    try {
+      await navigator.clipboard.writeText(output.value);
+      status.textContent = "Codigo copiado.";
+    } catch {
+      output.select();
+      document.execCommand("copy");
+      status.textContent = "Codigo seleccionado para copiar.";
+    }
   });
   $("#logout-button").addEventListener("click", async () => {
     await logout();
