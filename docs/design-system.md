@@ -40,10 +40,24 @@
 - Si esta minimizado y llega un mensaje nuevo, debe mostrar contador en el boton.
 - Debe evitar pedir nombre, telefono o email si ya fueron capturados.
 
-## Paleta sugerida
+## Paleta aprobada
 
-- Base: fondos claros, tinta oscura y lineas suaves.
-- Acento principal: teal/verde institucional para estado positivo y seleccion.
-- Alerta: rosa/rojo solo para urgencia o riesgo.
-- Advertencia: amarillo/ambar para espera o accion pendiente.
-- Evitar una interfaz dominada por un solo color.
+- Base principal: negro/grafito para navegacion, acciones primarias y superficies de control.
+- Acento principal: dorado Honey Whale para seleccion, llamadas a accion y foco visual.
+- Superficie de trabajo: blanco calido/gris muy claro para lectura, formularios y tablas.
+- Texto principal: tinta casi negra con alto contraste.
+- Estados:
+  - Verde: correcto, activo, conectado.
+  - Rojo: error, riesgo, destructivo.
+  - Naranja: advertencia, espera, SLA en riesgo.
+  - Azul discreto: informacion o sincronizacion.
+- Evitar degradados grandes y paletas de un solo tono. El dorado debe ser acento, no fondo dominante.
+
+## Layout aprobado 2026-06-03
+
+- Sidebar oscura fija en escritorio y navegacion horizontal desplazable en movil.
+- Topbar clara con contexto de usuario y acciones de simulacion.
+- Cada modulo debe tener cabecera clara, controles agrupados y contenido principal con una sola intencion visual.
+- Conversaciones debe sentirse como contact center: bandeja compacta, detalle amplio, composer visible y actividad secundaria.
+- Formularios largos deben vivir en paneles delimitados, con botones de accion visibles y feedback inmediato.
+- Cards solo para entidades repetibles; metricas, filtros y tablas/listas deben tener estilos distintos.

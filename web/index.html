@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-chatbot-console">
+    <title>WhaleHub</title>
+    <link rel="stylesheet" href="/styles.css?v=20260603-redesign-system">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -12,7 +12,7 @@
         <span class="brand-mark">HW</span>
         <div>
           <p class="eyebrow">Acceso administrativo</p>
-          <h1>HWHub</h1>
+          <h1>WhaleHub</h1>
         </div>
         <label>
           Email
@@ -31,7 +31,7 @@
       <div class="brand">
         <span class="brand-mark">HW</span>
         <div>
-          <strong>HWHub</strong>
+          <strong>WhaleHub</strong>
           <small>Atencion + IA</small>
         </div>
       </div>
@@ -54,7 +54,7 @@
       <section class="topbar">
         <div>
           <p class="eyebrow">Operaciones en tiempo real</p>
-          <h1>Hub multicanal para ventas, citas y soporte</h1>
+          <h1>WhaleHub operativo</h1>
         </div>
         <div class="top-actions">
           <label class="role-switch">
@@ -343,12 +343,12 @@
       </div>
 
       <div class="view" data-view="agents">
-        <section class="workspace single">
-          <div class="panel" id="agents">
+        <section class="module-grid" id="agents">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Multiagente</p>
-                <h2>Agentes activos</h2>
+                <h2>Gestionar agente</h2>
               </div>
             </header>
             <form class="editor" data-editor="agents">
@@ -361,18 +361,26 @@
               <p id="agent-presence-note" class="form-note"></p>
               <button>Guardar agente</button>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Disponibilidad</p>
+                <h2>Agentes activos</h2>
+              </div>
+            </header>
             <div id="agents-list" class="cards"></div>
           </div>
         </section>
       </div>
 
       <div class="view" data-view="knowledge">
-        <section class="workspace single">
-          <div class="panel" id="knowledge">
+        <section class="module-grid" id="knowledge">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Base de conocimiento</p>
-                <h2>Preguntas frecuentes</h2>
+                <h2>Editar FAQ</h2>
               </div>
             </header>
             <form class="editor" data-editor="faqs">
@@ -385,6 +393,14 @@
               <label class="check"><input type="checkbox" name="published" checked> Publicada</label>
               <button>Guardar FAQ</button>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Buscador</p>
+                <h2>Preguntas frecuentes</h2>
+              </div>
+            </header>
             <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
             <div id="faq-list" class="faq-list"></div>
           </div>
@@ -392,12 +408,12 @@
       </div>
 
       <div class="view" data-view="branches">
-        <section class="workspace single">
-          <div class="panel" id="branches">
+        <section class="module-grid" id="branches">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Directorio operativo</p>
-                <h2>Sucursales</h2>
+                <h2>Editar sucursal</h2>
               </div>
             </header>
             <form class="editor" data-editor="branches">
@@ -420,6 +436,14 @@
               <label class="check-row"><input name="active" type="checkbox" checked> Activa</label>
               <button>Guardar sucursal</button>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Consulta</p>
+                <h2>Sucursales</h2>
+              </div>
+            </header>
             <div class="filters">
               <select id="branch-state-filter">
                 <option value="">Todos los estados</option>
@@ -433,12 +457,12 @@
       </div>
 
       <div class="view" data-view="directory">
-        <section class="workspace single">
-          <div class="panel" id="directory">
+        <section class="module-grid" id="directory">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Fallback por canal e intencion</p>
-                <h2>Directorio</h2>
+                <h2>Editar contacto</h2>
               </div>
             </header>
             <form class="editor" data-editor="directoryContacts">
@@ -457,6 +481,14 @@
               <label class="check-row"><input name="active" type="checkbox" checked> Activo</label>
               <button>Guardar contacto</button>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Ruteo humano</p>
+                <h2>Directorio</h2>
+              </div>
+            </header>
             <div class="filters">
               <select id="directory-area-filter">
                 <option value="">Todas las areas</option>
@@ -470,12 +502,12 @@
       </div>
 
       <div class="view" data-view="routing">
-        <section class="workspace single">
-          <div class="panel" id="routing">
+        <section class="module-grid" id="routing">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Reglas modificables</p>
-                <h2>Canalizacion</h2>
+                <h2>Editar regla</h2>
               </div>
             </header>
             <form class="editor" data-editor="routingRules">
@@ -489,18 +521,26 @@
               <input name="fallbackMessage" placeholder="Mensaje fallback">
               <button>Guardar regla</button>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Motor de decision</p>
+                <h2>Canalizacion</h2>
+              </div>
+            </header>
             <div id="routing-list" class="rules"></div>
           </div>
         </section>
       </div>
 
       <div class="view" data-view="integrations">
-        <section class="workspace single">
-          <div class="panel" id="integrations">
+        <section class="module-grid" id="integrations">
+          <div class="panel form-panel">
             <header>
               <div>
                 <p class="eyebrow">Credenciales</p>
-                <h2>APIs e integraciones</h2>
+                <h2>Configurar API</h2>
               </div>
             </header>
             <form id="integration-form" class="editor">
@@ -526,6 +566,14 @@
               </div>
               <p id="integration-status" class="form-note"></p>
             </form>
+          </div>
+          <div class="panel list-panel">
+            <header>
+              <div>
+                <p class="eyebrow">Estado y pruebas</p>
+                <h2>APIs e integraciones</h2>
+              </div>
+            </header>
             <div id="integrations-list" class="cards"></div>
           </div>
         </section>
@@ -616,7 +664,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-chatbot-console"></script>
-    <script src="/widget.js?v=20260603-chatbot-console" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-redesign-system"></script>
+    <script src="/widget.js?v=20260603-redesign-system" data-channel="official_site"></script>
   </body>
 </html>
