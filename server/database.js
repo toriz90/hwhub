@@ -137,9 +137,13 @@ async function ensureAuthSchema(pool) {
 }
 
 function csv(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
   if (!value) return [];
-  return String(value)
+  const source = String(value).trim();
+  const normalized = source.startsWith("{") && source.endsWith("}")
+    ? source.slice(1, -1).replaceAll('"', "")
+    : source;
+  return normalized
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
@@ -187,8 +191,8 @@ function agentFromRow(row) {
     id: row.id,
     name: row.name,
     role: row.role,
-    skills: row.skills || [],
-    channels: row.channels || [],
+    skills: csv(row.skills),
+    channels: csv(row.channels),
     online: activeSession || row.is_online,
     manualOnline: row.is_online,
     loginControlled: activeSession,

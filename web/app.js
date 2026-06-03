@@ -411,6 +411,11 @@ function renderAgents() {
         <p>${esc(agent.role)}</p>
         <p class="meta">${agent.online ? "Activo" : "Fuera de linea"} - ${agent.activeConversations}/${agent.maxConversations} chats</p>
         ${agent.linkedUser ? `<p class="meta">Usuario: ${esc(agent.linkedUser.name || agent.linkedUser.email)}${agent.loginControlled ? " - controlado por sesion" : " - control manual disponible"}</p>` : `<p class="meta">Sin usuario vinculado - control manual</p>`}
+        <label class="switch-row" title="${agent.loginControlled ? "La sesion iniciada controla este agente" : "Activar o desactivar manualmente"}">
+          <input type="checkbox" data-agent-presence="${esc(agent.id)}" ${agent.online ? "checked" : ""} ${agent.loginControlled || !roleCan("agents") ? "disabled" : ""}>
+          <span></span>
+          <em>${agent.loginControlled ? "Activo por sesion" : agent.online ? "Activo manual" : "Inactivo manual"}</em>
+        </label>
         ${(agent.skills || []).map((skill) => `<span class="tag">${esc(skill)}</span>`).join("")}
         ${agent.loginControlled ? `<span class="tag tag-session">Sesion activa</span>` : `<span class="tag">Manual</span>`}
         <div class="row-actions">
@@ -1230,6 +1235,7 @@ function bindEditors() {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const collection = form.dataset.editor;
+      const note = collection === "agents" ? $("#agent-presence-note") : null;
       const payload = formPayload(form);
       if (collection === "branches" && !payload.hours) {
         payload.hours = [
@@ -1240,17 +1246,21 @@ function bindEditors() {
       }
       const id = payload.id;
       delete payload.id;
-      await api(`/api/${collection}${id ? `/${id}` : ""}`, {
-        method: id ? "PUT" : "POST",
-        body: JSON.stringify(payload)
-      });
-      form.reset();
-      if (collection === "agents") {
-        if (form.elements.online) form.elements.online.disabled = false;
-        const note = $("#agent-presence-note");
-        if (note) note.textContent = "";
+      try {
+        await api(`/api/${collection}${id ? `/${id}` : ""}`, {
+          method: id ? "PUT" : "POST",
+          body: JSON.stringify(payload)
+        });
+        form.reset();
+        if (collection === "agents") {
+          if (form.elements.online) form.elements.online.disabled = false;
+          if (note) note.textContent = "Agente guardado correctamente.";
+        }
+        await refresh();
+      } catch (error) {
+        if (note) note.textContent = error.message || "No se pudo guardar el agente.";
+        else throw error;
       }
-      await refresh();
     });
   }
 }
@@ -1267,6 +1277,33 @@ function bindRowActions() {
     button.onclick = async () => {
       await api(`/api/${button.dataset.delete}/${button.dataset.id}`, { method: "DELETE" });
       await refresh();
+    };
+  }
+  for (const input of $$("[data-agent-presence]")) {
+    input.onchange = async () => {
+      const agent = state.data.agents.find((item) => item.id === input.dataset.agentPresence);
+      if (!agent || agent.loginControlled) return;
+      input.disabled = true;
+      try {
+        await api(`/api/agents/${encodeURIComponent(agent.id)}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name: agent.name,
+            role: agent.role,
+            skills: agent.skills,
+            channels: agent.channels,
+            online: input.checked,
+            activeConversations: agent.activeConversations ?? 0,
+            maxConversations: agent.maxConversations ?? 5
+          })
+        });
+        await refresh();
+      } catch (error) {
+        input.checked = !input.checked;
+        alert(error.message || "No se pudo cambiar el estado del agente.");
+      } finally {
+        input.disabled = false;
+      }
     };
   }
 }
