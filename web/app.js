@@ -724,6 +724,7 @@ function renderChatbotSettings() {
     if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || (form.elements[key].type === "color" ? "#111b25" : "");
   }
   updateWidgetEmbedCode();
+  updateWidgetPreview();
 }
 
 function widgetEmbedCode() {
@@ -735,6 +736,34 @@ function updateWidgetEmbedCode() {
   const output = $("#widget-embed-code");
   if (!output) return;
   output.value = widgetEmbedCode();
+}
+
+function updateWidgetPreview() {
+  const form = $("#chatbot-settings-form");
+  const preview = $("#chatbot-widget-preview");
+  if (!form || !preview) return;
+  const values = {
+    title: form.elements.title.value || "Honey Whale",
+    subtitle: form.elements.subtitle.value || "Atencion por chatbot y agentes",
+    buttonLabel: form.elements.buttonLabel.value || "Chat",
+    welcome: form.elements.welcome.value || "Hola, en que puedo ayudarte?",
+    headerColor: form.elements.headerColor.value || "#111b25",
+    accentColor: form.elements.accentColor.value || "#087f7b",
+    botBubbleColor: form.elements.botBubbleColor.value || "#e5f6f3",
+    userBubbleColor: form.elements.userBubbleColor.value || "#111b25"
+  };
+  for (const key of ["title", "subtitle", "buttonLabel", "welcome"]) {
+    const target = preview.querySelector(`[data-preview="${key}"]`);
+    if (target) target.textContent = values[key];
+  }
+  const header = preview.querySelector(".widget-preview-header");
+  const botBubble = preview.querySelector(".preview-message.bot");
+  const userBubble = preview.querySelector(".preview-message.user");
+  const button = preview.querySelector(".widget-preview-button");
+  if (header) header.style.background = values.headerColor;
+  if (botBubble) botBubble.style.background = values.botBubbleColor;
+  if (userBubble) userBubble.style.background = values.userBubbleColor;
+  if (button) button.style.background = values.accentColor;
 }
 
 async function refresh() {
@@ -787,6 +816,8 @@ function bindStaticEvents() {
       status.textContent = error.message || "No se pudo guardar la configuracion.";
     }
   });
+  $("#chatbot-settings-form").addEventListener("input", updateWidgetPreview);
+  $("#chatbot-settings-form").addEventListener("change", updateWidgetPreview);
   $("#simulate-whatsapp").addEventListener("click", async () => {
     $("#channel").value = "whatsapp_cloud";
     $("#message").value = "Quiero informacion de ventas mayoristas";

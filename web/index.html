@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HWHub</title>
-    <link rel="stylesheet" href="/styles.css?v=20260603-actions-feedback">
+    <link rel="stylesheet" href="/styles.css?v=20260603-chatbot-console">
   </head>
   <body>
     <section id="login-screen" class="login-screen">
@@ -194,83 +194,150 @@
       <div class="view" data-view="chatbot">
         <section class="workspace single">
           <div class="panel" id="chatbot">
-            <header>
+            <header class="chatbot-config-header">
               <div>
-                <p class="eyebrow">Workflow editable</p>
-                <h2>Motor chatbot</h2>
+                <p class="eyebrow">Centro de control</p>
+                <h2>Configuracion del chatbot</h2>
+                <p class="section-note">Personalidad, widget, instalacion y pruebas en una sola pantalla.</p>
               </div>
+              <span class="status bot_active">Bot operativo</span>
             </header>
-            <div class="flow">
-              <div>Mensaje entrante</div>
-              <div>Detectar canal e intencion</div>
-              <div>Consultar FAQs, directorio, agenda o WooCommerce</div>
-              <div>Responder con IA o canalizar a agente</div>
-              <div>Pausar, tomar, transferir o cerrar</div>
+
+            <div class="chatbot-console">
+              <form id="chatbot-settings-form" class="chatbot-settings-form">
+                <section class="chatbot-block chatbot-ai-settings">
+                  <div class="block-heading">
+                    <span>01</span>
+                    <div>
+                      <p class="eyebrow">IA</p>
+                      <h3>Respuesta del bot</h3>
+                    </div>
+                  </div>
+                  <label>
+                    Prompt general
+                    <textarea name="prompt" id="chatbot-prompt" placeholder="Instrucciones base para el tono, limites, canalizacion y uso de herramientas."></textarea>
+                  </label>
+                  <label>
+                    Temperatura
+                    <input name="temperature" id="chatbot-temperature" type="number" min="0" max="1" step="0.1">
+                  </label>
+                </section>
+
+                <section class="chatbot-block">
+                  <div class="block-heading">
+                    <span>02</span>
+                    <div>
+                      <p class="eyebrow">Widget</p>
+                      <h3>Textos y colores</h3>
+                    </div>
+                  </div>
+                  <div class="chatbot-form-grid">
+                    <label>Titulo<input name="title" placeholder="Honey Whale"></label>
+                    <label>Subtitulo<input name="subtitle" placeholder="Atencion por chatbot y agentes"></label>
+                    <label>Texto del boton<input name="buttonLabel" placeholder="Chat"></label>
+                    <label>Mensaje inicial<input name="welcome" placeholder="Hola, en que puedo ayudarte?"></label>
+                    <label>Cabecera<input name="headerColor" type="color"></label>
+                    <label>Acento<input name="accentColor" type="color"></label>
+                    <label>Burbuja bot<input name="botBubbleColor" type="color"></label>
+                    <label>Burbuja cliente<input name="userBubbleColor" type="color"></label>
+                    <label>
+                      Posicion horizontal
+                      <select name="positionHorizontal">
+                        <option value="right">Derecha</option>
+                        <option value="center">Centro</option>
+                        <option value="left">Izquierda</option>
+                      </select>
+                    </label>
+                    <label>
+                      Posicion vertical
+                      <select name="positionVertical">
+                        <option value="bottom">Abajo</option>
+                        <option value="center">Centro</option>
+                        <option value="top">Arriba</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <div class="chatbot-save-bar">
+                  <button>Guardar configuracion</button>
+                  <p id="chatbot-settings-status" class="form-note"></p>
+                </div>
+              </form>
+
+              <aside class="widget-preview-panel">
+                <div class="block-heading">
+                  <span>03</span>
+                  <div>
+                    <p class="eyebrow">Vista previa</p>
+                    <h3>Widget publico</h3>
+                  </div>
+                </div>
+                <div class="widget-preview" id="chatbot-widget-preview">
+                  <div class="widget-preview-header">
+                    <strong data-preview="title">Honey Whale</strong>
+                    <small data-preview="subtitle">Atencion por chatbot y agentes</small>
+                  </div>
+                  <div class="widget-preview-body">
+                    <p class="preview-message bot" data-preview="welcome">Hola, en que puedo ayudarte?</p>
+                    <p class="preview-message user">Quiero revisar mi pedido</p>
+                  </div>
+                  <button type="button" class="widget-preview-button" data-preview="buttonLabel">Chat</button>
+                </div>
+              </aside>
             </div>
-            <form id="chatbot-settings-form" class="editor">
-              <label>
-                Prompt general
-                <textarea name="prompt" id="chatbot-prompt"></textarea>
-              </label>
-              <label>
-                Temperatura
-                <input name="temperature" id="chatbot-temperature" type="number" min="0" max="1" step="0.1">
-              </label>
-              <input name="title" placeholder="Titulo del widget">
-              <input name="subtitle" placeholder="Subtitulo del widget">
-              <input name="buttonLabel" placeholder="Texto del boton">
-              <input name="welcome" placeholder="Mensaje inicial">
-              <label>Color cabecera<input name="headerColor" type="color"></label>
-              <label>Color acento<input name="accentColor" type="color"></label>
-              <label>Burbuja bot<input name="botBubbleColor" type="color"></label>
-              <label>Burbuja cliente<input name="userBubbleColor" type="color"></label>
-              <label>
-                Posicion horizontal
-                <select name="positionHorizontal">
-                  <option value="right">Derecha</option>
-                  <option value="center">Centro</option>
-                  <option value="left">Izquierda</option>
-                </select>
-              </label>
-              <label>
-                Posicion vertical
-                <select name="positionVertical">
-                  <option value="bottom">Abajo</option>
-                  <option value="center">Centro</option>
-                  <option value="top">Arriba</option>
-                </select>
-              </label>
-              <button>Guardar configuracion</button>
-              <p id="chatbot-settings-status" class="form-note"></p>
-            </form>
-            <div class="embed-box">
-              <div>
-                <p class="eyebrow">Codigo de instalacion</p>
-                <h2>Widget para incrustar</h2>
+
+            <section class="chatbot-tools">
+              <div class="embed-box">
+                <div class="block-heading">
+                  <span>04</span>
+                  <div>
+                    <p class="eyebrow">Instalacion</p>
+                    <h3>Codigo del widget</h3>
+                  </div>
+                </div>
+                <textarea id="widget-embed-code" readonly></textarea>
+                <button id="copy-widget-code" type="button">Copiar codigo</button>
+                <p id="widget-code-status" class="form-note"></p>
               </div>
-              <textarea id="widget-embed-code" readonly></textarea>
-              <button id="copy-widget-code" type="button">Copiar codigo</button>
-              <p id="widget-code-status" class="form-note"></p>
+
+              <div class="chatbot-test-box">
+                <div class="block-heading">
+                  <span>05</span>
+                  <div>
+                    <p class="eyebrow">Prueba</p>
+                    <h3>Ruteo rapido</h3>
+                  </div>
+                </div>
+                <form id="chat-form" class="chat-test">
+                  <label>
+                    Canal
+                    <select id="channel">
+                      <option value="web_widget">Widget web</option>
+                      <option value="woocommerce">WooCommerce</option>
+                      <option value="whatsapp_cloud">WhatsApp oficial</option>
+                      <option value="evolution_api">Evolution API</option>
+                      <option value="telnyx">Telnyx</option>
+                      <option value="plivo">Plivo</option>
+                    </select>
+                  </label>
+                  <label>
+                    Mensaje de prueba
+                    <input id="message" value="Compre por MercadoLibre y necesito ayuda">
+                  </label>
+                  <button>Probar ruteo</button>
+                </form>
+                <div id="chat-result" class="result"></div>
+              </div>
+            </section>
+
+            <div class="flow compact-flow">
+              <div>Entrada</div>
+              <div>Intencion</div>
+              <div>Herramientas</div>
+              <div>Respuesta o agente</div>
+              <div>Cierre</div>
             </div>
-            <form id="chat-form" class="chat-test">
-              <label>
-                Canal
-                <select id="channel">
-                  <option value="web_widget">Widget web</option>
-                  <option value="woocommerce">WooCommerce</option>
-                  <option value="whatsapp_cloud">WhatsApp oficial</option>
-                  <option value="evolution_api">Evolution API</option>
-                  <option value="telnyx">Telnyx</option>
-                  <option value="plivo">Plivo</option>
-                </select>
-              </label>
-              <label>
-                Mensaje de prueba
-                <input id="message" value="Compre por MercadoLibre y necesito ayuda">
-              </label>
-              <button>Probar ruteo</button>
-            </form>
-            <div id="chat-result" class="result"></div>
           </div>
         </section>
       </div>
@@ -549,7 +616,7 @@
       </div>
     </main>
 
-    <script src="/app.js?v=20260603-actions-feedback"></script>
-    <script src="/widget.js?v=20260603-actions-feedback" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-chatbot-console"></script>
+    <script src="/widget.js?v=20260603-chatbot-console" data-channel="official_site"></script>
   </body>
 </html>
