@@ -935,7 +935,7 @@ function safeExternalUrl(value) {
   }
 }
 
-function renderRichText(value = "") {
+function renderInlineRichText(value = "") {
   const source = String(value || "");
   const urlPattern = /https?:\/\/[^\s<>"']+/gi;
   const parts = [];
@@ -948,7 +948,41 @@ function renderRichText(value = "") {
     lastIndex = (match.index || 0) + match[0].length;
   }
   parts.push(esc(source.slice(lastIndex)));
-  return parts.join("").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+  return parts.join("").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+}
+
+function renderRichText(value = "") {
+  const lines = String(value || "").split(/\r?\n/);
+  const html = [];
+  let listOpen = false;
+  const closeList = () => {
+    if (!listOpen) return;
+    html.push("</ul>");
+    listOpen = false;
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      closeList();
+      html.push(`<div class="message-gap"></div>`);
+      continue;
+    }
+    const bullet = line.match(/^[-•]\s+(.+)$/);
+    if (bullet) {
+      if (!listOpen) {
+        html.push(`<ul class="message-list-content">`);
+        listOpen = true;
+      }
+      html.push(`<li>${renderInlineRichText(bullet[1])}</li>`);
+      continue;
+    }
+    closeList();
+    const isHeading = /^\*\*[^*]+\*\*$/.test(line);
+    html.push(`<p${isHeading ? ` class="message-heading"` : ""}>${renderInlineRichText(line)}</p>`);
+  }
+  closeList();
+  return html.join("");
 }
 
 function renderMessageRichContent(blocks = []) {
@@ -1016,7 +1050,7 @@ async function openConversation(id) {
           ${data.messages
             .map((message) => `
               <div class="message ${esc(message.senderType)}">
-                <p>${renderRichText(message.body)}</p>
+                <div class="message-body">${renderRichText(message.body)}</div>
                 ${renderMessageRichContent(message.metadata?.richContent)}
                 <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
               </div>

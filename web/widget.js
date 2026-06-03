@@ -69,19 +69,54 @@
     }
   }
 
-  function renderText(value = "") {
+  function renderInlineText(value = "") {
     const urlPattern = /https?:\/\/[^\s<>"']+/gi;
     const parts = [];
     let lastIndex = 0;
-    for (const match of String(value).matchAll(urlPattern)) {
+    const source = String(value || "");
+    for (const match of source.matchAll(urlPattern)) {
       const raw = match[0].replace(/[),.;]+$/, "");
-      parts.push(esc(String(value).slice(lastIndex, match.index)));
+      parts.push(esc(source.slice(lastIndex, match.index)));
       const href = safeUrl(raw);
       parts.push(href ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(new URL(href).hostname.replace(/^www\./, ""))}</a>` : esc(raw));
       lastIndex = (match.index || 0) + match[0].length;
     }
-    parts.push(esc(String(value).slice(lastIndex)));
-    return parts.join("").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+    parts.push(esc(source.slice(lastIndex)));
+    return parts.join("").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  }
+
+  function renderText(value = "") {
+    const lines = String(value || "").split(/\r?\n/);
+    const html = [];
+    let listOpen = false;
+    const closeList = () => {
+      if (!listOpen) return;
+      html.push("</ul>");
+      listOpen = false;
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) {
+        closeList();
+        html.push(`<div class="hwhub-message-gap"></div>`);
+        continue;
+      }
+      const bullet = line.match(/^[-•]\s+(.+)$/);
+      if (bullet) {
+        if (!listOpen) {
+          html.push(`<ul class="hwhub-message-list">`);
+          listOpen = true;
+        }
+        html.push(`<li>${renderInlineText(bullet[1])}</li>`);
+        continue;
+      }
+      closeList();
+      const isHeading = /^\*\*[^*]+\*\*$/.test(line);
+      html.push(`<p${isHeading ? ` class="hwhub-message-heading"` : ""}>${renderInlineText(line)}</p>`);
+    }
+    closeList();
+    return html.join("");
   }
 
   function renderRichContent(blocks = []) {
@@ -488,7 +523,7 @@
       return `
         ${separator}
         <article class="hwhub-widget-message ${esc(message.senderType)}">
-          <p>${renderText(message.body)}</p>
+          <div class="hwhub-widget-message-body">${renderText(message.body)}</div>
           ${renderRichContent(message.metadata?.richContent)}
           <time>${esc(timeLabel(createdAt))}</time>
         </article>

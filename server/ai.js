@@ -78,7 +78,7 @@ function buildContext({ text, routed, currentState }) {
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
-  const branches = currentState.branches.slice(0, 20).map((branch) => ({
+  const branches = selectRelevantBranches(currentState.branches || [], normalized).map((branch) => ({
     name: branch.name,
     state: branch.state,
     city: branch.city,
@@ -129,6 +129,16 @@ function buildContext({ text, routed, currentState }) {
       "Si hay datos de TrackShip, menciona estatus de envio, guia y URL de seguimiento cuando exista.",
       "Si el perfil del cliente ya tiene nombre, telefono o email, no vuelvas a pedir esos datos.",
       "Si customerProfile.appointmentConfirmedAt existe y el mensaje actual no pide explicitamente otra cita, NO sigas pidiendo datos de cita; responde normalmente al mensaje actual.",
+      "Cuando respondas sobre sucursales, centros de servicio, direcciones o telefonos, usa este formato profesional y facil de leer:",
+      "**Sucursal recomendada**",
+      "- Nombre: nombre exacto",
+      "- Ubicacion: colonia, municipio, estado",
+      "- Direccion: direccion registrada o 'Dato no registrado'",
+      "- WhatsApp: numero registrado o 'Dato no registrado'",
+      "- Telefono: numero registrado o 'Dato no registrado'",
+      "- Horario: horario registrado o 'Dato no registrado'",
+      "- Servicios: servicios registrados o 'Dato no registrado'",
+      "Cierra con una pregunta breve de seguimiento. No escribas todos los datos en un solo parrafo.",
       "Para citas usa appointmentState. Si appointmentState.canCreate es false, NO digas 'agendado', 'reservado' ni 'confirmado'. Solo pide los campos faltantes de appointmentState.missing.",
       "Si appointmentState.confirmed es true, considera cerrado el flujo de cita y no pidas campos faltantes.",
       "Si hay servicios de Easy!Appointments, puedes ofrecer iniciar la agenda, pero solo confirma una cita cuando appointmentState.canCreate sea true y exista confirmacion de la API.",
@@ -144,6 +154,35 @@ function buildContext({ text, routed, currentState }) {
       `Contexto externo de APIs: ${JSON.stringify(connectorContext)}`
     ].join("\n")
   };
+}
+
+function selectRelevantBranches(branches = [], normalizedText = "") {
+  const terms = normalizedText
+    .split(/[^a-z0-9áéíóúñü]+/i)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 3);
+
+  return [...branches]
+    .map((branch, index) => {
+      const haystack = [
+        branch.name,
+        branch.state,
+        branch.city,
+        branch.municipality,
+        branch.colony,
+        branch.address,
+        branch.phone,
+        branch.whatsapp,
+        branch.email,
+        branch.hours,
+        (branch.services || []).join(" ")
+      ].join(" ").toLowerCase();
+      const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+      return { branch, score, index };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .slice(0, 24)
+    .map((item) => item.branch);
 }
 
 function mockReply({ text, routed, currentState }) {
