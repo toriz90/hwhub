@@ -37,10 +37,10 @@ const defaultChatbotSettings = {
     subtitle: "Atencion por chatbot y agentes",
     welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
     buttonLabel: "Chat",
-    headerColor: "#111b25",
-    accentColor: "#e84c70",
-    botBubbleColor: "#e8f6f4",
-    userBubbleColor: "#111b25",
+    headerColor: "#1f2a37",
+    accentColor: "#f5b301",
+    botBubbleColor: "#e8f5f3",
+    userBubbleColor: "#1f2a37",
     positionHorizontal: "right",
     positionVertical: "bottom"
   }
@@ -52,6 +52,16 @@ function mergeChatbotSettings(value = {}) {
     ...(value || {}),
     widget: { ...defaultChatbotSettings.widget, ...(value?.widget || {}) }
   };
+  const legacyWidgetColors = {
+    headerColor: { "#111b25": "#1f2a37" },
+    accentColor: { "#e84c70": "#f5b301", "#087f7b": "#f5b301" },
+    botBubbleColor: { "#e8f6f4": "#e8f5f3", "#e5f6f3": "#e8f5f3" },
+    userBubbleColor: { "#111b25": "#1f2a37" }
+  };
+  for (const [key, replacements] of Object.entries(legacyWidgetColors)) {
+    const current = String(merged.widget[key] || "").toLowerCase();
+    if (replacements[current]) merged.widget[key] = replacements[current];
+  }
   if (!String(merged.prompt || "").trim()) merged.prompt = defaultChatbotPrompt;
   return {
     ...merged,

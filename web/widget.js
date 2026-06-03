@@ -1,6 +1,7 @@
 (function () {
   const currentScript = document.currentScript;
-  const api = currentScript?.dataset.hwhubApi || "";
+  const scriptOrigin = currentScript?.src ? new URL(currentScript.src).origin : "";
+  const api = currentScript?.dataset.hwhubApi || scriptOrigin || "";
   const channel = currentScript?.dataset.channel || "web_widget";
   const storageKey = `hwhub-widget:${api || location.origin}:${channel}`;
   const requiredFields = ["firstName", "lastName", "email", "phone"];
@@ -731,7 +732,16 @@
     </div>
   `;
 
-  document.body.append(panel, button);
+  function mountWidget() {
+    if (button.isConnected || panel.isConnected) return;
+    document.body.append(panel, button);
+  }
+
+  if (document.body) {
+    mountWidget();
+  } else {
+    document.addEventListener("DOMContentLoaded", mountWidget, { once: true });
+  }
 
   const badge = panel.ownerDocument.querySelector("#hwhub-widget-badge");
   const profileForm = panel.querySelector("#hwhub-widget-profile");
