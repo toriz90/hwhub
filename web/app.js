@@ -1715,6 +1715,22 @@ function renderConversationContext(data, currentAgent) {
       </div>
     </section>
     <section class="wh-context-section">
+      <p class="eyebrow">Cita Easy!Appointments</p>
+      ${profile.appointmentId || profile.appointmentFolio || profile.appointmentStart ? `
+        <article class="wh-order-card">
+          <strong>${esc(profile.appointmentFolio || `ID ${profile.appointmentId}`)}</strong>
+          <span class="wh-conv-tag">Cita confirmada</span>
+          <p>${esc(profile.appointmentStart || "Fecha pendiente en contexto")}</p>
+          ${profile.appointmentId && profile.appointmentFolio ? `<p>ID interno: ${esc(profile.appointmentId)}</p>` : ""}
+        </article>
+      ` : `
+        <article class="wh-empty-state compact">
+          <strong>Sin cita vinculada</strong>
+          <p>Cuando el widget cree una cita, aqui aparecera su folio oficial.</p>
+        </article>
+      `}
+    </section>
+    <section class="wh-context-section">
       <p class="eyebrow">Pedido WooCommerce</p>
       ${profile.orderNumber ? `
         <article class="wh-order-card">

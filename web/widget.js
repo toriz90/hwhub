@@ -42,7 +42,11 @@
           equipmentModel: currentScript?.dataset.equipmentModel || saved.profile?.equipmentModel || "",
           serialNumber: currentScript?.dataset.serialNumber || saved.profile?.serialNumber || "",
           orderNumber: currentScript?.dataset.orderNumber || saved.profile?.orderNumber || "",
-          details: saved.profile?.details || ""
+          details: saved.profile?.details || "",
+          appointmentConfirmedAt: saved.profile?.appointmentConfirmedAt || "",
+          appointmentId: saved.profile?.appointmentId || "",
+          appointmentFolio: saved.profile?.appointmentFolio || "",
+          appointmentStart: saved.profile?.appointmentStart || ""
         },
         messages: saved.messages || []
       };
@@ -852,7 +856,7 @@
   }
 
   function resetAppointmentSelection() {
-    for (const key of ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime", "appointmentConfirmedAt", "appointmentId", "appointmentStart"]) {
+    for (const key of ["appointmentServiceId", "appointmentProviderId", "appointmentDate", "appointmentTime", "appointmentConfirmedAt", "appointmentId", "appointmentFolio", "appointmentStart"]) {
       session.profile[key] = "";
     }
     saveSession();
@@ -863,7 +867,8 @@
     const url = safeUrl(current.rescheduleUrl || "");
     const link = url ? ` <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Reagendar cita</a>` : "";
     const email = session.profile.email ? ` Correo: ${esc(session.profile.email)}.` : "";
-    return `${esc(result.message || "Ya existe una cita futura asociada a este correo.")} Cita actual: ${esc(current.start || "sin fecha visible")}.${email}${link}`;
+    const folio = current.folio ? ` Folio: ${esc(current.folio)}.` : "";
+    return `${esc(result.message || "Ya existe una cita futura asociada a este correo.")} Cita actual: ${esc(current.start || "sin fecha visible")}.${folio}${email}${link}`;
   }
 
   function setScreen(screen) {
@@ -1242,13 +1247,15 @@
     ].filter(Boolean).join("\n");
     const confirmation = [
       `Cita creada correctamente${createResult.appointment?.id ? ` con ID ${createResult.appointment.id}` : ""}.`,
+      createResult.appointment?.folio ? `Folio: ${createResult.appointment.folio}` : "",
       `Servicio: ${service?.name || createResult.service?.name || session.profile.appointmentServiceId}`,
       `Proveedor: ${provider?.name || session.profile.appointmentProviderId}`,
       `Fecha y hora: ${createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`}`,
-      "Revisa tu correo electronico; ahi recibiras la confirmacion con el PDF adjunto y tu folio de cita."
-    ].join("\n");
+      "Revisa tu correo electronico; ahi recibiras la confirmacion con el PDF adjunto."
+    ].filter(Boolean).join("\n");
     session.profile.appointmentConfirmedAt = new Date().toISOString();
     session.profile.appointmentId = createResult.appointment?.id || "";
+    session.profile.appointmentFolio = createResult.appointment?.folio || "";
     session.profile.appointmentStart = createResult.appointment?.start || `${session.profile.appointmentDate} ${session.profile.appointmentTime}`;
     pendingAppointmentMessage = "";
     setScreen("chat");

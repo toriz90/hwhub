@@ -448,6 +448,16 @@ function appointmentPublicUrl(config = {}, hash) {
   return hash && endpoint ? `${endpoint}/index.php/booking/reschedule/${encodeURIComponent(hash)}` : "";
 }
 
+async function hydrateEasyAppointment(config, appointment = {}) {
+  if (!appointment?.id) return appointment || {};
+  try {
+    const fresh = await fetchEasyJson(config, `/index.php/api/v1/appointments/${encodeURIComponent(appointment.id)}`, { cache: false });
+    return { ...appointment, ...(fresh || {}) };
+  } catch {
+    return appointment;
+  }
+}
+
 function normalizeSlots(data) {
   if (Array.isArray(data)) return data.map((item) => typeof item === "string" ? item : item.start || item.time || item).filter(Boolean);
   const list = data?.availableHours || data?.availabilities || data?.data || [];
@@ -471,14 +481,16 @@ async function findFutureAppointmentByEmail(config, email, today) {
     .filter((appointment) => String(appointment.start || "").slice(0, 10) >= today)
     .filter((appointment) => !/cancel/i.test(String(appointment.status || "")))
     .sort((left, right) => String(left.start).localeCompare(String(right.start)))[0];
+  const hydrated = future ? await hydrateEasyAppointment(config, future) : null;
   return future ? {
-    appointmentId: future.id,
-    start: future.start,
-    status: future.status,
-    hash: future.hash,
-    rescheduleUrl: appointmentPublicUrl(config, future.hash),
-    serviceId: future.serviceId,
-    providerId: future.providerId
+    appointmentId: hydrated.id,
+    folio: hydrated.folio || "",
+    start: hydrated.start,
+    status: hydrated.status,
+    hash: hydrated.hash,
+    rescheduleUrl: appointmentPublicUrl(config, hydrated.hash),
+    serviceId: hydrated.serviceId,
+    providerId: hydrated.providerId
   } : null;
 }
 
@@ -629,9 +641,10 @@ export async function createEasyAppointment(store, payload = {}) {
     location: String(payload.sourceValue || "")
   };
   const appointment = await postEasyJson(config, "/index.php/api/v1/appointments", appointmentPayload);
+  const hydratedAppointment = await hydrateEasyAppointment(config, appointment);
   return {
     ok: true,
-    appointment: { ...appointment, manageUrl: appointmentPublicUrl(config, appointment?.hash) },
+    appointment: { ...hydratedAppointment, manageUrl: appointmentPublicUrl(config, hydratedAppointment?.hash) },
     customer: {
       id: customer.id,
       firstName: customer.firstName,

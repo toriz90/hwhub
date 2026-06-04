@@ -481,6 +481,7 @@ function customerProfileFromBody(body = {}) {
     details: body.details || customer.details || "",
     appointmentConfirmedAt: body.appointmentConfirmedAt || customer.appointmentConfirmedAt || "",
     appointmentId: body.appointmentId || customer.appointmentId || "",
+    appointmentFolio: body.appointmentFolio || customer.appointmentFolio || "",
     appointmentStart: body.appointmentStart || customer.appointmentStart || ""
   };
 }
@@ -503,6 +504,7 @@ function mergeCustomerProfile(conversation, profile) {
     details: profile.details || current.details || "",
     appointmentConfirmedAt: profile.appointmentConfirmedAt || current.appointmentConfirmedAt || "",
     appointmentId: profile.appointmentId || current.appointmentId || "",
+    appointmentFolio: profile.appointmentFolio || current.appointmentFolio || "",
     appointmentStart: profile.appointmentStart || current.appointmentStart || ""
   };
 }
@@ -524,6 +526,7 @@ function appointmentState(profile, text = "", history = []) {
       canCreate: false,
       missing: [],
       appointmentId: profile.appointmentId || null,
+      appointmentFolio: profile.appointmentFolio || null,
       appointmentStart: profile.appointmentStart || null
     };
   }

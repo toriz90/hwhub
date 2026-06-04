@@ -146,6 +146,7 @@ function buildContext({ text, routed, currentState }) {
       "Si wooCustomerAuthRequired es true, no muestres pedidos por email o id de cliente; solicita numero de pedido, telefono o correo para validar manualmente.",
       "Si hay datos de TrackShip, menciona estatus de envio, guia y URL de seguimiento cuando exista.",
       "Si el perfil del cliente ya tiene nombre, telefono o email, no vuelvas a pedir esos datos.",
+      "Si customerProfile.appointmentFolio existe, ese es el folio oficial de cita de Easy!Appointments; puedes mostrarlo, pero nunca inventes uno.",
       "Si customerProfile.appointmentConfirmedAt existe y el mensaje actual no pide explicitamente otra cita, NO sigas pidiendo datos de cita; responde normalmente al mensaje actual.",
       "Cuando respondas sobre sucursales, centros de servicio, direcciones o telefonos, usa este formato profesional y facil de leer:",
       "**Sucursal recomendada**",
