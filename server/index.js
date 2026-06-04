@@ -969,13 +969,17 @@ const server = createServer(async (req, res) => {
         metadata: { customerProfile: mergedProfile, visitorId, wooCustomerId: mergedProfile.wooCustomerId }
       });
       emit("conversation.created", savedConversation);
+      const createdMessages = await store.messages(savedConversation.id);
+      const firstMessage = createdMessages[createdMessages.length - 1];
+      if (firstMessage) emit("message.created", firstMessage);
     } else {
-      await store.addMessage(savedConversation.id, {
+      const customerMessage = await store.addMessage(savedConversation.id, {
         senderType: "customer",
         senderId: null,
         body: body.message || "",
         metadata: { visitorId, customerProfile: mergedProfile }
       });
+      emit("message.created", customerMessage);
       savedConversation = await store.updateConversationContext?.(savedConversation.id, {
         customer: mergedProfile.name || undefined,
         customerPhone: mergedProfile.phone || undefined,
@@ -989,12 +993,18 @@ const server = createServer(async (req, res) => {
       emit("conversation.updated", savedConversation);
     }
     if (ai.reply) {
-      await store.addMessage(savedConversation.id, {
+      const botMessage = await store.addMessage(savedConversation.id, {
         senderType: "bot",
         senderId: null,
         body: ai.reply,
         metadata: { provider: ai.provider, model: ai.model, usedContext: ai.usedContext, error: ai.error || null, richContent }
       });
+      emit("message.created", botMessage);
+      const refreshedConversation = await store.conversationById?.(savedConversation.id);
+      if (refreshedConversation) {
+        savedConversation = refreshedConversation;
+        emit("conversation.updated", savedConversation);
+      }
     }
     const messages = await store.messages(savedConversation.id);
     sendJson(res, {
