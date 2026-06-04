@@ -4423,3 +4423,204 @@ html[data-theme="dark"] .message.msg.me .message-body {
     grid-template-columns: 300px minmax(0, 1fr);
   }
 }
+
+/* WhaleHub operational dashboard and controls pass */
+.dashboard-insights {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.25fr) minmax(260px, 0.9fr) minmax(260px, 0.9fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.dashboard-card {
+  min-height: 260px;
+}
+
+.dashboard-attention-list,
+.dashboard-channel-bars,
+.dashboard-integration-status {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-attention-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid var(--wh-border);
+  border-left: 4px solid var(--wh-gold);
+  border-radius: 12px;
+  background: var(--wh-surface);
+  color: var(--wh-text);
+  text-align: left;
+  box-shadow: none;
+}
+
+.dashboard-attention-item:hover {
+  border-color: color-mix(in srgb, var(--wh-gold) 72%, var(--wh-border));
+  background: var(--wh-gold-soft);
+}
+
+.dashboard-attention-item span,
+.dashboard-channel-row div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dashboard-attention-item strong,
+.dashboard-channel-row strong {
+  color: var(--wh-text-strong);
+}
+
+.dashboard-attention-item small,
+.dashboard-channel-row span {
+  color: var(--wh-muted);
+  font-size: 11px;
+}
+
+.dashboard-attention-item em {
+  color: var(--wh-muted-2);
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.dashboard-channel-row {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-channel-row i {
+  display: block;
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--wh-border);
+}
+
+.dashboard-channel-row i::before {
+  content: "";
+  display: block;
+  width: var(--bar);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--wh-gold), #f8cf5a);
+}
+
+.dashboard-api-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  border: 1px solid var(--wh-border);
+  border-radius: 11px;
+  padding: 9px 11px;
+  background: var(--wh-surface);
+}
+
+.dashboard-api-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-api-row strong {
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--wh-ink);
+  font-size: 10px;
+  text-transform: uppercase;
+  background: var(--wh-gold-soft);
+}
+
+.dashboard-api-row.is-ok strong {
+  background: rgba(20, 126, 81, 0.14);
+  color: #147e51;
+}
+
+.dashboard-api-row.is-warning strong {
+  background: rgba(189, 49, 49, 0.12);
+  color: #bd3131;
+}
+
+.wh-conv-tag.is-unread {
+  background: var(--wh-gold);
+  color: var(--wh-ink);
+}
+
+.wh-unread-dot {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wh-gold);
+  color: var(--wh-ink);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+label.check,
+label.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+label.check input[type="checkbox"],
+label.check-row input[type="checkbox"] {
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 42px;
+  border: 1px solid var(--wh-border);
+  border-radius: 999px;
+  background: #d9dde3;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+label.check input[type="checkbox"]::before,
+label.check-row input[type="checkbox"]::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(13, 15, 18, 0.22);
+  transition: transform 0.18s ease;
+}
+
+label.check input[type="checkbox"]:checked,
+label.check-row input[type="checkbox"]:checked {
+  border-color: var(--wh-gold);
+  background: var(--wh-gold);
+}
+
+label.check input[type="checkbox"]:checked::before,
+label.check-row input[type="checkbox"]:checked::before {
+  transform: translateX(18px);
+}
+
+label.check input[type="checkbox"]:disabled,
+label.check-row input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 1180px) {
+  .dashboard-insights {
+    grid-template-columns: 1fr;
+  }
+}

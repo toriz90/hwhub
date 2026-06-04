@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650;9..144,750&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=20260603-maqueta-pass">
+    <link rel="stylesheet" href="/styles.css?v=20260603-ops-pass">
   </head>
   <body class="wh-app">
     <section id="login-screen" class="login-screen">
@@ -170,6 +170,35 @@
             <strong id="metric-closed">0</strong>
           </button>
         </section>
+        <section class="dashboard-insights">
+          <article class="panel dashboard-card">
+            <header>
+              <div>
+                <p class="eyebrow">Requiere atencion</p>
+                <h2>Cola operativa</h2>
+              </div>
+            </header>
+            <div id="dashboard-attention-list" class="dashboard-attention-list"></div>
+          </article>
+          <article class="panel dashboard-card">
+            <header>
+              <div>
+                <p class="eyebrow">Canales</p>
+                <h2>Volumen actual</h2>
+              </div>
+            </header>
+            <div id="dashboard-channel-bars" class="dashboard-channel-bars"></div>
+          </article>
+          <article class="panel dashboard-card">
+            <header>
+              <div>
+                <p class="eyebrow">Integraciones</p>
+                <h2>Estado API</h2>
+              </div>
+            </header>
+            <div id="dashboard-integration-status" class="dashboard-integration-status"></div>
+          </article>
+        </section>
       </div>
 
       <div class="view" data-view="conversations">
@@ -242,7 +271,7 @@
                 <button>Enviar</button>
               </form>
             </div>
-          </aside>
+          </div>
 
           <aside class="panel wh-inbox-context">
             <header class="wh-inbox-col-head">
@@ -258,7 +287,7 @@
                 <p>Abre un chat para ver identidad, canal, historial y contexto WooCommerce disponible.</p>
               </article>
             </div>
-          </div>
+          </aside>
         </section>
       </div>
 
@@ -736,7 +765,7 @@
     </main>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="/app.js?v=20260603-theme-switch"></script>
-    <script src="/widget.js?v=20260603-theme-switch" data-channel="official_site"></script>
+    <script src="/app.js?v=20260603-ops-pass"></script>
+    <script src="/widget.js?v=20260603-ops-pass" data-channel="official_site"></script>
   </body>
 </html>

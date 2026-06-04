@@ -5,7 +5,9 @@ const state = {
   selectedConversationId: null,
   role: "viewer",
   user: null,
-  typing: {}
+  typing: {},
+  conversationDetails: {},
+  unread: {}
 };
 
 const filters = {
@@ -446,6 +448,12 @@ async function logout() {
 
 async function loadBootstrap() {
   state.data = await api("/api/bootstrap");
+  if (state.data?.conversations) {
+    const validIds = new Set(state.data.conversations.map((item) => item.id));
+    for (const id of Object.keys(state.unread)) {
+      if (!validIds.has(id)) delete state.unread[id];
+    }
+  }
   return state.data;
 }
 
@@ -465,6 +473,46 @@ function setAuthenticatedUi(isAuthenticated) {
   $("#active-user").textContent = state.user ? `${state.user.name} - ${state.user.role}` : "";
 }
 
+function upsertConversation(conversation) {
+  if (!conversation || !state.data?.conversations) return;
+  const index = state.data.conversations.findIndex((item) => item.id === conversation.id);
+  if (index >= 0) {
+    state.data.conversations[index] = { ...state.data.conversations[index], ...conversation };
+  } else {
+    state.data.conversations.unshift(conversation);
+  }
+  state.data.conversations.sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
+}
+
+function updateConversationSummaryFromMessage(message) {
+  if (!message?.conversationId || !state.data?.conversations) return;
+  const conversation = state.data.conversations.find((item) => item.id === message.conversationId);
+  if (!conversation) return;
+  conversation.lastMessage = message.body || conversation.lastMessage;
+  conversation.updatedAt = message.createdAt || new Date().toISOString();
+}
+
+function cacheConversationDetail(data) {
+  if (!data?.conversation?.id) return;
+  state.conversationDetails[data.conversation.id] = data;
+  upsertConversation(data.conversation);
+}
+
+function cacheMessage(message) {
+  if (!message?.conversationId) return;
+  const detail = state.conversationDetails[message.conversationId];
+  if (detail?.messages && !detail.messages.some((item) => item.id === message.id)) {
+    detail.messages.push(message);
+  }
+  updateConversationSummaryFromMessage(message);
+}
+
+function renderConversationFrame() {
+  renderDashboard();
+  renderConversations();
+  applyRoleUi();
+}
+
 function renderDashboard() {
   const appState = state.data;
   $("#metric-conversations").textContent = appState.conversations.length;
@@ -482,6 +530,67 @@ function renderDashboard() {
   $("#metric-closed").textContent = counts.closed || 0;
   $("#metric-urgent").textContent = appState.conversations.filter((item) => item.priority === "urgent").length;
   $("#metric-sla-risk").textContent = appState.conversations.filter((item) => ["at_risk", "breached"].includes(item.slaState)).length;
+  renderDashboardInsights(appState);
+}
+
+function renderDashboardInsights(appState) {
+  const attention = $("#dashboard-attention-list");
+  const channels = $("#dashboard-channel-bars");
+  const integrations = $("#dashboard-integration-status");
+  if (!attention || !channels || !integrations) return;
+
+  const priorityQueue = [...(appState.conversations || [])]
+    .filter((item) => item.status !== "closed")
+    .sort((left, right) => {
+      const score = (item) => (item.priority === "urgent" ? 3 : item.slaState === "breached" ? 2 : item.status === "waiting_for_agent" ? 1 : 0);
+      return score(right) - score(left) || new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0);
+    })
+    .slice(0, 5);
+
+  attention.innerHTML = priorityQueue.map((item) => `
+    <button type="button" class="dashboard-attention-item" data-dashboard-open="${esc(item.id)}">
+      <span>
+        <strong>${esc(item.customer || "Cliente")}</strong>
+        <small>${esc(channelLabel(item.channel))} - ${esc(statusLabel(item.status))}</small>
+      </span>
+      <em>${esc(formatShortTime(item.updatedAt))}</em>
+    </button>
+  `).join("") || `<article class="wh-empty-state compact"><strong>Sin pendientes</strong><p>No hay conversaciones abiertas que requieran atencion inmediata.</p></article>`;
+
+  for (const item of $$("[data-dashboard-open]")) {
+    item.onclick = () => {
+      showView("conversations");
+      history.replaceState(null, "", "#conversations");
+      openConversation(item.dataset.dashboardOpen);
+    };
+  }
+
+  const channelCounts = (appState.conversations || []).reduce((acc, item) => {
+    const label = channelLabel(item.channel);
+    acc[label] = (acc[label] || 0) + 1;
+    return acc;
+  }, {});
+  const maxChannel = Math.max(1, ...Object.values(channelCounts));
+  channels.innerHTML = Object.entries(channelCounts).map(([label, count]) => `
+    <article class="dashboard-channel-row">
+      <div>
+        <strong>${esc(label)}</strong>
+        <span>${esc(count)} chats</span>
+      </div>
+      <i style="--bar:${Math.max(8, Math.round((count / maxChannel) * 100))}%"></i>
+    </article>
+  `).join("") || `<article class="wh-empty-state compact"><strong>Sin actividad</strong><p>Aun no hay conversaciones por canal.</p></article>`;
+
+  const apiItems = appState.integrations || [];
+  integrations.innerHTML = apiItems.slice(0, 6).map((item) => {
+    const status = item.lastCheckStatus === "ok" ? "ok" : item.lastCheckStatus ? "warning" : "info";
+    return `
+      <article class="dashboard-api-row is-${status}">
+        <span>${esc(item.name || item.provider)}</span>
+        <strong>${esc(item.lastCheckStatus || "sin prueba")}</strong>
+      </article>
+    `;
+  }).join("") || `<article class="wh-empty-state compact"><strong>Sin APIs</strong><p>Configura integraciones para ver su estado aqui.</p></article>`;
 }
 
 function renderConversationInbox() {
@@ -506,7 +615,7 @@ function renderConversationInbox() {
       (!filters.slaState || item.slaState === filters.slaState || (filters.slaState === "at_risk" && item.slaState === "breached")) &&
       (!filters.search || haystack.includes(filters.search.toLowerCase()))
     );
-  });
+  }).sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
 
   $("#conversation-list").innerHTML = conversations
     .map((item) => {
@@ -514,8 +623,10 @@ function renderConversationInbox() {
       const channel = channelLabel(item.channel);
       const avatarClass = channelClass(item.channel, item.marketplace);
       const statusText = item.status === "agent_active" && agent ? `AGENTE - ${agent.name}` : statusShortLabel(item.status);
+      const unread = Number(state.unread[item.id] || 0);
       const tags = [
         `<span class="wh-conv-tag status-${esc(item.status)}">${esc(statusText)}</span>`,
+        unread ? `<span class="wh-conv-tag is-unread">${esc(unread)} nuevo${unread > 1 ? "s" : ""}</span>` : "",
         item.priority === "urgent" ? `<span class="wh-conv-tag is-urgent">URGENTE</span>` : "",
         item.intent ? `<span class="wh-conv-tag">${esc(item.intent)}</span>` : "",
         item.marketplace && item.marketplace !== "official" ? `<span class="wh-conv-tag">${esc(item.marketplace)}</span>` : ""
@@ -531,7 +642,7 @@ function renderConversationInbox() {
             <p>${esc(item.lastMessage || "Sin mensajes recientes")}</p>
             <div class="wh-conv-tags">${tags}</div>
           </div>
-          ${item.priority === "urgent" ? `<strong class="wh-unread-dot" aria-label="Urgente">!</strong>` : ""}
+          ${unread ? `<strong class="wh-unread-dot" aria-label="${esc(unread)} mensajes nuevos">${esc(unread)}</strong>` : item.priority === "urgent" ? `<strong class="wh-unread-dot" aria-label="Urgente">!</strong>` : ""}
         </article>
       `;
     })
@@ -553,54 +664,6 @@ function renderConversationInbox() {
 
 function renderConversations() {
   return renderConversationInbox();
-  const appState = state.data;
-  const conversations = appState.conversations.filter((item) => {
-    const haystack = `${item.customer || ""} ${item.lastMessage || ""} ${item.intent || ""}`.toLowerCase();
-    return (
-      (!filters.status || item.status === filters.status) &&
-      (!filters.channel || item.channel === filters.channel) &&
-      (!filters.priority || item.priority === filters.priority) &&
-      (!filters.slaState || item.slaState === filters.slaState || (filters.slaState === "at_risk" && item.slaState === "breached")) &&
-      (!filters.search || haystack.includes(filters.search.toLowerCase()))
-    );
-  });
-
-  $("#conversation-list").innerHTML = conversations
-    .map((item) => {
-      const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
-      return `
-        <article class="item conversation-card ${state.selectedConversationId === item.id ? "selected" : ""}" data-open-conversation="${esc(item.id)}">
-          <div class="conversation-card-head">
-            <strong>${esc(item.customer)}</strong>
-            <span>${item.waitingMinutes || 0} min</span>
-          </div>
-          <p>${esc(item.lastMessage)}</p>
-          <p class="meta">${esc(item.channel)} - ${esc(item.intent || "sin intencion")} - ${agent ? esc(agent.name) : "sin agente"}</p>
-          <span class="status ${esc(item.status)}">${statusLabel(item.status)}</span>
-          <span class="priority ${esc(item.priority)}">${priorityLabel(item.priority)} · ${item.waitingMinutes || 0} min</span>
-          <div class="row-actions">
-            <button data-quick-conversation-action="take" data-id="${esc(item.id)}" title="Asignar a agente y detener respuestas automaticas">Tomar chat</button>
-            <button data-quick-conversation-action="pause" data-id="${esc(item.id)}" title="Pausar respuestas automaticas">Pausar bot</button>
-            <button data-quick-conversation-action="bot" data-id="${esc(item.id)}" title="Reactivar respuestas automaticas">Activar bot</button>
-            <button data-quick-conversation-action="close" data-id="${esc(item.id)}" title="Cerrar la conversacion">Cerrar chat</button>
-          </div>
-        </article>
-      `;
-    })
-    .join("") || `<article class="item"><p class="meta">No hay conversaciones con esos filtros.</p></article>`;
-
-  for (const item of $$(".conversation-card")) {
-    item.onclick = (event) => {
-      if (event.target.closest("button")) return;
-      openConversation(item.dataset.openConversation);
-    };
-  }
-  for (const button of $$("[data-quick-conversation-action]")) {
-    button.onclick = async () => {
-      await api(`/api/conversations/${button.dataset.id}/${button.dataset.quickConversationAction}`, { method: "POST" });
-      await refresh();
-    };
-  }
 }
 
 function renderAdminCollections() {
@@ -1620,10 +1683,8 @@ function renderConversationContext(data, currentAgent) {
   `;
 }
 
-async function openConversation(id) {
-  state.selectedConversationId = id;
-  setConversationActionStatus();
-  const data = await api(`/api/conversations/${id}`);
+function renderConversationDetailData(data) {
+  if (!data?.conversation) return;
   const currentAgent = state.data.agents.find((agent) => agent.id === data.conversation.assignedAgentId);
   const heading = $("#conversation-thread-heading");
   if (heading) {
@@ -1643,51 +1704,15 @@ async function openConversation(id) {
   const threadMessageList = $("#conversation-detail .message-list");
   if (threadMessageList) threadMessageList.scrollTop = threadMessageList.scrollHeight;
   applyConversationActionAvailability(data.conversation.status);
-  return;
-  $("#conversation-detail").className = "";
-  $("#conversation-detail").innerHTML = `
-    <section class="conversation-shell">
-      <div class="conversation-thread">
-        <div class="conversation-context">
-          <article><span>Cliente</span><strong>${esc(data.conversation.customer)}</strong></article>
-          <article><span>Canal</span><strong>${esc(data.conversation.channel)}</strong></article>
-          <article><span>Intencion</span><strong>${esc(data.conversation.intent || "sin intencion")}</strong></article>
-          <article><span>Agente</span><strong>${currentAgent ? esc(currentAgent.name) : "sin asignar"}</strong></article>
-        </div>
-        <div class="message-list">
-          ${data.messages
-            .map((message) => `
-              <div class="message ${esc(message.senderType)}">
-                <div class="message-body">${renderRichText(message.body)}</div>
-                ${renderMessageRichContent(message.metadata?.richContent)}
-                <small>${esc(message.senderType)} - ${new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</small>
-              </div>
-            `)
-            .join("")}
-          ${state.typing[id]?.bot ? `<div class="message bot typing"><p>Bot escribiendo...</p></div>` : ""}
-          ${state.typing[id]?.agent ? `<div class="message agent typing"><p>Agente escribiendo...</p></div>` : ""}
-        </div>
-      </div>
-      <aside class="conversation-activity">
-        <h3>Actividad</h3>
-        <div class="timeline">
-          ${(data.events || [])
-            .map((event) => `
-              <article class="timeline-event">
-                <strong>${esc(event.body)}</strong>
-                <p class="meta">${esc(event.eventType)} - ${esc(event.actorType)}</p>
-                <p class="meta">${new Date(event.createdAt).toLocaleString()}</p>
-              </article>
-            `)
-            .join("") || `<article class="timeline-event"><p class="meta">Sin eventos registrados.</p></article>`}
-        </div>
-      </aside>
-    </section>
-  `;
-  renderConversations();
-  const messageList = $("#conversation-detail .message-list");
-  if (messageList) messageList.scrollTop = messageList.scrollHeight;
-  applyConversationActionAvailability(data.conversation.status);
+}
+
+async function openConversation(id) {
+  state.selectedConversationId = id;
+  state.unread[id] = 0;
+  setConversationActionStatus();
+  const data = await api(`/api/conversations/${id}`);
+  cacheConversationDetail(data);
+  renderConversationDetailData(data);
 }
 
 function applyConversationActionAvailability(status) {
@@ -1720,11 +1745,12 @@ function bindConversationActions() {
       setConversationActionStatus(labels.busy, "info");
       try {
         const updated = await api(`/api/conversations/${state.selectedConversationId}/${action}`, { method: "POST" });
+        upsertConversation(updated);
         $("#conversation-status").textContent = statusLabel(updated.status);
         $("#conversation-status").className = `status ${updated.status}`;
         applyConversationActionAvailability(updated.status);
         setConversationActionStatus(labels.done, "ok");
-        await refresh();
+        renderConversationFrame();
         await openConversation(state.selectedConversationId);
         setConversationActionStatus(labels.done, "ok");
         notify(labels.done, "ok");
@@ -1761,16 +1787,41 @@ function bindConversationActions() {
     const body = input.value.trim();
     if (!body) return;
     setButtonBusy(button, true, "Enviando...");
+    const conversationId = state.selectedConversationId;
+    const optimisticMessage = {
+      id: `tmp-${Date.now()}`,
+      conversationId,
+      senderType: "agent",
+      senderId: state.user?.agentId || state.user?.id || null,
+      body,
+      metadata: { optimistic: true },
+      createdAt: new Date().toISOString()
+    };
+    cacheMessage(optimisticMessage);
+    input.value = "";
+    if (state.conversationDetails[conversationId]) {
+      $("#conversation-detail").innerHTML = renderThreadMessages(state.conversationDetails[conversationId].messages, conversationId);
+      const threadMessageList = $("#conversation-detail .message-list");
+      if (threadMessageList) threadMessageList.scrollTop = threadMessageList.scrollHeight;
+    }
+    renderConversationFrame();
     try {
-      await api(`/api/conversations/${state.selectedConversationId}/messages`, {
+      const message = await api(`/api/conversations/${conversationId}/messages`, {
         method: "POST",
         body: JSON.stringify({ senderType: "agent", body })
       });
-      input.value = "";
-      await refresh();
-      await openConversation(state.selectedConversationId);
+      const detail = state.conversationDetails[conversationId];
+      if (detail?.messages) {
+        detail.messages = detail.messages.filter((item) => item.id !== optimisticMessage.id);
+      }
+      cacheMessage(message);
+      await openConversation(conversationId);
       notify("Mensaje enviado", "ok");
     } catch (error) {
+      const detail = state.conversationDetails[conversationId];
+      if (detail?.messages) detail.messages = detail.messages.filter((item) => item.id !== optimisticMessage.id);
+      input.value = body;
+      if (conversationId === state.selectedConversationId) await openConversation(conversationId);
       notify("No se pudo enviar el mensaje", "error", error.message);
     } finally {
       setButtonBusy(button, false);
@@ -1983,28 +2034,49 @@ function bindRoleLab() {
 
 function bindRealtime() {
   const events = new EventSource("/api/events");
-  events.addEventListener("conversation.created", async () => {
+  events.addEventListener("conversation.created", (event) => {
+    const conversation = JSON.parse(event.data);
     state.alerts += 1;
-    await refresh();
+    upsertConversation(conversation);
+    renderConversationFrame();
+    notify("Nueva conversacion", "info", `${conversation.customer || "Cliente"} - ${channelLabel(conversation.channel)}`);
   });
-  events.addEventListener("conversation.updated", async () => {
+  events.addEventListener("conversation.updated", async (event) => {
+    const conversation = JSON.parse(event.data);
     state.alerts += 1;
-    await refresh();
-    if (state.selectedConversationId) await openConversation(state.selectedConversationId);
+    upsertConversation(conversation);
+    renderConversationFrame();
+    if (conversation.id === state.selectedConversationId) await openConversation(conversation.id);
   });
   events.addEventListener("conversation.typing", async (event) => {
     const data = JSON.parse(event.data);
     state.typing[data.conversationId] ||= {};
     state.typing[data.conversationId][data.senderType] = Boolean(data.typing);
-    if (data.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
+    if (data.conversationId === state.selectedConversationId) {
+      const detail = state.conversationDetails[state.selectedConversationId];
+      if (detail) renderConversationDetailData(detail);
+    }
   });
   events.addEventListener("message.created", async (event) => {
     const message = JSON.parse(event.data);
-    if (message.conversationId === state.selectedConversationId) await openConversation(state.selectedConversationId);
+    cacheMessage(message);
+    if (message.senderType === "customer" && message.conversationId !== state.selectedConversationId) {
+      state.unread[message.conversationId] = (state.unread[message.conversationId] || 0) + 1;
+      state.alerts += 1;
+      notify("Mensaje nuevo de cliente", "info", message.body || "");
+    }
+    renderConversationFrame();
+    if (message.conversationId === state.selectedConversationId) {
+      const detail = state.conversationDetails[state.selectedConversationId];
+      if (detail) renderConversationDetailData(detail);
+      else await openConversation(state.selectedConversationId);
+    }
   });
-  events.addEventListener("agents.updated", async () => {
-    await refresh();
-  });
+  for (const eventName of ["integrations.updated", "integrations.deleted", "users.updated", "agents.updated"]) {
+    events.addEventListener(eventName, async () => {
+      await refresh();
+    });
+  }
 }
 
 let appStarted = false;
