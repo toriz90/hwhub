@@ -666,6 +666,13 @@ function renderConversations() {
   return renderConversationInbox();
 }
 
+function renderChipList(items = [], className = "") {
+  return (items || [])
+    .filter((item) => item !== null && item !== undefined && String(item).trim())
+    .map((item) => `<span class="tag ${esc(className)}">${esc(item)}</span>`)
+    .join("");
+}
+
 function renderAdminCollections() {
   renderAgents();
   renderRouting();
@@ -683,51 +690,79 @@ function renderFaqs(query = $("#faq-search").value || "") {
   });
   $("#faq-list").innerHTML = filtered
     .map((faq) => `
-      <article class="faq">
-        <strong>${esc(faq.question)}</strong>
-        <p>${esc(faq.shortAnswer)}</p>
-        <p class="meta">${esc(faq.category)}</p>
-        ${(faq.tags || []).map((tag) => `<span class="tag">${esc(tag)}</span>`).join("")}
+      <article class="faq wh-entity-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(faq.question)}</strong>
+            <p>${esc(faq.category || "Sin categoria")}</p>
+          </div>
+          <span class="wh-state-pill ${faq.published ? "is-ok" : "is-muted"}">${faq.published ? "Publicada" : "Borrador"}</span>
+        </header>
+        <p class="wh-card-summary">${esc(faq.shortAnswer)}</p>
+        <div class="wh-chip-row">${renderChipList(faq.tags)}</div>
         <div class="row-actions">
           <button data-edit="faqs" data-id="${esc(faq.id)}">Editar</button>
           <button data-delete="faqs" data-id="${esc(faq.id)}">Eliminar</button>
         </div>
       </article>
     `)
-    .join("");
+    .join("") || `<article class="faq wh-entity-card"><p class="meta">No hay FAQs con ese filtro.</p></article>`;
 }
 
 function renderAgents() {
   $("#agents-list").innerHTML = state.data.agents
-    .map((agent) => `
-      <article class="card">
-        <strong>${esc(agent.name)}</strong>
-        <p>${esc(agent.role)}</p>
-        <p class="meta">${agent.online ? "Activo" : "Fuera de linea"} - ${agent.activeConversations}/${agent.maxConversations} chats</p>
-        ${agent.linkedUser ? `<p class="meta">Usuario: ${esc(agent.linkedUser.name || agent.linkedUser.email)}${agent.loginControlled ? " - controlado por sesion" : " - control manual disponible"}</p>` : `<p class="meta">Sin usuario vinculado - control manual</p>`}
+    .map((agent) => {
+      const load = `${agent.activeConversations ?? 0}/${agent.maxConversations ?? 5}`;
+      return `
+      <article class="card wh-entity-card agent-card">
+        <header class="wh-card-head">
+          <div class="wh-avatar-title">
+            <span class="wh-mini-avatar">${esc(initials(agent.name))}</span>
+            <div>
+              <strong>${esc(agent.name)}</strong>
+              <p>${esc(agent.role)}</p>
+            </div>
+          </div>
+          <span class="wh-state-pill ${agent.online ? "is-ok" : "is-muted"}">${agent.online ? "Activo" : "Inactivo"}</span>
+        </header>
+        <div class="wh-kpi-row">
+          <span><b>${esc(load)}</b> chats</span>
+          <span>${agent.loginControlled ? "Sesion" : "Manual"}</span>
+        </div>
+        <p class="meta">${agent.linkedUser ? `Usuario: ${esc(agent.linkedUser.name || agent.linkedUser.email)}` : "Sin usuario vinculado"}</p>
         <label class="switch-row" title="${agent.loginControlled ? "La sesion iniciada controla este agente" : "Activar o desactivar manualmente"}">
           <input type="checkbox" data-agent-presence="${esc(agent.id)}" ${agent.online ? "checked" : ""} ${agent.loginControlled || !roleCan("agents") ? "disabled" : ""}>
           <span></span>
           <em>${agent.loginControlled ? "Activo por sesion" : agent.online ? "Activo manual" : "Inactivo manual"}</em>
         </label>
-        ${(agent.skills || []).map((skill) => `<span class="tag">${esc(skill)}</span>`).join("")}
-        ${agent.loginControlled ? `<span class="tag tag-session">Sesion activa</span>` : `<span class="tag">Manual</span>`}
+        <div class="wh-chip-row">${renderChipList(agent.skills)}${renderChipList(agent.channels, "tag-channel")}</div>
         <div class="row-actions">
           <button data-edit="agents" data-id="${esc(agent.id)}">Editar</button>
           <button data-delete="agents" data-id="${esc(agent.id)}">Eliminar</button>
         </div>
       </article>
-    `)
+    `;
+    })
     .join("");
 }
 
 function renderRouting() {
   $("#routing-list").innerHTML = state.data.routingRules
     .map((rule) => `
-      <article class="rule">
-        <strong>${esc(rule.name)}</strong>
-        <p class="meta">${esc(rule.intent)} - ${rule.botAllowed ? "bot permitido" : "requiere agente"} - prioridad ${esc(rule.priority)}</p>
-        <p>${esc(rule.fallbackMessage)}</p>
+      <article class="rule wh-entity-card route-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(rule.name)}</strong>
+            <p>${esc(rule.intent || "sin intencion")} -> ${esc(rule.requiredSkill || "sin skill")}</p>
+          </div>
+          <span class="wh-state-pill ${rule.botAllowed ? "is-ok" : "is-warning"}">${rule.botAllowed ? "Bot" : "Agente"}</span>
+        </header>
+        <div class="route-line">
+          <span>Prioridad ${esc(rule.priority)}</span>
+          <i></i>
+          <span>${esc(rule.channel || "Todos los canales")}</span>
+        </div>
+        <p class="wh-card-summary">${esc(rule.fallbackMessage)}</p>
         <div class="row-actions">
           <button data-edit="routingRules" data-id="${esc(rule.id)}">Editar</button>
           <button data-delete="routingRules" data-id="${esc(rule.id)}">Eliminar</button>
@@ -766,14 +801,22 @@ function renderBranches() {
 
   $("#branches-list").innerHTML = filtered
     .map((branch) => `
-      <article class="card">
-        <strong>${esc(branch.name)}</strong>
-        <p>${esc([branch.colony, branch.municipality, branch.state || branch.city].filter(Boolean).join(" - "))}</p>
-        <p class="meta">${esc(branch.address || "Direccion pendiente")}</p>
-        <p class="meta">WhatsApp: ${esc(branch.whatsapp || "sin dato")} ${branch.phone ? `- Tel: ${esc(branch.phone)}` : ""}</p>
-        ${branch.email ? `<p class="meta">Email: ${esc(branch.email)}</p>` : ""}
-        <p class="meta">Horario: ${esc(branch.hours || "sin horario")}</p>
-        ${(branch.services || []).map((service) => `<span class="tag">${esc(service)}</span>`).join("")}
+      <article class="card wh-entity-card branch-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(branch.name)}</strong>
+            <p>${esc([branch.colony, branch.municipality, branch.state || branch.city].filter(Boolean).join(" - "))}</p>
+          </div>
+          <span class="wh-state-pill ${branch.active === false ? "is-muted" : "is-ok"}">${branch.active === false ? "Inactiva" : "Activa"}</span>
+        </header>
+        <p class="wh-card-summary">${esc(branch.address || "Direccion pendiente")}</p>
+        <div class="wh-card-facts">
+          <span>WhatsApp: <b>${esc(branch.whatsapp || "sin dato")}</b></span>
+          ${branch.phone ? `<span>Tel: <b>${esc(branch.phone)}</b></span>` : ""}
+          ${branch.email ? `<span>Email: <b>${esc(branch.email)}</b></span>` : ""}
+          <span>Horario: <b>${esc(branch.hours || "sin horario")}</b></span>
+        </div>
+        <div class="wh-chip-row">${renderChipList(branch.services)}</div>
         ${branch.wholesaleContact ? `<p class="meta">Mayoristas: ${esc(branch.wholesaleContact)}</p>` : ""}
         <div class="row-actions">
           <button data-edit="branches" data-id="${esc(branch.id)}">Editar</button>
@@ -781,7 +824,7 @@ function renderBranches() {
         </div>
       </article>
     `)
-    .join("") || `<article class="card"><p class="meta">No hay sucursales con esos filtros.</p></article>`;
+    .join("") || `<article class="card wh-entity-card"><p class="meta">No hay sucursales con esos filtros.</p></article>`;
 }
 
 function renderDirectoryContacts() {
@@ -813,39 +856,49 @@ function renderDirectoryContacts() {
 
   $("#directory-list").innerHTML = filtered
     .map((contact) => `
-      <article class="card directory-card">
-        <strong>${esc(contact.name)}</strong>
-        <p>${esc(contact.area || "Sin area")}</p>
-        <p class="meta">WhatsApp: ${esc(contact.whatsapp || "sin dato")}${contact.email ? ` - Email: ${esc(contact.email)}` : ""}</p>
-        <p class="meta">Horario: ${esc(contact.schedule || "sin horario")}</p>
-        ${contact.description ? `<p>${esc(contact.description)}</p>` : ""}
-        <p class="meta">Prioridad ${esc(contact.priority ?? 100)}</p>
-        ${(contact.marketplaces || []).map((item) => `<span class="tag tag-market">${esc(item)}</span>`).join("")}
-        ${(contact.channels || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
-        ${(contact.intents || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
-        ${(contact.skills || []).map((item) => `<span class="tag">${esc(item)}</span>`).join("")}
+      <article class="card directory-card wh-entity-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(contact.name)}</strong>
+            <p>${esc(contact.area || "Sin area")}</p>
+          </div>
+          <span class="wh-state-pill ${contact.active === false ? "is-muted" : "is-ok"}">Prioridad ${esc(contact.priority ?? 100)}</span>
+        </header>
+        <div class="wh-card-facts">
+          <span>WhatsApp: <b>${esc(contact.whatsapp || "sin dato")}</b></span>
+          ${contact.email ? `<span>Email: <b>${esc(contact.email)}</b></span>` : ""}
+          <span>Horario: <b>${esc(contact.schedule || "sin horario")}</b></span>
+        </div>
+        ${contact.description ? `<p class="wh-card-summary">${esc(contact.description)}</p>` : ""}
+        <div class="wh-chip-row">
+          ${renderChipList(contact.marketplaces, "tag-market")}
+          ${renderChipList(contact.channels, "tag-channel")}
+          ${renderChipList(contact.intents)}
+          ${renderChipList(contact.skills)}
+        </div>
         <div class="row-actions">
           <button data-edit="directoryContacts" data-id="${esc(contact.id)}">Editar</button>
           <button data-delete="directoryContacts" data-id="${esc(contact.id)}">Eliminar</button>
         </div>
       </article>
     `)
-    .join("") || `<article class="card"><p class="meta">No hay contactos con esos filtros.</p></article>`;
+    .join("") || `<article class="card wh-entity-card"><p class="meta">No hay contactos con esos filtros.</p></article>`;
 }
 
 function renderIntegrations() {
   const integrations = state.data.integrations || [];
   $("#integrations-list").innerHTML = integrations
     .map((item) => `
-      <article class="card">
-        <strong>${esc(item.name)}</strong>
-        <p class="meta">${esc(item.provider)} - ${item.active ? "activa" : "inactiva"}</p>
-        <p class="meta">
-          Ultima prueba: ${esc(formatDateTime(item.lastCheckedAt))}
-          ${item.lastCheckStatus ? `- ${esc(item.lastCheckStatus)}` : ""}
-        </p>
-        ${item.lastCheckMessage ? `<p class="meta">${esc(item.lastCheckMessage)}</p>` : ""}
-        ${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}
+      <article class="card wh-entity-card integration-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(item.name)}</strong>
+            <p>${esc(item.provider)} - ${esc(formatDateTime(item.lastCheckedAt))}</p>
+          </div>
+          <span class="wh-state-pill ${item.lastCheckStatus === "ok" ? "is-ok" : item.lastCheckStatus ? "is-warning" : "is-muted"}">${esc(item.lastCheckStatus || (item.active ? "Activa" : "Inactiva"))}</span>
+        </header>
+        ${item.lastCheckMessage ? `<p class="wh-card-summary">${esc(item.lastCheckMessage)}</p>` : ""}
+        <div class="wh-chip-row">${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}</div>
         <div class="row-actions">
           <button data-edit-integration="${esc(item.id)}">Editar</button>
           <button data-test-integration="${esc(item.id)}">Probar</button>
@@ -919,9 +972,14 @@ function renderIntegrations() {
 function renderRoleMatrix() {
   $("#role-matrix").innerHTML = Object.entries(roleCatalog)
     .map(([role, permissions]) => `
-      <article class="card">
-        <strong>${esc(role)}</strong>
-        ${permissions.map((permission) => `<span class="tag">${esc(permission)}</span>`).join("")}
+      <article class="card wh-entity-card role-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(role)}</strong>
+            <p>${esc(permissions.length)} capacidades</p>
+          </div>
+        </header>
+        <div class="wh-chip-row">${renderChipList(permissions)}</div>
       </article>
     `)
     .join("");
@@ -937,10 +995,21 @@ function renderUsers() {
     .map((user) => {
       const agent = state.data.agents.find((item) => item.id === user.agentId);
       return `
-        <article class="card">
-          <strong>${esc(user.name)}</strong>
-          <p>${esc(user.email)}</p>
-          <p class="meta">${esc(user.role)} - ${user.isActive ? "activo" : "inactivo"}${agent ? ` - ${esc(agent.name)}` : ""}</p>
+        <article class="card wh-entity-card user-card">
+          <header class="wh-card-head">
+            <div class="wh-avatar-title">
+              <span class="wh-mini-avatar">${esc(initials(user.name || user.email))}</span>
+              <div>
+                <strong>${esc(user.name)}</strong>
+                <p>${esc(user.email)}</p>
+              </div>
+            </div>
+            <span class="wh-state-pill ${user.isActive ? "is-ok" : "is-muted"}">${user.isActive ? "Activo" : "Inactivo"}</span>
+          </header>
+          <div class="wh-chip-row">
+            <span class="tag">${esc(user.role)}</span>
+            ${agent ? `<span class="tag tag-channel">${esc(agent.name)}</span>` : `<span class="tag">Sin agente</span>`}
+          </div>
           <div class="row-actions">
             <button data-edit-user="${esc(user.id)}">Editar</button>
           </div>
