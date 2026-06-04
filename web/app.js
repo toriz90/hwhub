@@ -1755,6 +1755,7 @@ function renderConversationContext(data, currentAgent) {
 function renderConversationDetailData(data) {
   if (!data?.conversation) return;
   const currentAgent = state.data.agents.find((agent) => agent.id === data.conversation.assignedAgentId);
+  const conversationId = data.conversation.id;
   const heading = $("#conversation-thread-heading");
   if (heading) {
     heading.innerHTML = `
@@ -1766,7 +1767,7 @@ function renderConversationDetailData(data) {
   $("#conversation-status").textContent = statusLabel(data.conversation.status);
   $("#conversation-status").className = `status ${data.conversation.status}`;
   $("#conversation-detail").className = "wh-thread-body";
-  $("#conversation-detail").innerHTML = renderThreadMessages(data.messages, id);
+  $("#conversation-detail").innerHTML = renderThreadMessages(data.messages || [], conversationId);
   const contextPanel = $("#conversation-context-panel");
   if (contextPanel) contextPanel.innerHTML = renderConversationContext(data, currentAgent);
   renderConversations();
@@ -1779,9 +1780,20 @@ async function openConversation(id) {
   state.selectedConversationId = id;
   state.unread[id] = 0;
   setConversationActionStatus();
-  const data = await api(`/api/conversations/${id}`);
-  cacheConversationDetail(data);
-  renderConversationDetailData(data);
+  try {
+    const data = await api(`/api/conversations/${id}`);
+    cacheConversationDetail(data);
+    renderConversationDetailData(data);
+  } catch (error) {
+    $("#conversation-detail").className = "wh-thread-body";
+    $("#conversation-detail").innerHTML = `
+      <article class="wh-empty-state">
+        <strong>No se pudo abrir la conversacion</strong>
+        <p>${esc(error.message || "Intenta seleccionarla de nuevo.")}</p>
+      </article>
+    `;
+    notify("No se pudo abrir la conversacion", "error", error.message);
+  }
 }
 
 function applyConversationActionAvailability(status) {
