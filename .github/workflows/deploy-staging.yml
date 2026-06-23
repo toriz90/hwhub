@@ -1,0 +1,121 @@
+name: Deploy to Staging (NAS)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-nas
+  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    name: Deploy a ~/docker/stacks/hwhub-app/
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.NAS_SSH_KEY }}
+          SSH_HOST: ${{ secrets.NAS_HOST }}
+          SSH_USER: ${{ secrets.NAS_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          cat > ~/.ssh/config <<EOF
+          Host target
+            HostName ${SSH_HOST}
+            User ${SSH_USER}
+            IdentityFile ~/.ssh/id_ed25519
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Deploy en el NAS (git pull + docker compose up + health check)
+        env:
+          SHA: ${{ github.sha }}
+          DEPLOY_PATH: ~/docker/stacks/hwhub-app
+        run: |
+          set -euo pipefail
+          ssh target "cat > /tmp/hwhub-deploy.sh" <<'REMOTE'
+          set -euo pipefail
+          echo "==> Deploy remoto: GIT_SHA='${GIT_SHA}'  DEPLOY_PATH='${DEPLOY_PATH}'"
+          test -n "${GIT_SHA}" || { echo "✗ GIT_SHA llegó vacío al NAS"; exit 1; }
+          
+          cd "${DEPLOY_PATH}"
+          
+          # 1) Checkout exacto del commit
+          git fetch --all --prune
+          git reset --hard "${GIT_SHA}"
+          
+          # 2) Docker compose: build, recrear contenedores
+          COMPOSE="docker compose"
+          export GIT_SHA
+          echo "==> directorio: $(pwd)"
+          
+          # Build con SHA real (invalida caché → imagen nueva por commit)
+          $COMPOSE build --build-arg GIT_SHA="${GIT_SHA}" 2>&1 | tail -20
+          built_image=$(docker image inspect -f '{{.Id}}' hwhub-app-app 2>/dev/null || echo none)
+          echo "==> imagen construida: ${built_image}"
+          
+          # 3) Recreación DETERMINISTA: borrar contenedor, levantar con imagen nueva
+          docker rm -f hwhub-app-app-1 2>/dev/null || true
+          if ! $COMPOSE up -d --force-recreate --remove-orphans; then
+            echo "✗ 'docker compose up' falló" >&2
+            $COMPOSE logs --tail=100 >&2
+            exit 1
+          fi
+          
+          # 4) Verificación: el contenedor DEBE correr la imagen recién construida
+          run_image=$(docker inspect -f '{{.Image}}' hwhub-app-app-1 2>/dev/null || echo none)
+          echo "==> en vivo: ${run_image}"
+          if [ "${run_image}" != "${built_image}" ]; then
+            echo "✗ El contenedor NO corre la imagen recién construida" >&2
+            echo "   esperada: ${built_image}" >&2
+            echo "   en vivo:  ${run_image}" >&2
+            exit 1
+          fi
+          
+          # 5) Health check en puerto 8041 (contenedor expone 8041→3000)
+          # Retry: 30 intentos, 2s entre cada uno
+          ok=0
+          for i in $(seq 1 30); do
+            health=$(curl -fsS -m 5 http://127.0.0.1:8041/health 2>/dev/null || true)
+            if printf '%s' "${health}" | grep -qE 'ok|healthy|running' 2>/dev/null; then
+              ok=1; break
+            fi
+            echo "   intento ${i}/30: health pending..."
+            sleep 2
+          done
+          echo "==> health check: ${health:-sin respuesta}"
+          if [ "${ok}" -ne 1 ]; then
+            echo "✗ Health check falló: 127.0.0.1:8041/health no responde" >&2
+            $COMPOSE logs --tail=80 app >&2
+            exit 1
+          fi
+          
+          echo "✓ Deploy OK (hwhub-app en vivo en puerto 8041, commit ${GIT_SHA})"
+          REMOTE
+          
+          # Ejecuta el script con env inyectado y STDIN cerrado
+          ssh target "GIT_SHA='${SHA}' DEPLOY_PATH='${DEPLOY_PATH}' bash /tmp/hwhub-deploy.sh" < /dev/null
+          ssh target "rm -f /tmp/hwhub-deploy.sh" < /dev/null || true
+
+      - name: Cleanup SSH keys
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519 ~/.ssh/config

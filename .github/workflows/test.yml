@@ -1,0 +1,43 @@
+name: Test
+
+# Validacion de codigo en PR y push (excepto main).
+# Reutilizable: deploy.yml lo invoca como `needs: test`.
+# 
+# Patrón INEIN v3: gate real — nada llega a producción sin pasar.
+# install → npm run check (sintaxis Node.js).
+#
+# Concurrency: cancelar CI anterior si llega uno nuevo en el mismo branch.
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+  workflow_call:
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: npm check (syntax validation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate syntax
+        run: npm run check
+
