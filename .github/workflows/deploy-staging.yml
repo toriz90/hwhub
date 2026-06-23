@@ -19,45 +19,50 @@ jobs:
   deploy:
     name: Deploy a ~/docker/stacks/hwhub-app/
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.NAS_SSH_KEY }}
-          SSH_HOST: ${{ secrets.NAS_HOST }}
-          SSH_USER: ${{ secrets.NAS_USER }}
+      - name: Deploy en el NAS (git pull + docker compose up)
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          cat > ~/.ssh/config <<EOF
-          Host target
-            HostName ${SSH_HOST}
-            User ${SSH_USER}
-            IdentityFile ~/.ssh/id_ed25519
-            StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
-          EOF
-          chmod 600 ~/.ssh/config
-
-      - name: Deploy en el NAS (git reset + docker up + health check)
-        env:
-          SHA: ${{ github.sha }}
-          DEPLOY_PATH: ~/docker/stacks/hwhub-app
-        run: |
-          set -euo pipefail
+          cd ~/docker/stacks/hwhub-app
+          echo "==> Deploy local en NAS"
+          echo "==> directorio: $(pwd)"
           
-          # Copiar script al NAS y ejecutar con variables de entorno inyectadas
-          ssh target "cat > /tmp/deploy.sh" < .github/scripts/deploy.sh
-          ssh target "GIT_SHA='${SHA}' DEPLOY_PATH='${DEPLOY_PATH}' bash /tmp/deploy.sh" < /dev/null
-          ssh target "rm -f /tmp/deploy.sh" < /dev/null || true
-
-      - name: Cleanup SSH keys
-        if: always()
-        run: rm -f ~/.ssh/id_ed25519 ~/.ssh/config
+          # 1) Git pull al commit exacto
+          echo "==> git fetch + reset"
+          git fetch --all --prune 2>&1 | tail -5
+          git reset --hard ${{ github.sha }} 2>&1 | tail -3
+          
+          # 2) Docker compose: build + recreate
+          echo "==> docker compose build + up"
+          docker compose build --build-arg GIT_SHA=${{ github.sha }} 2>&1 | tail -20
+          docker compose up -d --force-recreate --remove-orphans 2>&1 | tail -10
+          
+          # 3) Health check en puerto 8041
+          echo "==> health check: http://127.0.0.1:8041/health"
+          ok=0
+          for i in $(seq 1 30); do
+            health=$(curl -fsS -m 5 http://127.0.0.1:8041/health 2>/dev/null || true)
+            if printf '%s' "${health}" | grep -qiE 'ok|healthy|running|"status"' 2>/dev/null; then
+              ok=1
+              echo "✓ health check PASSED (intento ${i}/30)"
+              break
+            fi
+            echo "   intento ${i}/30: esperando health check..."
+            sleep 2
+          done
+          
+          if [ "${ok}" -ne 1 ]; then
+            echo "✗ Health check falló tras 30 intentos" >&2
+            docker compose logs --tail=80 app >&2
+            exit 1
+          fi
+          
+          echo ""
+          echo "✓ Deploy exitoso en commit ${{ github.sha }}"
+          echo "  URL: http://127.0.0.1:8041/"
