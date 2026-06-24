@@ -782,11 +782,12 @@ textarea:disabled {
 }
 
 .switch-row {
+  position: relative;
   width: fit-content;
   display: inline-grid;
   grid-template-columns: auto auto;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.6rem;
   margin: 0.55rem 0 0.25rem;
   color: var(--ink);
   font-size: 0.82rem;
@@ -794,11 +795,17 @@ textarea:disabled {
 
 .switch-row input {
   position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }
 
 .switch-row span {
+  flex: none;
+  display: block;
+  box-sizing: border-box;
   width: 2.35rem;
   height: 1.25rem;
   position: relative;
@@ -2338,14 +2345,6 @@ button.danger {
 .compact-flow div {
   border-color: rgba(214, 161, 29, 0.22);
   background: #fff8dc;
-}
-
-.switch-row input:checked + span {
-  background: var(--gold);
-}
-
-.switch-row input:checked + span::after {
-  background: #111;
 }
 
 .rich-link,
