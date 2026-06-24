@@ -335,9 +335,10 @@ function renderIntegrationFields(provider, values = {}, keepSecrets = false) {
       const required = field.required ? "required" : "";
       if (field.type === "checkbox") {
         return `
-          <label class="check integration-field">
+          <label class="switch-row integration-field">
             <input type="checkbox" data-config-field="${esc(field.key)}" ${value ? "checked" : ""}>
-            ${esc(field.label)}
+            <span></span>
+            <em>${esc(field.label)}</em>
           </label>
         `;
       }
