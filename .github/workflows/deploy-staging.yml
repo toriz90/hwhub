@@ -41,7 +41,7 @@ jobs:
           # 2) Docker compose: build + recreate
           echo "==> docker compose build + up"
           docker compose build --build-arg GIT_SHA=${{ github.sha }} 2>&1 | tail -20
-          docker compose up -d --force-recreate --remove-orphans 2>&1 | tail -10
+          docker compose up -d --force-recreate --no-deps --remove-orphans app 2>&1 | tail -10
           
           # 3) Health check en puerto 8041: 60 intentos x 3 segundos
           echo "==> health check: http://127.0.0.1:8041/health (60 intentos, 3s cada uno)"
