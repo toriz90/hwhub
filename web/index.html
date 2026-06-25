@@ -562,51 +562,6 @@
         </section>
       </div>
 
-      <div class="view" data-view="integrations">
-        <section class="module-grid" id="integrations">
-          <div class="panel form-panel">
-            <header>
-              <div>
-                <p class="eyebrow">Credenciales</p>
-                <h2>Configurar API</h2>
-              </div>
-            </header>
-            <form id="integration-form" class="editor">
-              <input type="hidden" name="id">
-              <select name="provider" required>
-                <option value="openai">OpenAI</option>
-                <option value="claude">Claude</option>
-                <option value="whatsapp_cloud">WhatsApp Cloud</option>
-                <option value="evolution_api">Evolution API</option>
-                <option value="telnyx">Telnyx</option>
-                <option value="plivo">Plivo</option>
-                <option value="woocommerce">WooCommerce</option>
-                <option value="easyappointments">Easy!Appointments</option>
-                <option value="trackship">TrackShip</option>
-              </select>
-              <input name="name" placeholder="Nombre visible" required>
-              <input type="hidden" name="config">
-              <div id="integration-fields" class="integration-fields"></div>
-              <label class="switch-row"><input type="checkbox" name="active" checked><span></span><em>Activa</em></label>
-              <div class="form-actions">
-                <button type="button" id="test-integration-draft">Probar conexion</button>
-                <button type="submit" id="save-integration" disabled>Guardar API</button>
-              </div>
-              <p id="integration-status" class="form-note"></p>
-            </form>
-          </div>
-          <div class="panel list-panel">
-            <header>
-              <div>
-                <p class="eyebrow">Estado y pruebas</p>
-                <h2>APIs e integraciones</h2>
-              </div>
-            </header>
-            <div id="integrations-list" class="cards"></div>
-          </div>
-        </section>
-      </div>
-
       <div class="view" data-view="roles">
         <section class="grid-two">
           <div class="panel" id="roles">
@@ -700,8 +655,48 @@
             </div>
 
             <div class="settings-panel" data-settings-panel="apis" hidden>
-              <p class="section-note">Las integraciones y APIs se gestionan en el modulo APIs.</p>
-              <button type="button" data-view-link="integrations">Ir a APIs</button>
+              <section class="module-grid" id="integrations">
+                <div class="panel form-panel">
+                  <header>
+                    <div>
+                      <p class="eyebrow">Credenciales</p>
+                      <h2>Configurar API</h2>
+                    </div>
+                  </header>
+                  <form id="integration-form" class="editor">
+                    <input type="hidden" name="id">
+                    <select name="provider" required>
+                      <option value="openai">OpenAI</option>
+                      <option value="claude">Claude</option>
+                      <option value="whatsapp_cloud">WhatsApp Cloud</option>
+                      <option value="evolution_api">Evolution API</option>
+                      <option value="telnyx">Telnyx</option>
+                      <option value="plivo">Plivo</option>
+                      <option value="woocommerce">WooCommerce</option>
+                      <option value="easyappointments">Easy!Appointments</option>
+                      <option value="trackship">TrackShip</option>
+                    </select>
+                    <input name="name" placeholder="Nombre visible" required>
+                    <input type="hidden" name="config">
+                    <div id="integration-fields" class="integration-fields"></div>
+                    <label class="switch-row"><input type="checkbox" name="active" checked><span></span><em>Activa</em></label>
+                    <div class="form-actions">
+                      <button type="button" id="test-integration-draft">Probar conexion</button>
+                      <button type="submit" id="save-integration" disabled>Guardar API</button>
+                    </div>
+                    <p id="integration-status" class="form-note"></p>
+                  </form>
+                </div>
+                <div class="panel list-panel">
+                  <header>
+                    <div>
+                      <p class="eyebrow">Estado y pruebas</p>
+                      <h2>APIs e integraciones</h2>
+                    </div>
+                  </header>
+                  <div id="integrations-list" class="cards"></div>
+                </div>
+              </section>
             </div>
 
             <div class="settings-panel" data-settings-panel="access" hidden>

@@ -1155,10 +1155,10 @@ async function refresh() {
 
 const SETTINGS_TABS = ["brand", "apis", "access", "notifications"];
 
-// Modulos que pasaran a tabs de Configuracion (pasos 2/3). Hoy abren su vista propia;
-// al mover el markup, cambiar el destino a { view: "settings", tab: "apis"|"access" }.
+// Hashes de modulos que viven (o viviran) como tabs de Configuracion. integrations ya esta
+// en el tab apis; users/roles se reapuntaran a { view: "settings", tab: "access" } al moverlos (paso 3).
 const MODULE_ALIAS = {
-  integrations: { view: "integrations" },
+  integrations: { view: "settings", tab: "apis" },
   users: { view: "users" },
   roles: { view: "roles" }
 };
@@ -1193,7 +1193,11 @@ function showView(view) {
 }
 
 function bindStaticEvents() {
-  for (const link of $$("[data-view-link]")) link.addEventListener("click", () => showView(link.dataset.viewLink));
+  for (const link of $$("[data-view-link]")) link.addEventListener("click", () => {
+    const target = MODULE_ALIAS[link.dataset.viewLink] || { view: link.dataset.viewLink };
+    showView(target.view);
+    if (target.tab) activateSettingsTab(target.tab);
+  });
   const route = resolveRoute(window.location.hash);
   showView(route.view);
   if (route.tab) activateSettingsTab(route.tab);
