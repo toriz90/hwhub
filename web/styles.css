@@ -1992,11 +1992,11 @@ textarea {
 #branches .list-panel .filters,
 #directory .list-panel .filters {
   align-items: end;
-  padding: 16px 20px;
-  background: var(--surface);
-  border: 0.5px solid var(--line);
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 16px 20px !important;
+  background: var(--surface-soft) !important;
+  border: 0.5px solid var(--line) !important;
+  border-radius: 8px !important;
+  margin-bottom: 16px !important;
 }
 
 .list-panel .card,

@@ -259,10 +259,12 @@
         50% { transform: scale(1.08); }
       }
 
-      @media (prefers-reduced-motion: no-preference) {
-        .hwhub-widget-button:not(.is-open) {
-          animation: hw-pulse 3s ease-in-out infinite;
-        }
+      .hwhub-widget-button:not(.is-open) {
+        animation: hw-pulse 3s ease-in-out infinite;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hwhub-widget-button { animation: none; }
       }
 
       .hw-status { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
