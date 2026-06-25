@@ -4619,26 +4619,7 @@ body.wh-app {
   min-width: 0;
 }
 
-.wh-sidebar .wh-nav a::before {
-  width: 16px;
-  flex: 0 0 16px;
-  color: currentColor;
-  opacity: 0.8;
-  text-align: center;
-  font-size: 13px;
-}
-
-.wh-sidebar .wh-nav a[data-view-link="dashboard"]::before { content: "◆"; }
-.wh-sidebar .wh-nav a[data-view-link="conversations"]::before { content: "●"; }
-.wh-sidebar .wh-nav a[data-view-link="agents"]::before { content: "◉"; }
-.wh-sidebar .wh-nav a[data-view-link="chatbot"]::before { content: "✦"; }
-.wh-sidebar .wh-nav a[data-view-link="routing"]::before { content: "↳"; }
-.wh-sidebar .wh-nav a[data-view-link="integrations"]::before { content: "⛓"; }
-.wh-sidebar .wh-nav a[data-view-link="knowledge"]::before { content: "?"; }
-.wh-sidebar .wh-nav a[data-view-link="branches"]::before { content: "⌂"; }
-.wh-sidebar .wh-nav a[data-view-link="directory"]::before { content: "☎"; }
-.wh-sidebar .wh-nav a[data-view-link="users"]::before { content: "♙"; }
-.wh-sidebar .wh-nav a[data-view-link="roles"]::before { content: "✓"; }
+/* Iconos viejos por ::before eliminados: el unico icono es el <i class="ti"> del HTML */
 
 main.wh-main {
   height: 100vh;
@@ -5782,7 +5763,6 @@ html[data-theme="dark"] .filters select {
   }
 
   .wh-nav-group--footer {
-    margin-top: auto;
     border-top: 0.5px solid rgba(255, 255, 255, 0.08);
   }
 }
@@ -6004,14 +5984,27 @@ html[data-theme="dark"] .filters select {
 #branches-list,
 #directory-list,
 #faq-list,
-#routing-list {
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+#routing-list,
+#users-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
   align-content: start;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .wh-entity-card {
   gap: 8px;
   padding: 12px 14px;
+  min-width: 0;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.wh-entity-card .wh-card-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .wh-entity-card .wh-card-head {
@@ -6023,10 +6016,10 @@ html[data-theme="dark"] .filters select {
 }
 
 .wh-entity-card .wh-card-head strong {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .wh-entity-card .wh-card-head p {
@@ -6069,9 +6062,12 @@ html[data-theme="dark"] .filters select {
   cursor: pointer;
 }
 
-.settings-tab.is-active {
+.settings-tabs .settings-tab.is-active {
+  background: transparent;
   color: var(--ink);
-  border-bottom-color: var(--gold);
+  font-weight: 500;
+  border-bottom: 2px solid var(--gold);
+  border-radius: 0;
 }
 
 .settings-panel[hidden] {
@@ -6182,4 +6178,39 @@ html[data-theme="dark"] .filters select {
   color: var(--pv-base);
   font-size: 11px;
   font-weight: 800;
+}
+
+/* ===== Fix 4: header de modulo con CTA (panel izquierdo eliminado) ===== */
+.module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 10px;
+  border-bottom: 0.5px solid var(--line);
+}
+
+.module-header .page-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.btn-add-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 7px;
+  background: #000;
+  color: #FFD106;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* El modulo queda en 1 columna: ya no hay panel-form a la izquierda */
+.module-header + .module-grid {
+  grid-template-columns: 1fr;
 }
