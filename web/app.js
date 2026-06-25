@@ -1153,6 +1153,32 @@ async function refresh() {
   render();
 }
 
+const SETTINGS_TABS = ["brand", "apis", "access", "notifications"];
+
+// Modulos que pasaran a tabs de Configuracion (pasos 2/3). Hoy abren su vista propia;
+// al mover el markup, cambiar el destino a { view: "settings", tab: "apis"|"access" }.
+const MODULE_ALIAS = {
+  integrations: { view: "integrations" },
+  users: { view: "users" },
+  roles: { view: "roles" }
+};
+
+function resolveRoute(hash) {
+  const raw = (hash || "").replace(/^#/, "");
+  if (!raw) return { view: "dashboard" };
+  const [head, sub] = raw.split("/");
+  if (head === "settings") return { view: "settings", tab: SETTINGS_TABS.includes(sub) ? sub : "brand" };
+  return MODULE_ALIAS[head] || { view: head };
+}
+
+function activateSettingsTab(name) {
+  const view = $('[data-view="settings"]');
+  if (!view) return;
+  const tab = SETTINGS_TABS.includes(name) ? name : "brand";
+  for (const t of view.querySelectorAll(".settings-tab")) t.classList.toggle("is-active", t.dataset.settingsTab === tab);
+  for (const p of view.querySelectorAll("[data-settings-panel]")) p.hidden = p.dataset.settingsPanel !== tab;
+}
+
 function showView(view) {
   const selected = view || "dashboard";
   for (const section of $$("[data-view]")) section.classList.toggle("active", section.dataset.view === selected);
@@ -1168,7 +1194,9 @@ function showView(view) {
 
 function bindStaticEvents() {
   for (const link of $$("[data-view-link]")) link.addEventListener("click", () => showView(link.dataset.viewLink));
-  showView(window.location.hash.replace("#", "") || "dashboard");
+  const route = resolveRoute(window.location.hash);
+  showView(route.view);
+  if (route.tab) activateSettingsTab(route.tab);
   const themeToggle = $("#theme-toggle");
   if (themeToggle) {
     themeToggle.addEventListener("change", () => {
@@ -2098,8 +2126,8 @@ function bindSettings() {
   for (const tab of view.querySelectorAll(".settings-tab")) {
     tab.addEventListener("click", () => {
       const name = tab.dataset.settingsTab;
-      for (const t of view.querySelectorAll(".settings-tab")) t.classList.toggle("is-active", t === tab);
-      for (const p of view.querySelectorAll("[data-settings-panel]")) p.hidden = p.dataset.settingsPanel !== name;
+      activateSettingsTab(name);
+      history.replaceState(null, "", `#settings/${name}`);
     });
   }
   for (const pair of view.querySelectorAll(".color-pair")) {
