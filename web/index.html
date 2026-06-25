@@ -853,6 +853,27 @@
       </form>
     </div>
 
+    <nav class="bottom-nav" aria-label="Navegacion movil">
+      <a class="bottom-nav-item" href="#dashboard" data-view-link="dashboard"><i class="ti ti-layout-dashboard"></i><span>Inicio</span></a>
+      <a class="bottom-nav-item" href="#conversations" data-view-link="conversations"><i class="ti ti-message-2"></i><span>Chats</span></a>
+      <a class="bottom-nav-item" href="#agents" data-view-link="agents"><i class="ti ti-users"></i><span>Agentes</span></a>
+      <button class="bottom-nav-item" type="button" data-action="open-more-drawer"><i class="ti ti-dots"></i><span>Mas</span></button>
+    </nav>
+
+    <div class="more-drawer-backdrop" hidden>
+      <div class="more-drawer" role="dialog" aria-label="Mas destinos">
+        <a class="more-drawer-item" href="#chatbot" data-view-link="chatbot"><i class="ti ti-robot"></i><span>Chatbot</span></a>
+        <a class="more-drawer-item" href="#routing" data-view-link="routing"><i class="ti ti-route"></i><span>Ruteo</span></a>
+        <a class="more-drawer-item" href="#integrations" data-view-link="integrations"><i class="ti ti-plug"></i><span>APIs</span></a>
+        <a class="more-drawer-item" href="#knowledge" data-view-link="knowledge"><i class="ti ti-help-circle"></i><span>FAQs</span></a>
+        <a class="more-drawer-item" href="#branches" data-view-link="branches"><i class="ti ti-building"></i><span>Sucursales</span></a>
+        <a class="more-drawer-item" href="#directory" data-view-link="directory"><i class="ti ti-address-book"></i><span>Directorio</span></a>
+        <a class="more-drawer-item" href="#users" data-view-link="users"><i class="ti ti-user"></i><span>Usuarios</span></a>
+        <a class="more-drawer-item" href="#roles" data-view-link="roles"><i class="ti ti-shield"></i><span>Roles</span></a>
+        <a class="more-drawer-item" href="#settings" data-view-link="settings"><i class="ti ti-settings"></i><span>Configuracion</span></a>
+      </div>
+    </div>
+
     <script src="/app.js?v=20260624-api-toggles"></script>
     <script src="/widget.js?v=20260604-appointment-folio" data-channel="official_site"></script>
   </body>

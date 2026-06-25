@@ -1391,6 +1391,7 @@ function bindStaticEvents() {
   renderIntegrationFields(integrationProvider.value, definitionDefaults(integrationTemplate(integrationProvider.value)));
   bindEditors();
   bindBranchModal();
+  bindBottomNav();
   bindConversationActions();
   bindConversationFilters();
   bindIntegrations();
@@ -2008,6 +2009,16 @@ function openBranchModal(item) {
 
 function closeBranchModal() {
   $("#branch-modal").hidden = true;
+}
+
+function bindBottomNav() {
+  const backdrop = $(".more-drawer-backdrop");
+  if (!backdrop) return;
+  $('[data-action="open-more-drawer"]')?.addEventListener("click", () => { backdrop.hidden = false; });
+  // Cierra con tap en el backdrop o en cualquier destino del drawer (el link ya cambia de vista via data-view-link)
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop || event.target.closest(".more-drawer-item")) backdrop.hidden = true;
+  });
 }
 
 function bindBranchModal() {
