@@ -1093,13 +1093,14 @@ function renderChatbotSettings() {
   form.elements.temperature.value = settings.temperature ?? 0.3;
   const defaults = {
     headerColor: "#1f2a37",
+    headerTextColor: "#ffffff",
     accentColor: "#f5b301",
     botBubbleColor: "#e8f5f3",
     userBubbleColor: "#1f2a37",
     positionHorizontal: "right",
     positionVertical: "bottom"
   };
-  for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "accentColor", "botBubbleColor", "userBubbleColor", "positionHorizontal", "positionVertical"]) {
+  for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "headerTextColor", "accentColor", "botBubbleColor", "userBubbleColor", "positionHorizontal", "positionVertical"]) {
     if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || "";
   }
   updateWidgetEmbedCode();
@@ -1127,6 +1128,7 @@ function updateWidgetPreview() {
     buttonLabel: form.elements.buttonLabel.value || "Chat",
     welcome: form.elements.welcome.value || "Hola, en que puedo ayudarte?",
     headerColor: form.elements.headerColor.value || "#1f2a37",
+    headerTextColor: form.elements.headerTextColor.value || "#ffffff",
     accentColor: form.elements.accentColor.value || "#f5b301",
     botBubbleColor: form.elements.botBubbleColor.value || "#e8f5f3",
     userBubbleColor: form.elements.userBubbleColor.value || "#1f2a37"
@@ -1139,7 +1141,7 @@ function updateWidgetPreview() {
   const botBubble = preview.querySelector(".preview-message.bot");
   const userBubble = preview.querySelector(".preview-message.user");
   const button = preview.querySelector(".widget-preview-button");
-  if (header) header.style.background = values.headerColor;
+  if (header) { header.style.background = values.headerColor; header.style.color = values.headerTextColor; }
   if (botBubble) botBubble.style.background = values.botBubbleColor;
   if (userBubble) userBubble.style.background = values.userBubbleColor;
   if (button) button.style.background = values.accentColor;
@@ -1204,6 +1206,7 @@ function bindStaticEvents() {
         buttonLabel: form.elements.buttonLabel.value,
         welcome: form.elements.welcome.value,
         headerColor: form.elements.headerColor.value,
+        headerTextColor: form.elements.headerTextColor.value,
         accentColor: form.elements.accentColor.value,
         botBubbleColor: form.elements.botBubbleColor.value,
         userBubbleColor: form.elements.userBubbleColor.value,

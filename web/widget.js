@@ -254,16 +254,24 @@
         font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
-      @keyframes hwhubPulse {
-        0%, 100% { transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0)) scale(1); }
-        50% { transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0)) scale(1.08); }
+      @keyframes hw-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
       }
 
       @media (prefers-reduced-motion: no-preference) {
         .hwhub-widget-button:not(.is-open) {
-          animation: hwhubPulse 3s ease-in-out infinite;
+          animation: hw-pulse 3s ease-in-out infinite;
         }
       }
+
+      .hw-status { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
+      .hw-status--online { background: rgba(76, 175, 80, 0.15); color: #2e7d32; }
+      .hw-status--reconnecting { background: rgba(255, 165, 0, 0.15); color: #e65100; }
+      .hw-status--offline { background: rgba(220, 38, 38, 0.15); color: #b91c1c; }
+
+      .hw-quick-chips { display: flex; gap: 6px; padding: 6px 12px; overflow-x: auto; }
+      .hw-chip { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: #f5f5f0; border: 0.5px solid #e0dbd0; cursor: pointer; white-space: nowrap; }
 
       .hwhub-widget-button.is-open { animation: none; }
       .hwhub-widget-button.is-open span,
@@ -312,7 +320,7 @@
         gap: 12px;
         padding: 15px 16px;
         background: var(--hwhub-widget-header, #1f2a37);
-        color: #fff;
+        color: var(--hwhub-header-text, #fff);
       }
 
       .hwhub-widget-panel header strong {
@@ -322,7 +330,8 @@
 
       .hwhub-widget-panel header p {
         margin: 2px 0 0;
-        color: rgba(255, 255, 255, 0.78);
+        color: var(--hwhub-header-text, #fff);
+        opacity: 0.78;
       }
 
       .hwhub-widget-panel header button,
@@ -715,6 +724,7 @@
       <div>
         <strong id="hwhub-widget-title">${esc(widgetConfig.title)}</strong>
         <p id="hwhub-widget-subtitle">${esc(widgetConfig.subtitle)}</p>
+        <span id="hwhub-widget-status" class="hw-status hw-status--online">● En línea</span>
       </div>
       <button id="hwhub-widget-edit-profile" type="button">Datos</button>
     </header>
@@ -759,6 +769,11 @@
       </form>
       <section id="hwhub-widget-chat" class="hwhub-widget-chat-screen" hidden>
         <div id="hwhub-widget-messages" class="hwhub-widget-messages"></div>
+        <div class="hw-quick-chips">
+          <button class="hw-chip" type="button" data-msg="Quiero agendar una cita">📅 Cita</button>
+          <button class="hw-chip" type="button" data-msg="¿Cuál es el estado de mi pedido?">📦 Mi pedido</button>
+          <button class="hw-chip" type="button" data-msg="¿Dónde está la sucursal más cercana?">📍 Sucursal</button>
+        </div>
         <div class="hwhub-widget-compose">
           <textarea id="hwhub-widget-message" placeholder="Escribe tu pregunta"></textarea>
           <button id="hwhub-widget-send" type="button">Enviar</button>
@@ -809,6 +824,7 @@
       const headerColor = widgetConfig.headerColor || "#1f2a37";
       const accentColor = widgetConfig.accentColor || "#f5b301";
       panel.style.setProperty("--hwhub-widget-header", headerColor);
+      panel.style.setProperty("--hwhub-header-text", widgetConfig.headerTextColor || "#ffffff");
       panel.style.setProperty("--hwhub-widget-accent", accentColor);
       panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f5f3");
       panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#1f2a37");
@@ -1182,6 +1198,30 @@
     }
   });
 
+  for (const chip of panel.querySelectorAll(".hw-chip")) {
+    chip.addEventListener("click", () => {
+      textarea.value = chip.dataset.msg || "";
+      sendMessageToApi(chip.dataset.msg || "");
+    });
+  }
+
+  // El widget no tiene SSE (los eventos requieren sesion de backoffice). Estado real via navigator.onLine + resultado del envio.
+  function setWidgetStatus(state) {
+    const el = panel.querySelector("#hwhub-widget-status");
+    if (!el) return;
+    const map = {
+      online: ["hw-status--online", "● En línea"],
+      reconnecting: ["hw-status--reconnecting", "● Reconectando"],
+      offline: ["hw-status--offline", "● Sin conexión"]
+    };
+    const [cls, text] = map[state] || map.online;
+    el.className = "hw-status " + cls;
+    el.textContent = text;
+  }
+  setWidgetStatus(navigator.onLine ? "online" : "offline");
+  window.addEventListener("online", () => setWidgetStatus("online"));
+  window.addEventListener("offline", () => setWidgetStatus("offline"));
+
   editProfile.addEventListener("click", () => setScreen("profile"));
   cancelAppointment.addEventListener("click", () => {
     pendingAppointmentMessage = "";
@@ -1358,8 +1398,10 @@
       saveSession();
       renderMessages();
       updateBadge();
+      setWidgetStatus("online");
     } catch (error) {
       setTyping(false);
+      setWidgetStatus(navigator.onLine ? "reconnecting" : "offline");
       session.messages.push({ senderType: "system", body: error.message || "No se pudo contactar al asistente.", createdAt: new Date().toISOString() });
       if (panel.hidden) session.unread = (session.unread || 0) + 1;
       renderMessages();
