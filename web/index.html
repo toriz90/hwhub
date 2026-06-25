@@ -518,21 +518,33 @@
             </header>
             <form class="editor" data-editor="branches">
               <input type="hidden" name="id">
-              <input name="name" placeholder="Nombre">
-              <input name="state" placeholder="Estado">
-              <input name="municipality" placeholder="Municipio / Alcaldia">
-              <input name="colony" placeholder="Colonia">
-              <input name="city" placeholder="Ciudad visible">
-              <input name="phone" placeholder="Telefono">
-              <input name="whatsapp" placeholder="WhatsApp">
-              <input name="email" placeholder="Email">
-              <input name="address" placeholder="Direccion">
-              <input name="weekdayHours" placeholder="Horario entre semana">
-              <input name="saturdayHours" placeholder="Horario sabado">
-              <input name="sundayHours" placeholder="Horario domingo">
-              <input name="hours" placeholder="Resumen de horario">
-              <input name="services" placeholder="Servicios separados por coma">
-              <input name="wholesaleContact" placeholder="Contacto mayorista">
+              <details class="form-section" open>
+                <summary>Identidad</summary>
+                <input name="name" placeholder="Nombre">
+                <input name="state" placeholder="Estado">
+                <input name="municipality" placeholder="Municipio / Alcaldia">
+                <input name="colony" placeholder="Colonia">
+                <input name="city" placeholder="Ciudad visible">
+              </details>
+              <details class="form-section" open>
+                <summary>Contacto</summary>
+                <input name="phone" placeholder="Telefono">
+                <input name="whatsapp" placeholder="WhatsApp">
+                <input name="email" placeholder="Email">
+                <input name="address" placeholder="Direccion">
+              </details>
+              <details class="form-section" open>
+                <summary>Horarios</summary>
+                <input name="weekdayHours" placeholder="Horario entre semana">
+                <input name="saturdayHours" placeholder="Horario sabado">
+                <input name="sundayHours" placeholder="Horario domingo">
+                <input name="hours" placeholder="Resumen de horario">
+              </details>
+              <details class="form-section" open>
+                <summary>Servicios</summary>
+                <input name="services" placeholder="Servicios separados por coma">
+                <input name="wholesaleContact" placeholder="Contacto mayorista">
+              </details>
               <label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Activa</em></label>
               <button>Guardar sucursal</button>
             </form>
@@ -567,17 +579,26 @@
             </header>
             <form class="editor" data-editor="directoryContacts">
               <input type="hidden" name="id">
-              <input name="area" placeholder="Area">
-              <input name="name" placeholder="Nombre visible">
-              <input name="email" placeholder="Email">
-              <input name="whatsapp" placeholder="WhatsApp">
-              <input name="schedule" placeholder="Horario">
-              <input name="priority" type="number" placeholder="Prioridad">
-              <input name="channels" placeholder="Canales separados por coma">
-              <input name="intents" placeholder="Intenciones separadas por coma">
-              <input name="marketplaces" placeholder="Marketplaces separados por coma">
-              <input name="skills" placeholder="Skills separados por coma">
-              <textarea name="description" placeholder="Descripcion interna"></textarea>
+              <details class="form-section" open>
+                <summary>Identidad</summary>
+                <input name="area" placeholder="Area">
+                <input name="name" placeholder="Nombre visible">
+                <input name="email" placeholder="Email">
+                <input name="whatsapp" placeholder="WhatsApp">
+              </details>
+              <details class="form-section" open>
+                <summary>Operacion</summary>
+                <input name="schedule" placeholder="Horario">
+                <input name="priority" type="number" placeholder="Prioridad">
+                <input name="channels" placeholder="Canales separados por coma">
+                <input name="intents" placeholder="Intenciones separadas por coma">
+                <input name="marketplaces" placeholder="Marketplaces separados por coma">
+                <input name="skills" placeholder="Skills separados por coma">
+              </details>
+              <details class="form-section" open>
+                <summary>Descripcion</summary>
+                <textarea name="description" placeholder="Descripcion interna"></textarea>
+              </details>
               <label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Activo</em></label>
               <button>Guardar contacto</button>
             </form>
