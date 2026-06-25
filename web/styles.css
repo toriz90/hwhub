@@ -6184,9 +6184,9 @@ html[data-theme="dark"] .filters select {
 .module-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
-  padding: 14px 20px 10px;
+  padding: 10px 20px;
   border-bottom: 0.5px solid var(--line);
 }
 
