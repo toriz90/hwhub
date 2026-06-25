@@ -255,12 +255,12 @@
       }
 
       @keyframes hw-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.08); }
+        0% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 0 var(--hwhub-widget-accent, #FFD106); }
+        100% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 12px rgb(from var(--hwhub-widget-accent, #FFD106) r g b / 0); }
       }
 
       .hwhub-widget-button:not(.is-open) {
-        animation: hw-pulse 3s ease-in-out infinite;
+        animation: hw-pulse 2s ease-out infinite;
       }
 
       @media (prefers-reduced-motion: reduce) {
