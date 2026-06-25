@@ -1679,24 +1679,31 @@ function renderThreadMessages(messages = [], conversationId = "") {
       currentDay = nextDay;
       html.push(`<div class="daysep">${esc(nextDay)}</div>`);
     }
-    const type = message.senderType === "customer" ? "them" : message.senderType === "bot" ? "bot" : message.senderType === "system" ? "system" : "me";
+    const kindBySender = { customer: "client", bot: "bot", agent: "agent" };
     const senderLabel = {
       customer: "Cliente",
       bot: "WhaleBot",
       agent: "Agente",
       system: "Sistema"
     }[message.senderType] || message.senderType;
+    if (message.senderType === "system") {
+      html.push(`<div class="msg-system">${renderRichText(message.body)}</div>`);
+      continue;
+    }
+    const kind = kindBySender[message.senderType] || "agent";
+    const avatar = kind === "bot" ? `<i class="ti ti-robot"></i>` : esc(initials(senderLabel));
     html.push(`
-      <div class="message ${esc(message.senderType)} msg ${esc(type)}">
-        ${message.senderType === "bot" ? `<span class="wh-bot-flag">WhaleBot - automatico</span>` : ""}
-        <div class="message-body">${renderRichText(message.body)}</div>
-        ${renderMessageRichContent(message.metadata?.richContent)}
-        <small>${esc(senderLabel)} - ${esc(formatMessageTime(message.createdAt))}</small>
+      <div class="msg-row msg-row--${kind}">
+        <div class="msg-meta">${esc(senderLabel)} - ${esc(formatMessageTime(message.createdAt))}</div>
+        <div class="msg-bubble msg-bubble--${kind}">
+          <span class="msg-avatar">${avatar}</span>
+          <div class="msg-text">${renderRichText(message.body)}${renderMessageRichContent(message.metadata?.richContent)}</div>
+        </div>
       </div>
     `);
   }
-  if (state.typing[conversationId]?.bot) html.push(`<div class="message bot msg bot typing"><p>Bot escribiendo...</p></div>`);
-  if (state.typing[conversationId]?.agent) html.push(`<div class="message agent msg me typing"><p>Agente escribiendo...</p></div>`);
+  if (state.typing[conversationId]?.bot) html.push(`<div class="msg-row msg-row--bot"><div class="msg-bubble msg-bubble--bot"><span class="msg-avatar"><i class="ti ti-robot"></i></span><div class="msg-text">Bot escribiendo...</div></div></div>`);
+  if (state.typing[conversationId]?.agent) html.push(`<div class="msg-row msg-row--agent"><div class="msg-bubble msg-bubble--agent"><span class="msg-avatar">A</span><div class="msg-text">Agente escribiendo...</div></div></div>`);
   return `<div class="message-list wh-thread-messages">${html.join("")}</div>`;
 }
 
