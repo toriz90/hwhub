@@ -103,8 +103,8 @@ textarea {
 
 button {
   border: 0;
-  border-radius: 4px;
-  padding: 0.74rem 0.95rem;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
   background: var(--navy-strong);
   color: var(--white);
   cursor: pointer;
@@ -358,14 +358,6 @@ h2 {
   color: #1d4ed8;
 }
 
-.metrics article,
-.panel {
-  background: var(--white);
-  border: 1px solid #c7d0db;
-  border-radius: 5px;
-  box-shadow: var(--shadow);
-}
-
 .metrics article {
   padding: 1rem;
 }
@@ -430,10 +422,6 @@ h2 {
 .grid-two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 1rem;
-}
-
-.panel {
-  padding: 1rem;
 }
 
 .panel header {
@@ -512,7 +500,7 @@ h2 {
   display: inline-block;
   margin-top: 0.55rem;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 999px;
   color: var(--white);
   background: var(--blue);
   font-size: 0.72rem;
@@ -534,8 +522,8 @@ h2 {
   display: inline-block;
   margin: 0.55rem 0 0 0.35rem;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  background: #edf1f5;
+  border-radius: 999px;
+  background: #eef1f5;
   color: var(--ink);
   font-size: 0.72rem;
 }
@@ -900,7 +888,7 @@ textarea:disabled {
 
 .row-actions button {
   padding: 0.45rem 0.6rem;
-  background: #edf1f5;
+  background: #eef1f5;
   color: var(--ink);
 }
 
@@ -917,8 +905,8 @@ textarea:disabled {
 }
 
 .filters button {
-  padding: 0.72rem 0.8rem;
-  background: #e6ebf1;
+  padding: 8px 12px;
+  background: #eef1f5;
   color: var(--ink);
   border: 1px solid #c7d0db;
 }
@@ -1282,7 +1270,7 @@ textarea:disabled {
 }
 
 .conversation-actions button {
-  padding: 0.55rem 0.7rem;
+  padding: 8px 12px;
 }
 
 .conversation-actions button.is-active-action {
@@ -1585,7 +1573,7 @@ textarea {
 }
 
 .hwhub-widget-form-actions button:first-child {
-  background: #e6ebf1;
+  background: #eef1f5;
   color: var(--ink);
   border: 1px solid #c7d0db;
 }
@@ -1716,7 +1704,7 @@ body {
 
 button {
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   background: var(--navy-strong);
   color: var(--white);
   box-shadow: none;
@@ -3164,7 +3152,7 @@ main.wh-main {
   justify-content: center;
   gap: 0.45rem;
   border: 1px solid transparent;
-  padding: 0.68rem 0.9rem;
+  padding: 8px 12px;
   text-decoration: none;
   cursor: pointer;
 }
@@ -3469,7 +3457,7 @@ main.wh-main {
 .wh-conv-tag.status-paused,
 .wh-conv-tag.is-urgent {
   border-color: color-mix(in srgb, var(--wh-orange) 36%, var(--wh-border));
-  color: var(--wh-orange);
+  color: var(--ink);
 }
 
 .wh-conv-tag.status-closed {
@@ -3782,7 +3770,7 @@ body.wh-app {
 }
 
 .wh-brand small {
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -3850,7 +3838,7 @@ main.wh-main {
 }
 
 .wh-topbar .eyebrow {
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 9.5px;
   letter-spacing: 1.6px;
 }
@@ -4043,7 +4031,7 @@ html[data-theme="dark"] .wh-conv .conversation-card-head strong {
 }
 
 .wh-conv .conversation-card-head span {
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 10.5px;
 }
 
@@ -4125,7 +4113,7 @@ html[data-theme="dark"] .wh-thread-body {
 .daysep {
   border: 0;
   background: transparent;
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 700;
 }
@@ -4178,7 +4166,7 @@ html[data-theme="dark"] .message.msg.me .message-body {
 
 .message.msg small {
   padding: 0 4px;
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 10px;
 }
 
@@ -4337,7 +4325,7 @@ html[data-theme="dark"] .message.msg.me .message-body {
 }
 
 .dashboard-attention-item em {
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 11px;
   font-style: normal;
   white-space: nowrap;
@@ -4907,7 +4895,7 @@ main.wh-main {
   min-height: 34px;
   border: 1px solid var(--wh-border);
   border-radius: 9px;
-  padding: 7px 11px;
+  padding: 8px 12px;
   background: var(--wh-surface);
   color: var(--wh-text);
   font-size: 11.5px;
@@ -5054,7 +5042,7 @@ button.danger,
 .wh-thread-messages .message.msg small,
 .wh-thread-messages .wh-bot-flag {
   padding: 0 6px;
-  color: var(--wh-muted-2);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 800;
 }
