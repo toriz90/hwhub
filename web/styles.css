@@ -5998,3 +5998,51 @@ html[data-theme="dark"] .filters select {
   20%, 60% { transform: translateX(-4px); }
   40%, 80% { transform: translateX(4px); }
 }
+
+/* ===== Bloque B: cards compactas + grid universal ===== */
+#agents-list,
+#branches-list,
+#directory-list,
+#faq-list,
+#routing-list {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  align-content: start;
+}
+
+.wh-entity-card {
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.wh-entity-card .wh-card-head {
+  align-items: center;
+}
+
+.wh-entity-card .wh-card-head > div {
+  min-width: 0;
+}
+
+.wh-entity-card .wh-card-head strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wh-entity-card .wh-card-head p {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wh-entity-card .wh-chip-row {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.wh-entity-card .wh-chip-row .tag {
+  flex: 0 0 auto;
+}
+
+.wh-entity-card .row-actions {
+  justify-content: flex-end;
+}
