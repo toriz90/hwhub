@@ -6311,3 +6311,19 @@ html[data-theme="dark"] .filters select {
 .wh-quick-replies button:hover {
   background: var(--surface-soft);
 }
+
+/* ===== Bloque B: link al entorno de pruebas ===== */
+.test-env-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--gold);
+  font-weight: 500;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.test-env-link:hover {
+  text-decoration: underline;
+}

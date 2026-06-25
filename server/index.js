@@ -781,6 +781,99 @@ const server = createServer(async (req, res) => {
   req.sessionId = cookies.hwhub_session || null;
   req.user = await store.userFromSession(req.sessionId);
 
+  if (url.pathname === "/test" && req.method === "GET") {
+    if (!req.user) {
+      res.writeHead(302, { location: "/#login" });
+      res.end();
+      return;
+    }
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+    res.end(`<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhaleHub · Pruebas</title>
+<style>
+  :root { --gold:#FFD106; --amber:#FFA506; --bg:#FFFDF0; --line:#e0dbd0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color:#111; }
+  .tb { display:flex; align-items:center; gap:12px; padding:12px 20px; background:#000; color:#fff; }
+  .tb .logo { color:var(--gold); font-weight:800; font-size:16px; }
+  .tb .badge { background:var(--amber); color:#000; font-weight:800; font-size:11px; padding:2px 8px; border-radius:999px; }
+  .tb a { margin-left:auto; color:#fff; text-decoration:none; font-size:13px; }
+  .wrap { max-width:880px; margin:0 auto; padding:20px; display:grid; gap:16px; }
+  .card { background:#fff; border:0.5px solid var(--line); border-radius:10px; padding:16px; }
+  .card h2 { margin:0 0 10px; font-size:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button, select { padding:7px 12px; border:0.5px solid var(--line); border-radius:7px; background:#fff; font:inherit; cursor:pointer; }
+  #log { max-height:260px; overflow:auto; font:12px/1.5 ui-monospace, monospace; background:#0a0a0a; color:#e7e9ed; border-radius:8px; padding:10px; }
+  #log .ev { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #log .t { color:var(--gold); }
+  #health { font:13px/1.6 ui-monospace, monospace; }
+</style>
+</head>
+<body>
+  <div class="tb">
+    <span class="logo">HW</span>
+    <span>WhaleHub · Entorno de pruebas</span>
+    <span class="badge">TEST</span>
+    <a href="/">← Volver al panel</a>
+  </div>
+  <div class="wrap">
+    <div class="card"><h2>Widget embebido (canal test)</h2><p>El widget de chat real aparece flotante abajo a la derecha.</p></div>
+    <div class="card">
+      <h2>Controles de debug</h2>
+      <div class="row">
+        <select id="ch">
+          <option value="web_widget">official_site</option>
+          <option value="whatsapp_cloud">whatsapp</option>
+          <option value="marketplace">marketplace</option>
+        </select>
+        <button id="sim-wa">Simular WhatsApp</button>
+        <button id="sim-mp">Simular marketplace</button>
+        <button id="reset">Reiniciar conversación</button>
+      </div>
+    </div>
+    <div class="card"><h2>Log SSE en vivo (últimos 20)</h2><div id="log"></div></div>
+    <div class="card"><h2>Estado del sistema</h2><div id="health">cargando…</div></div>
+  </div>
+  <script src="/widget.js" data-channel="test"></script>
+  <script>
+    var log = document.getElementById("log");
+    var events = new EventSource("/api/events");
+    var types = ["conversation.created","conversation.updated","conversation.typing","message.created","agents.updated","users.updated","integrations.updated","integrations.deleted"];
+    function push(type, raw) {
+      var line = document.createElement("div");
+      line.className = "ev";
+      line.innerHTML = '<span class="t">' + new Date().toLocaleTimeString() + '</span> <b>' + type + '</b> ' + String(raw).slice(0, 120).replace(/</g, "&lt;");
+      log.appendChild(line);
+      while (log.children.length > 20) log.removeChild(log.firstChild);
+      log.scrollTop = log.scrollHeight;
+    }
+    types.forEach(function(t){ events.addEventListener(t, function(e){ push(t, e.data); }); });
+    events.onerror = function(){ push("sse", "desconectado, reintentando…"); };
+    function sim(channel, message) {
+      fetch("/api/chat", { method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({ message: message, channel: channel, visitorId: "test-harness" }) }).catch(function(e){ push("error", e.message); });
+    }
+    document.getElementById("sim-wa").onclick = function(){ sim("whatsapp_cloud", "Quiero informacion de ventas mayoristas"); };
+    document.getElementById("sim-mp").onclick = function(){ sim("marketplace", "Compre por marketplace y necesito ayuda"); };
+    document.getElementById("reset").onclick = function(){
+      Object.keys(localStorage).filter(function(k){ return k.indexOf("hwhub-widget:") === 0; }).forEach(function(k){ localStorage.removeItem(k); });
+      location.reload();
+    };
+    function health() {
+      fetch("/health").then(function(r){ return r.json(); }).then(function(d){
+        document.getElementById("health").textContent = "storage: " + d.storage + " · uptime: " + d.uptime + "s · " + d.timestamp;
+      }).catch(function(){ document.getElementById("health").textContent = "health no disponible"; });
+    }
+    health(); setInterval(health, 10000);
+  </script>
+</body>
+</html>`);
+    return;
+  }
+
   if (url.pathname === "/api/login" && req.method === "POST") {
     const body = await readBody(req);
     const user = await store.authenticate(body.email, body.password);
