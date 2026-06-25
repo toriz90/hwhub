@@ -6215,8 +6215,8 @@ html[data-theme="dark"] .filters select {
   grid-template-columns: 1fr;
 }
 
-/* ===== Fix: alineacion buscador + grid Directorio/Sucursales ===== */
-.list-panel .filters {
+/* ===== Fix: alineacion buscador (todos los .filters dentro de un .panel: Directorio, Sucursales, Conversaciones) ===== */
+.panel .filters {
   padding: 16px 20px;
   background: var(--surface);
   border: 0.5px solid var(--line);
