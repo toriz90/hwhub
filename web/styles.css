@@ -1987,16 +1987,7 @@ textarea {
 
 .list-panel .filters {
   grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr) auto;
-}
-
-#branches .list-panel .filters,
-#directory .list-panel .filters {
   align-items: end;
-  padding: 16px 20px !important;
-  background: var(--surface-soft) !important;
-  border: 0.5px solid var(--line) !important;
-  border-radius: 8px !important;
-  margin-bottom: 16px !important;
 }
 
 .list-panel .card,
@@ -2143,10 +2134,11 @@ textarea {
 }
 
 .filters {
-  padding: 0.75rem;
-  border: 1px solid rgba(17, 17, 17, 0.08);
-  border-radius: var(--radius);
-  background: #f8f9fb;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  margin-bottom: 16px;
 }
 
 .filters button,
@@ -2785,7 +2777,6 @@ p,
   color: var(--text);
 }
 
-.filters,
 .editor,
 .reply-form,
 .conversation-context article,
@@ -3953,7 +3944,7 @@ html[data-theme="dark"] .wh-live-pill {
   gap: 6px;
   padding: 10px 16px 14px;
   border-bottom: 1px solid var(--wh-border);
-  background: var(--wh-paper);
+  background: var(--wh-surface);
 }
 
 .wh-inbox .filters select,
@@ -6218,15 +6209,6 @@ html[data-theme="dark"] .filters select {
 /* El modulo queda en 1 columna: ya no hay panel-form a la izquierda */
 .module-header + .module-grid {
   grid-template-columns: 1fr;
-}
-
-/* ===== Fix: alineacion buscador (todos los .filters dentro de un .panel: Directorio, Sucursales, Conversaciones) ===== */
-.panel .filters {
-  padding: 16px 20px;
-  background: var(--surface);
-  border: 0.5px solid var(--line);
-  border-radius: 8px;
-  margin-bottom: 16px;
 }
 
 .list-panel .cards {
