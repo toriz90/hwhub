@@ -249,10 +249,10 @@
             <header class="wh-thread-header">
               <button id="conversation-back" type="button" class="wh-thread-back" aria-label="Volver a la bandeja">&#8592; Bandeja</button>
               <div id="conversation-thread-heading">
-                <p class="eyebrow">Atencion</p>
                 <h2>Selecciona un chat</h2>
                 <p class="section-note">El hilo aparecera aqui con acciones de agente.</p>
               </div>
+              <span id="sse-status" class="sse-status is-reconnecting">&#9679; Conectando</span>
               <span id="conversation-status" class="status status-empty">Sin seleccion</span>
             </header>
             <div id="conversation-detail" class="detail-empty wh-thread-body" aria-live="polite">Selecciona una conversacion para ver mensajes y acciones.</div>
@@ -264,9 +264,9 @@
                 <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
               </div>
               <div class="wh-quick-replies" aria-label="Respuestas rapidas">
-                <button type="button" data-quick-reply="Puedo ayudarte a revisar el estado de tu pedido. Compárteme tu número de pedido o teléfono.">Estado de pedido</button>
-                <button type="button" data-quick-reply="Te comparto la sucursal o centro de servicio más cercano con la información disponible.">Sucursal cercana</button>
-                <button type="button" data-quick-reply="Activo nuevamente el bot para que continúe con la atención automática.">Devolver al bot</button>
+                <button type="button" data-quick-reply="Con gusto te ayudo a agendar una cita. ¿Que dia, sucursal y servicio prefieres?">📅 Agendar cita</button>
+                <button type="button" data-quick-reply="Puedo ayudarte a revisar el estado de tu pedido. Compárteme tu número de pedido o teléfono.">📦 Estado de pedido</button>
+                <button type="button" data-quick-reply="Te comparto la sucursal o centro de servicio más cercano con la información disponible.">📍 Sucursal cercana</button>
               </div>
               <p id="conversation-action-status" class="action-feedback" aria-live="polite"></p>
               <form id="agent-reply-form" class="reply-form">

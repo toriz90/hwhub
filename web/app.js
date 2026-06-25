@@ -1791,9 +1791,8 @@ function renderConversationDetailData(data) {
   const heading = $("#conversation-thread-heading");
   if (heading) {
     heading.innerHTML = `
-      <p class="eyebrow">${esc(channelLabel(data.conversation.channel))}</p>
       <h2>${esc(data.conversation.customer || "Cliente")}</h2>
-      <p class="section-note">${esc(data.conversation.customerPhone || "Sin telefono")} - ${esc(data.conversation.intent || "sin intencion")} - ${currentAgent ? `Agente: ${esc(currentAgent.name)}` : "sin agente"}</p>
+      <p class="section-note">${esc(channelLabel(data.conversation.channel))} · ${esc(data.conversation.intent || "sin intencion")}${currentAgent ? ` · ${esc(currentAgent.name)}` : ""}</p>
     `;
   }
   $("#conversation-status").textContent = statusLabel(data.conversation.status);
@@ -2315,8 +2314,24 @@ function bindRoleLab() {
   });
 }
 
+function setSseStatus(state) {
+  const el = $("#sse-status");
+  if (!el) return;
+  const map = {
+    online: ["is-online", "● En linea"],
+    reconnecting: ["is-reconnecting", "● Reconectando"],
+    down: ["is-down", "● Sin conexion"]
+  };
+  const [cls, text] = map[state] || map.reconnecting;
+  el.className = `sse-status ${cls}`;
+  el.textContent = text;
+}
+
 function bindRealtime() {
   const events = new EventSource("/api/events");
+  setSseStatus("reconnecting");
+  events.addEventListener("open", () => setSseStatus("online"));
+  events.addEventListener("error", () => setSseStatus(events.readyState === 2 ? "down" : "reconnecting"));
   events.addEventListener("conversation.created", (event) => {
     const conversation = JSON.parse(event.data);
     state.alerts += 1;

@@ -254,6 +254,35 @@
         font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
+      @keyframes hwhubPulse {
+        0%, 100% { transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0)) scale(1); }
+        50% { transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0)) scale(1.08); }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .hwhub-widget-button:not(.is-open) {
+          animation: hwhubPulse 3s ease-in-out infinite;
+        }
+      }
+
+      .hwhub-widget-button.is-open { animation: none; }
+      .hwhub-widget-button.is-open span,
+      .hwhub-widget-button.is-open strong,
+      .hwhub-widget-button.is-open::after { display: none; }
+      .hwhub-widget-button.is-open::before {
+        content: "\\2715";
+        width: auto;
+        height: auto;
+        background: none;
+        border: 0;
+        font-size: 24px;
+        line-height: 1;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .hwhub-widget-panel {
         position: fixed;
         right: 22px;
@@ -1144,6 +1173,7 @@
 
   button.addEventListener("click", () => {
     panel.hidden = !panel.hidden;
+    button.classList.toggle("is-open", !panel.hidden);
     if (!panel.hidden) {
       session.unread = 0;
       saveSession();
