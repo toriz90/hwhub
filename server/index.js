@@ -12,6 +12,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const root = normalize(join(__dirname, ".."));
 const publicDir = join(root, "web");
 const port = Number(process.env.PORT || 3000);
+const BUILD_ID = Date.now(); // cache-buster por arranque: invalida ?v= de css/js en cada restart
 
 const clients = new Set();
 let store;
@@ -746,9 +747,13 @@ async function serveStatic(req, res) {
     return;
   }
   try {
-    const content = await readFile(filePath);
+    const ext = extname(filePath);
+    let content = await readFile(filePath);
+    if (ext === ".html") {
+      content = content.toString("utf8").replace(/\?v=[\w.-]+/g, `?v=${BUILD_ID}`);
+    }
     res.writeHead(200, {
-      "content-type": mime[extname(filePath)] || "application/octet-stream",
+      "content-type": mime[ext] || "application/octet-stream",
       "cache-control": "no-store"
     });
     res.end(content);
