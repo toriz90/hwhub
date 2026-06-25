@@ -827,18 +827,6 @@ textarea:disabled {
   grid-column: 1 / -1;
 }
 
-.integration-field.check {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  color: var(--ink);
-}
-
-.check {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
 .switch-row {
   position: relative;
   width: fit-content;
@@ -4433,66 +4421,6 @@ html[data-theme="dark"] .message.msg.me .message-body {
   color: var(--wh-ink);
   font-size: 10px;
   font-weight: 800;
-}
-
-label.check,
-label.check-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 34px;
-  cursor: pointer;
-  color: var(--ink);
-  font-weight: 800;
-}
-
-label.check input[type="checkbox"],
-label.check-row input[type="checkbox"] {
-  appearance: none;
-  width: 42px;
-  height: 24px;
-  flex: 0 0 42px;
-  border: 1px solid var(--wh-border);
-  border-radius: 999px;
-  background: #d9dde3;
-  cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease;
-}
-
-label.check input[type="checkbox"]::before,
-label.check-row input[type="checkbox"]::before {
-  content: "";
-  display: block;
-  width: 18px;
-  height: 18px;
-  margin: 2px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 4px rgba(13, 15, 18, 0.22);
-  transition: transform 0.18s ease;
-}
-
-label.check input[type="checkbox"]:checked,
-label.check-row input[type="checkbox"]:checked {
-  border-color: var(--wh-gold);
-  background: var(--wh-gold);
-}
-
-label.check input[type="checkbox"]:checked::before,
-label.check-row input[type="checkbox"]:checked::before {
-  transform: translateX(18px);
-}
-
-label.check input[type="checkbox"]:disabled,
-label.check-row input[type="checkbox"]:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-label.check input[type="checkbox"]:focus-visible,
-label.check-row input[type="checkbox"]:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--wh-gold) 38%, transparent);
-  outline-offset: 2px;
 }
 
 @media (max-width: 1180px) {
