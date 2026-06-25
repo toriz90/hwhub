@@ -5188,6 +5188,49 @@ html[data-theme="dark"] .filters select {
   transform: rotate(90deg);
 }
 
+/* Estado vacio del badge de conversacion ("Sin seleccion"): neutro, no azul de estado */
+.status.status-empty {
+  background: var(--muted);
+  color: var(--ink);
+}
+
+/* Boton volver (push-view movil): oculto en desktop */
+.wh-thread-back {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+/* Confirmacion de marca (reemplaza confirm() nativo) */
+.wh-confirm {
+  margin: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  max-width: 360px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.wh-confirm::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.wh-confirm p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.wh-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 /* Mobile-first: sidebar -> bottom nav + apilado de columnas (<768px) */
 @media (max-width: 767px) {
   .wh-sidebar.sidebar {
@@ -5333,5 +5376,28 @@ html[data-theme="dark"] .filters select {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Contener cualquier desborde lateral (scroll horizontal negro) */
+  body.wh-app {
+    overflow-x: hidden;
+  }
+
+  /* Conversaciones push-view: bandeja por defecto; al seleccionar, hilo (oculta bandeja) */
+  .conversation-workspace .wh-inbox-thread {
+    display: none;
+  }
+
+  .conversation-workspace.is-thread-open .wh-inbox-list {
+    display: none;
+  }
+
+  .conversation-workspace.is-thread-open .wh-inbox-thread {
+    display: block;
+  }
+
+  .wh-thread-back {
+    display: inline-flex;
+    align-self: flex-start;
   }
 }

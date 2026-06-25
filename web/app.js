@@ -54,6 +54,18 @@ function notify(message, type = "ok", detail = "") {
   }, type === "error" ? 5200 : 3200);
 }
 
+// Confirmacion de marca via <dialog> nativo. Un toast no puede frenar una accion destructiva
+// (no devuelve decision); por eso usamos dialog. Fallback a confirm() si <dialog> no existe.
+function confirmDialog(message) {
+  const dialog = $("#confirm-dialog");
+  if (!dialog || typeof dialog.showModal !== "function") return Promise.resolve(window.confirm(message));
+  $("#confirm-dialog-message").textContent = message;
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => resolve(dialog.returnValue === "accept"), { once: true });
+  });
+}
+
 function setButtonBusy(button, busy, label = "Procesando...") {
   if (!button) return;
   if (busy) {
@@ -952,7 +964,8 @@ function renderIntegrations() {
   for (const button of $$("[data-delete-integration]")) {
     button.onclick = async () => {
       const item = integrations.find((entry) => entry.id === button.dataset.deleteIntegration);
-      if (!item || !confirm(`Eliminar la API "${item.name}"?`)) return;
+      if (!item) return;
+      if (!(await confirmDialog(`Eliminar la API "${item.name}"?`))) return;
       setButtonBusy(button, true, "Eliminando...");
       $("#integration-status").textContent = `Eliminando ${item.name}...`;
       try {
@@ -1530,9 +1543,9 @@ const conversationActionLabels = {
     button: "Pausar bot"
   },
   bot: {
-    busy: "Activando...",
-    done: "Bot activado. La conversacion vuelve a respuestas automaticas.",
-    button: "Activar bot"
+    busy: "Reactivando...",
+    done: "Bot reactivado. La conversacion vuelve a respuestas automaticas.",
+    button: "Reactivar bot"
   },
   close: {
     busy: "Cerrando...",
@@ -1795,6 +1808,7 @@ function renderConversationDetailData(data) {
 
 async function openConversation(id) {
   state.selectedConversationId = id;
+  document.querySelector(".conversation-workspace")?.classList.add("is-thread-open");
   state.unread[id] = 0;
   setConversationActionStatus();
   try {
@@ -1824,9 +1838,19 @@ function applyConversationActionAvailability(status) {
   for (const button of $$("[data-conversation-action]")) {
     button.classList.toggle("is-active-action", button.dataset.conversationAction === activeAction);
   }
+  // Estado-consciente: oculta la accion redundante (pausar si ya pausado, reactivar si ya activo)
+  const pauseBtn = $('[data-conversation-action="pause"]');
+  const botBtn = $('[data-conversation-action="bot"]');
+  if (pauseBtn) pauseBtn.hidden = status === "paused" || status === "closed";
+  if (botBtn) botBtn.hidden = status === "bot_active" || status === "closed";
 }
 
 function bindConversationActions() {
+  // Movil push-view: volver de hilo a bandeja (oculta la vista de hilo y limpia la seleccion)
+  $("#conversation-back")?.addEventListener("click", () => {
+    state.selectedConversationId = null;
+    document.querySelector(".conversation-workspace")?.classList.remove("is-thread-open");
+  });
   for (const button of $$("[data-conversation-action]")) {
     button.addEventListener("click", async () => {
       if (!state.selectedConversationId) {

@@ -78,7 +78,7 @@
         <div class="top-actions">
           <span class="wh-live-pill" aria-label="Conexion en vivo">Live</span>
           <label class="role-switch">
-            Rol
+            Viendo como:
             <select id="active-role">
               <option value="admin">Admin</option>
               <option value="supervisor">Supervisor</option>
@@ -95,8 +95,6 @@
           </label>
           <span id="active-user" class="user-pill"></span>
           <button id="logout-button" type="button">Salir</button>
-          <button id="simulate-whatsapp">Simular WhatsApp</button>
-          <button id="simulate-marketplace">Simular marketplace</button>
         </div>
       </section>
 
@@ -245,19 +243,20 @@
 
           <div class="panel conversation-detail wh-inbox-thread">
             <header class="wh-thread-header">
+              <button id="conversation-back" type="button" class="wh-thread-back" aria-label="Volver a la bandeja">&#8592; Bandeja</button>
               <div id="conversation-thread-heading">
                 <p class="eyebrow">Atencion</p>
                 <h2>Selecciona un chat</h2>
                 <p class="section-note">El hilo aparecera aqui con acciones de agente.</p>
               </div>
-              <span id="conversation-status" class="status">Sin seleccion</span>
+              <span id="conversation-status" class="status status-empty">Sin seleccion</span>
             </header>
             <div id="conversation-detail" class="detail-empty wh-thread-body" aria-live="polite">Selecciona una conversacion para ver mensajes y acciones.</div>
             <div class="wh-thread-composer">
               <div class="conversation-actions" aria-label="Acciones de conversacion">
                 <button data-conversation-action="take" title="Asignar esta conversacion a un agente y detener respuestas automaticas">Tomar chat</button>
                 <button data-conversation-action="pause" title="Pausar respuestas automaticas hasta reactivar el bot">Pausar bot</button>
-                <button data-conversation-action="bot" title="Devolver la conversacion al bot">Activar bot</button>
+                <button data-conversation-action="bot" title="Reactivar el bot para que responda en automatico">Reactivar bot</button>
                 <button data-conversation-action="close" title="Cerrar la conversacion">Cerrar chat</button>
               </div>
               <div class="wh-quick-replies" aria-label="Respuestas rapidas">
@@ -428,6 +427,21 @@
                   <button>Probar ruteo</button>
                 </form>
                 <div id="chat-result" class="result"></div>
+              </div>
+
+              <div class="chatbot-test-box">
+                <div class="block-heading">
+                  <span>06</span>
+                  <div>
+                    <p class="eyebrow">Prueba</p>
+                    <h3>Simuladores de entrada</h3>
+                  </div>
+                </div>
+                <p class="form-note">Genera conversaciones de prueba para validar ruteo y bandeja. Herramientas de desarrollo, no operativas.</p>
+                <div class="row-actions">
+                  <button id="simulate-whatsapp" type="button">Simular WhatsApp</button>
+                  <button id="simulate-marketplace" type="button">Simular marketplace</button>
+                </div>
               </div>
             </section>
 
@@ -785,6 +799,16 @@
       </div>
     </main>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <dialog id="confirm-dialog" class="wh-confirm">
+      <form method="dialog">
+        <p id="confirm-dialog-message"></p>
+        <div class="wh-confirm-actions">
+          <button value="cancel" class="secondary" autofocus>Cancelar</button>
+          <button value="accept" class="danger">Eliminar</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="/app.js?v=20260624-api-toggles"></script>
     <script src="/widget.js?v=20260604-appointment-folio" data-channel="official_site"></script>
