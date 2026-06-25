@@ -2066,10 +2066,30 @@ async function saveSettingsForm(name, selector) {
   if (!form) return;
   try {
     await api(`/api/settings/${name}`, { method: "POST", body: JSON.stringify(formPayload(form)) });
+    if (name === "brand") window.hwhubWidget?.reloadConfig?.();
     notify("Configuracion guardada correctamente", "ok");
   } catch (error) {
     notify("No se pudo guardar la configuracion", "error", error.message);
   }
+}
+
+async function loadBrandForm() {
+  const form = $("#brand-form");
+  if (!form) return;
+  let brand;
+  try { brand = await api("/api/settings/brand"); } catch { return; }
+  if (!brand || typeof brand !== "object") return;
+  for (const key of ["appName", "subtitle", "primary", "secondary", "base"]) {
+    if (brand[key] == null || brand[key] === "") continue;
+    const field = form.elements[key];
+    if (field) field.value = brand[key];
+  }
+  for (const pair of form.querySelectorAll(".color-pair")) {
+    const color = pair.querySelector('input[type="color"]');
+    const hex = pair.querySelector("[data-hex]");
+    if (color && hex) hex.value = color.value;
+  }
+  updateBrandPreview();
 }
 
 function bindSettings() {
@@ -2100,6 +2120,7 @@ function bindSettings() {
   $("#brand-form")?.addEventListener("submit", (event) => { event.preventDefault(); saveSettingsForm("brand", "#brand-form"); });
   $("#notifications-form")?.addEventListener("submit", (event) => { event.preventDefault(); saveSettingsForm("notifications", "#notifications-form"); });
   updateBrandPreview();
+  loadBrandForm();
 }
 
 function bindStepModals() {

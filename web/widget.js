@@ -1436,4 +1436,5 @@
   startSyncLoop();
   syncConversation();
   saveSession();
+  window.hwhubWidget = window.hwhubWidget || { reloadConfig: loadWidgetConfig };
 })();

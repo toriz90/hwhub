@@ -70,6 +70,20 @@ function mergeChatbotSettings(value = {}) {
   };
 }
 
+const isHexColor = (value) => typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value.trim());
+
+// Marca blanca: brand pisa los slots mapeados del widget (primary->accent, base->header).
+// Si brand no existe o un campo no es valido, el slot conserva el valor de chatbot.widget.
+function applyBrandToWidget(widget, brand) {
+  if (!brand || typeof brand !== "object") return widget;
+  const next = { ...widget };
+  if (typeof brand.appName === "string" && brand.appName.trim()) next.title = brand.appName.trim();
+  if (typeof brand.subtitle === "string" && brand.subtitle.trim()) next.subtitle = brand.subtitle.trim();
+  if (isHexColor(brand.primary)) next.accentColor = brand.primary.trim();
+  if (isHexColor(brand.base)) next.headerColor = brand.base.trim();
+  return next;
+}
+
 const state = {
   branches: [
     ...branchSeeds,
@@ -944,7 +958,7 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === "/api/widget-config" && req.method === "GET") {
     const settings = mergeChatbotSettings(await store.settings?.("chatbot"));
-    sendJson(res, settings.widget);
+    sendJson(res, applyBrandToWidget(settings.widget, await store.settings?.("brand")));
     return;
   }
 
