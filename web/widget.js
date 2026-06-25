@@ -528,24 +528,30 @@
 
       .hwhub-widget-message.customer {
         justify-self: end;
-        background: var(--hwhub-widget-user, #1f2a37);
-        color: #fff;
+        background: var(--hwhub-widget-user, #ffffff);
+        color: #1f2a37;
+        border-color: #e0dbd0;
       }
 
       .hwhub-widget-message.customer time {
-        color: rgba(255, 255, 255, 0.72);
+        color: rgba(31, 42, 55, 0.55);
       }
 
       .hwhub-widget-message.bot {
         justify-self: start;
-        background: var(--hwhub-widget-bot, #e8f5f3);
-        border-color: #cbe7e2;
+        background: var(--hwhub-widget-bot, #FFF8E0);
+        color: #664400;
+        border-color: var(--hwhub-widget-accent, #FFD106);
       }
 
       .hwhub-widget-message.agent {
         justify-self: start;
-        background: #fff6d8;
-        border-color: rgba(245, 179, 1, 0.45);
+        background: var(--hwhub-widget-header, #000000);
+        color: #ffffff;
+      }
+
+      .hwhub-widget-message.agent time {
+        color: rgba(255, 255, 255, 0.7);
       }
 
       .hwhub-widget-message.system {
@@ -704,8 +710,8 @@
     buttonLabel: "Chat",
     headerColor: "#1f2a37",
     accentColor: "#f5b301",
-    botBubbleColor: "#e8f5f3",
-    userBubbleColor: "#1f2a37",
+    botBubbleColor: "#FFF8E0",
+    userBubbleColor: "#ffffff",
     positionHorizontal: "right",
     positionVertical: "bottom"
   };
@@ -828,8 +834,8 @@
       panel.style.setProperty("--hwhub-widget-header", headerColor);
       panel.style.setProperty("--hwhub-header-text", widgetConfig.headerTextColor || "#ffffff");
       panel.style.setProperty("--hwhub-widget-accent", accentColor);
-      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#e8f5f3");
-      panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#1f2a37");
+      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#FFF8E0");
+      panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#ffffff");
       button.style.setProperty("--hwhub-widget-header", headerColor);
       button.style.setProperty("--hwhub-widget-accent", accentColor);
       applyWidgetPosition();

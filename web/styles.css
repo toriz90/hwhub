@@ -1604,44 +1604,6 @@ textarea {
   text-transform: capitalize;
 }
 
-.hwhub-widget-message {
-  max-width: 86%;
-  padding: 0.55rem 0.65rem;
-  border-radius: 5px;
-  color: var(--ink);
-  background: var(--white);
-  font-size: 0.86rem;
-  line-height: 1.35;
-}
-
-.hwhub-widget-message time {
-  display: block;
-  margin-top: 0.25rem;
-  color: rgba(17, 24, 39, 0.55);
-  font-size: 0.68rem;
-}
-
-.hwhub-widget-message.customer {
-  justify-self: end;
-  color: var(--white);
-  background: var(--hwhub-widget-user, #111b25);
-}
-
-.hwhub-widget-message.customer time {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.hwhub-widget-message.bot {
-  justify-self: start;
-  background: var(--hwhub-widget-bot, #e8f6f4);
-}
-
-.hwhub-widget-message.agent {
-  justify-self: start;
-  background: #fff7db;
-  border: 1px solid rgba(247, 181, 0, 0.42);
-}
-
 .hwhub-widget-profile-screen[hidden],
 .hwhub-widget-chat-screen[hidden] {
   display: none !important;

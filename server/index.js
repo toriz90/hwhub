@@ -40,8 +40,8 @@ const defaultChatbotSettings = {
     buttonLabel: "Chat",
     headerColor: "#1f2a37",
     accentColor: "#f5b301",
-    botBubbleColor: "#e8f5f3",
-    userBubbleColor: "#1f2a37",
+    botBubbleColor: "#FFF8E0",
+    userBubbleColor: "#ffffff",
     positionHorizontal: "right",
     positionVertical: "bottom"
   }
@@ -56,8 +56,8 @@ function mergeChatbotSettings(value = {}) {
   const legacyWidgetColors = {
     headerColor: { "#111b25": "#1f2a37" },
     accentColor: { "#e84c70": "#f5b301", "#087f7b": "#f5b301" },
-    botBubbleColor: { "#e8f6f4": "#e8f5f3", "#e5f6f3": "#e8f5f3" },
-    userBubbleColor: { "#111b25": "#1f2a37" }
+    botBubbleColor: { "#e8f6f4": "#FFF8E0", "#e5f6f3": "#FFF8E0", "#e8f5f3": "#FFF8E0" },
+    userBubbleColor: { "#111b25": "#ffffff", "#1f2a37": "#ffffff" }
   };
   for (const [key, replacements] of Object.entries(legacyWidgetColors)) {
     const current = String(merged.widget[key] || "").toLowerCase();
