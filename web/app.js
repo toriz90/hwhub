@@ -1390,6 +1390,7 @@ function bindStaticEvents() {
   });
   renderIntegrationFields(integrationProvider.value, definitionDefaults(integrationTemplate(integrationProvider.value)));
   bindEditors();
+  bindBranchModal();
   bindConversationActions();
   bindConversationFilters();
   bindIntegrations();
@@ -1970,6 +1971,62 @@ async function sendChat(message, channel = "web_widget") {
   return data;
 }
 
+// ---- Modal de Sucursales por steps (reutiliza el form-editor existente) ----
+const branchSteps = ["Identidad", "Contacto", "Horarios", "Confirmar"];
+let branchStep = 0;
+
+function setBranchStep(n) {
+  branchStep = Math.max(0, Math.min(n, branchSteps.length - 1));
+  for (const panel of $$("#branch-form [data-step-panel]")) {
+    panel.hidden = Number(panel.dataset.stepPanel) !== branchStep;
+  }
+  for (const item of $$("#branch-modal .step-item")) {
+    const s = Number(item.dataset.step);
+    item.classList.toggle("is-active", s === branchStep);
+    item.classList.toggle("is-done", s < branchStep);
+    item.classList.toggle("is-pending", s > branchStep);
+  }
+  const last = branchStep === branchSteps.length - 1;
+  $("#branch-back").disabled = branchStep === 0;
+  $("#branch-next").hidden = last;
+  $("#branch-save").hidden = !last;
+}
+
+function openBranchModal(item) {
+  const form = $("#branch-form");
+  if (item) {
+    fillForm("branches", item);
+    $("#branch-modal-title").textContent = "Editar sucursal";
+  } else {
+    form.reset();
+    form.elements.id.value = "";
+    $("#branch-modal-title").textContent = "Nueva sucursal";
+  }
+  setBranchStep(0);
+  $("#branch-modal").hidden = false;
+}
+
+function closeBranchModal() {
+  $("#branch-modal").hidden = true;
+}
+
+function bindBranchModal() {
+  $("#branch-new")?.addEventListener("click", () => openBranchModal(null));
+  $("#branch-next")?.addEventListener("click", () => setBranchStep(branchStep + 1));
+  $("#branch-back")?.addEventListener("click", () => setBranchStep(branchStep - 1));
+  // Click en el backdrop (fuera del contenedor) cierra
+  $("#branch-modal")?.addEventListener("click", (event) => {
+    if (event.target === $("#branch-modal")) closeBranchModal();
+  });
+  // Enter avanza de paso en vez de enviar (salvo en el ultimo paso o en textarea)
+  $("#branch-form")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.target.tagName !== "TEXTAREA" && branchStep < branchSteps.length - 1) {
+      event.preventDefault();
+      setBranchStep(branchStep + 1);
+    }
+  });
+}
+
 function bindEditors() {
   const collectionLabels = {
     agents: "Agente",
@@ -1978,12 +2035,12 @@ function bindEditors() {
     directoryContacts: "Contacto",
     routingRules: "Regla de ruteo"
   };
-  for (const form of $$(".editor[data-editor]")) {
+  for (const form of $$("[data-editor]")) {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const collection = form.dataset.editor;
       const note = collection === "agents" ? $("#agent-presence-note") : null;
-      const button = form.querySelector("button");
+      const button = form.querySelector('[type="submit"]') || form.querySelector("button");
       const payload = formPayload(form);
       if (collection === "branches" && !payload.hours) {
         payload.hours = [
@@ -2006,6 +2063,7 @@ function bindEditors() {
           if (note) note.textContent = "Agente guardado correctamente.";
         }
         await refresh();
+        if (collection === "branches") closeBranchModal();
         notify(`${collectionLabels[collection] || "Registro"} guardado correctamente`, "ok");
       } catch (error) {
         if (note) note.textContent = error.message || "No se pudo guardar el agente.";
@@ -2022,10 +2080,13 @@ function bindRowActions() {
     button.onclick = () => {
       const collection = button.dataset.edit;
       const item = state.data[collection].find((entry) => String(entry.id) === button.dataset.id);
-      if (item) {
-        fillForm(collection, item);
-        notify("Datos cargados para editar", "info");
+      if (!item) return;
+      if (collection === "branches") {
+        openBranchModal(item);
+        return;
       }
+      fillForm(collection, item);
+      notify("Datos cargados para editar", "info");
     };
   }
   for (const button of $$("[data-delete]")) {

@@ -5401,3 +5401,328 @@ html[data-theme="dark"] .filters select {
     align-self: flex-start;
   }
 }
+
+/* ============================================================
+   Sistema universal de modales por steps (Honey Whale)
+   Aditivo y reutilizable. No depende de ninguna clase previa.
+   Tokens de marca por DESIGN.md; #e0dbd0 = gris de seccion del spec (~--line).
+   ============================================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  animation: modalBackdropIn 200ms ease;
+}
+
+/* [hidden] debe ganar al display:flex de arriba (si no, el modal se ve al cargar) */
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow: hidden;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  animation: modalContainerIn 200ms ease;
+}
+
+/* ---- Header: negro, logo HW dorado, titulo blanco ---- */
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding: 14px 18px;
+  background: var(--black);
+  color: var(--white);
+}
+
+.modal-header .modal-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--gold);
+}
+
+.modal-header .modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--white);
+}
+
+/* ---- Indicador de steps ---- */
+.modal-steps {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex: 0 0 auto;
+  padding: 14px 18px;
+  background: var(--white);
+  border-bottom: 0.5px solid #e0dbd0;
+}
+
+.modal-steps .step-item {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-steps .step-circle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  background: #e0dbd0;
+  color: var(--muted);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.modal-steps .step-label {
+  max-width: 84px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--muted);
+}
+
+.modal-steps .step-line {
+  flex: 1 1 auto;
+  height: 2px;
+  margin-top: 13px;
+  background: #e0dbd0;
+  transition: background 0.18s ease;
+}
+
+/* Estados de step */
+.step-item.is-pending .step-circle {
+  background: #e0dbd0;
+  color: var(--muted);
+}
+
+.step-item.is-active .step-circle {
+  background: var(--black);
+  color: var(--gold);
+}
+
+.step-item.is-active .step-label {
+  color: var(--ink);
+}
+
+.step-item.is-done .step-circle {
+  background: var(--gold);
+  color: var(--black);
+  font-size: 0;
+}
+
+.step-item.is-done .step-circle::after {
+  content: "\2713";
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--black);
+}
+
+.step-item.is-done .step-label {
+  color: var(--ink);
+}
+
+/* Linea dorada cuando el step previo esta completo */
+.step-item.is-done + .step-line {
+  background: var(--gold);
+}
+
+/* ---- Body: crema, scrollable ---- */
+.modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 18px;
+  background: var(--bg);
+}
+
+/* Secciones (scoped a .modal-body para no chocar con .form-section del acordeon) */
+.modal-body .form-section {
+  display: block;
+  margin: 0 0 18px;
+}
+
+.modal-body .form-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Panel de step oculto: el display:block de arriba ganaria a [hidden] sin esto */
+.modal-body .form-section[hidden] {
+  display: none;
+}
+
+.form-section-eyebrow {
+  margin: 0 0 2px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.form-section-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--black);
+}
+
+/* ---- Campos ---- */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-group .field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.field-group .field-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.modal-body .field-group input,
+.modal-body .field-group select,
+.modal-body .field-group textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0.5px solid #e0dbd0;
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.modal-body .field-group input:focus,
+.modal-body .field-group select:focus,
+.modal-body .field-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.field-grid-2,
+.field-grid-3 {
+  display: grid;
+  gap: 12px;
+}
+
+.field-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ---- Footer ---- */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  background: var(--white);
+  border-top: 0.5px solid #e0dbd0;
+}
+
+.modal-footer .modal-btn {
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modal-footer .modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-footer .modal-btn-back {
+  margin-right: auto;
+  background: var(--white);
+  color: var(--ink);
+  border-color: #e0dbd0;
+}
+
+.modal-footer .modal-btn-next {
+  background: var(--black);
+  color: var(--white);
+}
+
+.modal-footer .modal-btn-save {
+  background: var(--gold);
+  color: var(--black);
+}
+
+/* ---- Animaciones ---- */
+@keyframes modalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalContainerIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes modalSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+/* ---- Movil: bottom sheet ---- */
+@media (max-width: 767px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-container {
+    max-width: none;
+    max-height: 92vh;
+    border-radius: 12px 12px 0 0;
+    animation: modalSheetIn 200ms ease;
+  }
+
+  .field-grid-2,
+  .field-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-container {
+    animation: none;
+  }
+}

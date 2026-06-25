@@ -527,41 +527,11 @@
             <header>
               <div>
                 <p class="eyebrow">Directorio operativo</p>
-                <h2>Editar sucursal</h2>
+                <h2>Sucursales</h2>
               </div>
             </header>
-            <form class="editor" data-editor="branches">
-              <input type="hidden" name="id">
-              <details class="form-section" open>
-                <summary>Identidad</summary>
-                <input name="name" placeholder="Nombre">
-                <input name="state" placeholder="Estado">
-                <input name="municipality" placeholder="Municipio / Alcaldia">
-                <input name="colony" placeholder="Colonia">
-                <input name="city" placeholder="Ciudad visible">
-              </details>
-              <details class="form-section" open>
-                <summary>Contacto</summary>
-                <input name="phone" placeholder="Telefono">
-                <input name="whatsapp" placeholder="WhatsApp">
-                <input name="email" placeholder="Email">
-                <input name="address" placeholder="Direccion">
-              </details>
-              <details class="form-section" open>
-                <summary>Horarios</summary>
-                <input name="weekdayHours" placeholder="Horario entre semana">
-                <input name="saturdayHours" placeholder="Horario sabado">
-                <input name="sundayHours" placeholder="Horario domingo">
-                <input name="hours" placeholder="Resumen de horario">
-              </details>
-              <details class="form-section" open>
-                <summary>Servicios</summary>
-                <input name="services" placeholder="Servicios separados por coma">
-                <input name="wholesaleContact" placeholder="Contacto mayorista">
-              </details>
-              <label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Activa</em></label>
-              <button>Guardar sucursal</button>
-            </form>
+            <p class="section-note">Crea o edita sucursales con el asistente guiado por pasos.</p>
+            <button id="branch-new" type="button">+ Nueva sucursal</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -809,6 +779,75 @@
         </div>
       </form>
     </dialog>
+
+    <div id="branch-modal" class="modal-backdrop" hidden>
+      <form class="modal-container" data-editor="branches" id="branch-form" role="dialog" aria-modal="true" aria-labelledby="branch-modal-title">
+        <header class="modal-header">
+          <span class="modal-logo">HW</span>
+          <h2 class="modal-title" id="branch-modal-title">Nueva sucursal</h2>
+        </header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Identidad</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Contacto</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Horarios</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p>
+            <h3 class="form-section-title">Identidad</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Nombre</label><input name="name" placeholder="Nombre de la sucursal"></div>
+              <div class="field-group"><label class="field-label">Estado</label><input name="state" placeholder="Estado"></div>
+              <div class="field-group"><label class="field-label">Municipio / Alcaldia</label><input name="municipality" placeholder="Municipio"></div>
+              <div class="field-group"><label class="field-label">Colonia</label><input name="colony" placeholder="Colonia"></div>
+              <div class="field-group"><label class="field-label">Ciudad visible</label><input name="city" placeholder="Ciudad"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p>
+            <h3 class="form-section-title">Contacto</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Telefono</label><input name="phone" placeholder="Telefono"></div>
+              <div class="field-group"><label class="field-label">WhatsApp</label><input name="whatsapp" placeholder="WhatsApp"></div>
+              <div class="field-group"><label class="field-label">Email</label><input name="email" type="email" placeholder="Email"></div>
+              <div class="field-group"><label class="field-label">Direccion</label><input name="address" placeholder="Direccion"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p>
+            <h3 class="form-section-title">Horarios</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Entre semana</label><input name="weekdayHours" placeholder="Lun-Vie"></div>
+              <div class="field-group"><label class="field-label">Sabado</label><input name="saturdayHours" placeholder="Sabado"></div>
+              <div class="field-group"><label class="field-label">Domingo</label><input name="sundayHours" placeholder="Domingo"></div>
+              <div class="field-group"><label class="field-label">Resumen</label><input name="hours" placeholder="Resumen de horario"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p>
+            <h3 class="form-section-title">Confirmar</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Servicios</label><input name="services" placeholder="Servicios separados por coma"></div>
+              <div class="field-group"><label class="field-label">Contacto mayorista</label><input name="wholesaleContact" placeholder="Contacto mayorista"></div>
+            </div>
+            <div class="field-group">
+              <label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Sucursal activa</em></label>
+              <p class="field-hint">Revisa los datos de los pasos anteriores y guarda.</p>
+            </div>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" id="branch-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next" id="branch-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" id="branch-save" hidden>Guardar sucursal</button>
+        </footer>
+      </form>
+    </div>
 
     <script src="/app.js?v=20260624-api-toggles"></script>
     <script src="/widget.js?v=20260604-appointment-folio" data-channel="official_site"></script>
