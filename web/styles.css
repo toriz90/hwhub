@@ -5313,15 +5313,17 @@ html[data-theme="dark"] .filters select {
     width: auto;
   }
 
-  /* Controles poco frecuentes en movil: rol + tema fuera; Simular* son dev tools */
-  .role-switch,
-  .theme-switch,
-  #simulate-whatsapp,
-  #simulate-marketplace {
+  /* Controles poco frecuentes en movil: rol + tema fuera; Simular* son dev tools.
+     Scope .wh-topbar = especificidad (0,2,0)/(1,1,0): gana a .theme-switch{display:inline-grid}
+     y a las reglas base por encima del orden de fuente. */
+  .wh-topbar .role-switch,
+  .wh-topbar .theme-switch,
+  .wh-topbar #simulate-whatsapp,
+  .wh-topbar #simulate-marketplace {
     display: none;
   }
 
-  .wh-live-pill {
+  .wh-topbar .wh-live-pill {
     display: inline-flex;
   }
 
