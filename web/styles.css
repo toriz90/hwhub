@@ -6214,3 +6214,25 @@ html[data-theme="dark"] .filters select {
 .module-header + .module-grid {
   grid-template-columns: 1fr;
 }
+
+/* ===== Fix: alineacion buscador + grid Directorio/Sucursales ===== */
+.list-panel .filters {
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 0.5px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.list-panel .cards {
+  margin-top: 0;
+}
+
+#directory-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}
+
+/* Sucursales: nombre a 1 linea (Directorio mantiene 2 lineas del clamp global) */
+.branch-card .wh-card-head strong {
+  -webkit-line-clamp: 1;
+}

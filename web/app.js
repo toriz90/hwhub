@@ -823,19 +823,15 @@ function renderBranches() {
         <header class="wh-card-head">
           <div>
             <strong>${esc(branch.name)}</strong>
-            <p>${esc([branch.colony, branch.municipality, branch.state || branch.city].filter(Boolean).join(" - "))}</p>
+            <p>${esc([branch.city, branch.state].filter(Boolean).join(" · ") || "Sin ubicacion")}</p>
           </div>
           <span class="wh-state-pill ${branch.active === false ? "is-muted" : "is-ok"}">${branch.active === false ? "Inactiva" : "Activa"}</span>
         </header>
-        <p class="wh-card-summary">${esc(branch.address || "Direccion pendiente")}</p>
         <div class="wh-card-facts">
-          <span>WhatsApp: <b>${esc(branch.whatsapp || "sin dato")}</b></span>
-          ${branch.phone ? `<span>Tel: <b>${esc(branch.phone)}</b></span>` : ""}
-          ${branch.email ? `<span>Email: <b>${esc(branch.email)}</b></span>` : ""}
-          <span>Horario: <b>${esc(branch.hours || "sin horario")}</b></span>
+          ${branch.whatsapp ? `<span>WhatsApp: <b>${esc(branch.whatsapp)}</b></span>` : ""}
+          <span>Horario: <b>${esc(branch.weekdayHours || branch.hours || "sin horario")}</b></span>
         </div>
-        <div class="wh-chip-row">${renderChipList(branch.services)}</div>
-        ${branch.wholesaleContact ? `<p class="meta">Mayoristas: ${esc(branch.wholesaleContact)}</p>` : ""}
+        <div class="wh-chip-row">${renderChipList((branch.services || []).slice(0, 3))}</div>
         <div class="row-actions">
           <button data-edit="branches" data-id="${esc(branch.id)}">Editar</button>
           <button data-delete="branches" data-id="${esc(branch.id)}">Eliminar</button>
@@ -876,24 +872,15 @@ function renderDirectoryContacts() {
     .map((contact) => `
       <article class="card directory-card wh-entity-card">
         <header class="wh-card-head">
-          <div>
-            <strong>${esc(contact.name)}</strong>
-            <p>${esc(contact.area || "Sin area")}</p>
+          <div class="wh-avatar-title">
+            <span class="wh-mini-avatar">${esc(initials(contact.name))}</span>
+            <div>
+              <strong>${esc(contact.name)}</strong>
+              <p>${esc(contact.email || contact.whatsapp || (Array.isArray(contact.channels) ? contact.channels[0] : contact.channels) || "Sin canal")}</p>
+            </div>
           </div>
-          <span class="wh-state-pill ${contact.active === false ? "is-muted" : "is-ok"}">Prioridad ${esc(contact.priority ?? 100)}</span>
+          <span class="wh-state-pill is-muted">${esc(contact.area || "Sin area")}</span>
         </header>
-        <div class="wh-card-facts">
-          <span>WhatsApp: <b>${esc(contact.whatsapp || "sin dato")}</b></span>
-          ${contact.email ? `<span>Email: <b>${esc(contact.email)}</b></span>` : ""}
-          <span>Horario: <b>${esc(contact.schedule || "sin horario")}</b></span>
-        </div>
-        ${contact.description ? `<p class="wh-card-summary">${esc(contact.description)}</p>` : ""}
-        <div class="wh-chip-row">
-          ${renderChipList(contact.marketplaces, "tag-market")}
-          ${renderChipList(contact.channels, "tag-channel")}
-          ${renderChipList(contact.intents)}
-          ${renderChipList(contact.skills)}
-        </div>
         <div class="row-actions">
           <button data-edit="directoryContacts" data-id="${esc(contact.id)}">Editar</button>
           <button data-delete="directoryContacts" data-id="${esc(contact.id)}">Eliminar</button>
