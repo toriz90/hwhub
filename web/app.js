@@ -154,6 +154,11 @@ const viewMeta = {
     eyebrow: "Permisos",
     title: "Roles",
     subtitle: "Capacidades por rol y pruebas de comportamiento de acceso."
+  },
+  settings: {
+    eyebrow: "Sistema",
+    title: "Configuracion",
+    subtitle: "Marca, APIs, accesos y notificaciones del backoffice."
   }
 };
 
@@ -1392,6 +1397,7 @@ function bindStaticEvents() {
   bindEditors();
   bindStepModals();
   bindBottomNav();
+  bindSettings();
   bindConversationActions();
   bindConversationFilters();
   bindIntegrations();
@@ -2055,6 +2061,56 @@ function bindBottomNav() {
   backdrop.addEventListener("click", (event) => {
     if (event.target === backdrop || event.target.closest(".more-drawer-item")) backdrop.hidden = true;
   });
+}
+
+function updateBrandPreview() {
+  const view = $('[data-view="settings"]');
+  const preview = $("#brand-preview");
+  if (!view || !preview) return;
+  preview.style.setProperty("--pv-primary", view.querySelector('input[name="primary"]')?.value || "#FFD106");
+  preview.style.setProperty("--pv-secondary", view.querySelector('input[name="secondary"]')?.value || "#FFA506");
+  preview.style.setProperty("--pv-base", view.querySelector('input[name="base"]')?.value || "#000000");
+}
+
+async function saveSettingsForm(name, selector) {
+  const form = $(selector);
+  if (!form) return;
+  try {
+    await api(`/api/settings/${name}`, { method: "POST", body: JSON.stringify(formPayload(form)) });
+    notify("Configuracion guardada correctamente", "ok");
+  } catch (error) {
+    notify("No se pudo guardar la configuracion", "error", error.message);
+  }
+}
+
+function bindSettings() {
+  const view = $('[data-view="settings"]');
+  if (!view) return;
+  for (const tab of view.querySelectorAll(".settings-tab")) {
+    tab.addEventListener("click", () => {
+      const name = tab.dataset.settingsTab;
+      for (const t of view.querySelectorAll(".settings-tab")) t.classList.toggle("is-active", t === tab);
+      for (const p of view.querySelectorAll("[data-settings-panel]")) p.hidden = p.dataset.settingsPanel !== name;
+    });
+  }
+  for (const pair of view.querySelectorAll(".color-pair")) {
+    const color = pair.querySelector('input[type="color"]');
+    const hex = pair.querySelector("[data-hex]");
+    if (!color || !hex) continue;
+    hex.value = color.value;
+    color.addEventListener("input", () => { hex.value = color.value; updateBrandPreview(); });
+    hex.addEventListener("input", () => {
+      if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) { color.value = hex.value; updateBrandPreview(); }
+    });
+  }
+  $("#brand-logo")?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    const preview = $("#brand-logo-preview");
+    if (file && preview) preview.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+  });
+  $("#brand-form")?.addEventListener("submit", (event) => { event.preventDefault(); saveSettingsForm("brand", "#brand-form"); });
+  $("#notifications-form")?.addEventListener("submit", (event) => { event.preventDefault(); saveSettingsForm("notifications", "#notifications-form"); });
+  updateBrandPreview();
 }
 
 function bindStepModals() {

@@ -881,6 +881,20 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  for (const key of ["brand", "notifications"]) {
+    if (url.pathname === `/api/settings/${key}` && req.method === "GET") {
+      if (!req.user) { sendUnauthorized(res); return; }
+      sendJson(res, (await store.settings?.(key)) || {});
+      return;
+    }
+    if (url.pathname === `/api/settings/${key}` && req.method === "POST") {
+      if (!req.user || !isAdmin(req)) { sendJson(res, { error: `Only admins can manage ${key} settings` }, 403); return; }
+      const body = await readBody(req);
+      sendJson(res, await store.saveSettings?.(key, body));
+      return;
+    }
+  }
+
   if (url.pathname === "/health") {
     sendJson(res, {
       ok: true,

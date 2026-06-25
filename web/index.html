@@ -706,6 +706,72 @@
           </div>
         </section>
       </div>
+
+      <div class="view" data-view="settings">
+        <section class="workspace single">
+          <div class="panel">
+            <header>
+              <div>
+                <p class="eyebrow">Sistema</p>
+                <h2>Configuracion</h2>
+              </div>
+            </header>
+            <div class="settings-tabs">
+              <button class="settings-tab is-active" type="button" data-settings-tab="brand">Marca</button>
+              <button class="settings-tab" type="button" data-settings-tab="apis">APIs</button>
+              <button class="settings-tab" type="button" data-settings-tab="access">Accesos</button>
+              <button class="settings-tab" type="button" data-settings-tab="notifications">Notificaciones</button>
+            </div>
+
+            <div class="settings-panel" data-settings-panel="brand">
+              <form id="brand-form" class="settings-form">
+                <div class="brand-logo-row">
+                  <div class="brand-logo-preview" id="brand-logo-preview"></div>
+                  <label class="field-label brand-logo-upload">Subir logo<input type="file" id="brand-logo" accept="image/*"></label>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field-group"><label class="field-label">Nombre de la app</label><input name="appName" placeholder="WhaleHub"></div>
+                  <div class="field-group"><label class="field-label">Subtitulo</label><input name="subtitle" placeholder="Atencion + IA"></div>
+                </div>
+                <div class="field-grid-3">
+                  <div class="field-group"><label class="field-label">Primario</label><div class="color-pair"><input type="color" name="primary" value="#FFD106"><input type="text" data-hex></div></div>
+                  <div class="field-group"><label class="field-label">Secundario</label><div class="color-pair"><input type="color" name="secondary" value="#FFA506"><input type="text" data-hex></div></div>
+                  <div class="field-group"><label class="field-label">Base</label><div class="color-pair"><input type="color" name="base" value="#000000"><input type="text" data-hex></div></div>
+                </div>
+                <div class="brand-preview" id="brand-preview">
+                  <div class="brand-preview-topbar"><span class="brand-preview-logo">HW</span><span>Vista previa</span></div>
+                  <div class="brand-preview-row"><button type="button" class="brand-preview-btn">Boton</button><span class="brand-preview-badge">Badge</span></div>
+                </div>
+                <button type="submit" class="modal-btn modal-btn-save">Guardar marca</button>
+              </form>
+            </div>
+
+            <div class="settings-panel" data-settings-panel="apis" hidden>
+              <p class="section-note">Las integraciones y APIs se gestionan en el modulo APIs.</p>
+              <button type="button" data-view-link="integrations">Ir a APIs</button>
+            </div>
+
+            <div class="settings-panel" data-settings-panel="access" hidden>
+              <p class="form-section-eyebrow">Accesos</p>
+              <h3 class="form-section-title">Usuarios y roles</h3>
+              <p class="section-note">Gestiona las cuentas del back y la matriz de permisos.</p>
+              <div class="row-actions">
+                <button type="button" data-view-link="users">Ir a Usuarios</button>
+                <button type="button" data-view-link="roles">Ir a Roles</button>
+              </div>
+            </div>
+
+            <div class="settings-panel" data-settings-panel="notifications" hidden>
+              <form id="notifications-form" class="settings-form">
+                <label class="switch-row"><input type="checkbox" name="slaBreach"><span></span><em>Alertas de SLA breach</em></label>
+                <label class="switch-row"><input type="checkbox" name="noAgent"><span></span><em>Conversacion sin agente asignado</em></label>
+                <div class="field-group"><label class="field-label">Email de alertas</label><input name="alertEmail" type="email" placeholder="alertas@honeywhale.com"></div>
+                <button type="submit" class="modal-btn modal-btn-save">Guardar</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 

@@ -6046,3 +6046,140 @@ html[data-theme="dark"] .filters select {
 .wh-entity-card .row-actions {
   justify-content: flex-end;
 }
+
+/* ===== Bloque F: modulo Configuracion (tabs + marca + preview) ===== */
+.settings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.settings-tab {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+}
+
+.settings-panel[hidden] {
+  display: none;
+}
+
+.settings-form {
+  display: grid;
+  gap: 14px;
+  max-width: 620px;
+}
+
+.brand-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo-preview {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0.5px solid #e0dbd0;
+  background: var(--surface-soft) center / cover no-repeat;
+}
+
+.brand-logo-upload {
+  cursor: pointer;
+}
+
+.brand-logo-upload input {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.color-pair {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.color-pair input[type="color"] {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: 0.5px solid #e0dbd0;
+  border-radius: 8px;
+  background: none;
+}
+
+.color-pair input[type="text"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.brand-preview {
+  --pv-primary: var(--gold);
+  --pv-secondary: var(--amber);
+  --pv-base: #000;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 0.5px solid #e0dbd0;
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.brand-preview-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--pv-base);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.brand-preview-logo {
+  color: var(--pv-primary);
+  font-weight: 800;
+}
+
+.brand-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-preview-btn {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--pv-primary);
+  color: var(--pv-base);
+  font-weight: 800;
+  cursor: default;
+}
+
+.brand-preview-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--pv-secondary);
+  color: var(--pv-base);
+  font-size: 11px;
+  font-weight: 800;
+}
