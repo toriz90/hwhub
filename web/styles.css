@@ -30,7 +30,7 @@
   /* ---- Metricas ---- */
   --radius: 14px;
   --radius-sm: 9px;
-  --sidebar-width: 240px;
+  --sidebar-width: 200px;
   --shadow: 0 1px 2px rgba(13, 15, 18, 0.04), 0 8px 24px rgba(13, 15, 18, 0.06);
   --shadow-soft: 0 1px 2px rgba(13, 15, 18, 0.04), 0 8px 24px rgba(13, 15, 18, 0.06);
 
@@ -5724,5 +5724,65 @@ html[data-theme="dark"] .filters select {
   .modal-backdrop,
   .modal-container {
     animation: none;
+  }
+}
+
+/* ===== Bloque C: sidebar con iconos Tabler (desktop >=768px) ===== */
+@media (min-width: 768px) {
+  .wh-nav {
+    gap: 2px;
+  }
+
+  .wh-sidebar .wh-nav a.s-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    color: #e7e9ed;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .wh-sidebar .wh-nav a.s-link .ti {
+    flex: 0 0 auto;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .wh-sidebar .wh-nav a.s-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wh-sidebar .wh-nav a.s-link:hover {
+    background: rgba(255, 209, 6, 0.1);
+    color: #ffffff;
+  }
+
+  .wh-sidebar .wh-nav a.s-link.active {
+    background: var(--gold);
+    color: var(--black);
+  }
+
+  .wh-sidebar .wh-nav a.s-link.active .ti {
+    color: var(--black);
+  }
+
+  .wh-nav-group {
+    padding: 6px 0;
+  }
+
+  .wh-nav-group + .wh-nav-group {
+    border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .wh-nav-group--footer {
+    margin-top: auto;
+    border-top: 0.5px solid rgba(255, 255, 255, 0.08);
   }
 }

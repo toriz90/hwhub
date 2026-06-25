@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650;9..144,750&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
     <link rel="stylesheet" href="/styles.css?v=20260624-toggles-unified">
   </head>
   <body class="wh-app">
@@ -44,26 +45,29 @@
       <nav class="wh-nav" aria-label="Modulos principales">
         <div class="wh-nav-group">
           <span>Operacion</span>
-          <a href="#dashboard" class="active" data-view-link="dashboard">Dashboard</a>
-          <a href="#conversations" data-view-link="conversations">Conversaciones</a>
-          <a href="#agents" data-view-link="agents">Agentes</a>
+          <a class="s-link active" href="#dashboard" data-view-link="dashboard"><i class="ti ti-layout-dashboard"></i><span>Dashboard</span></a>
+          <a class="s-link" href="#conversations" data-view-link="conversations"><i class="ti ti-message-2"></i><span>Conversaciones</span></a>
+          <a class="s-link" href="#agents" data-view-link="agents"><i class="ti ti-users"></i><span>Agentes</span></a>
         </div>
         <div class="wh-nav-group">
           <span>Configuracion IA</span>
-          <a href="#chatbot" data-view-link="chatbot">Chatbot</a>
-          <a href="#routing" data-view-link="routing">Ruteo</a>
-          <a href="#integrations" data-view-link="integrations">APIs</a>
+          <a class="s-link" href="#chatbot" data-view-link="chatbot"><i class="ti ti-robot"></i><span>Chatbot</span></a>
+          <a class="s-link" href="#routing" data-view-link="routing"><i class="ti ti-route"></i><span>Ruteo</span></a>
+          <a class="s-link" href="#integrations" data-view-link="integrations"><i class="ti ti-plug"></i><span>APIs</span></a>
         </div>
         <div class="wh-nav-group">
           <span>Datos operativos</span>
-          <a href="#knowledge" data-view-link="knowledge">FAQs</a>
-          <a href="#branches" data-view-link="branches">Sucursales</a>
-          <a href="#directory" data-view-link="directory">Directorio</a>
+          <a class="s-link" href="#knowledge" data-view-link="knowledge"><i class="ti ti-help-circle"></i><span>FAQs</span></a>
+          <a class="s-link" href="#branches" data-view-link="branches"><i class="ti ti-building"></i><span>Sucursales</span></a>
+          <a class="s-link" href="#directory" data-view-link="directory"><i class="ti ti-address-book"></i><span>Directorio</span></a>
         </div>
         <div class="wh-nav-group">
           <span>Sistema</span>
-          <a href="#users" data-view-link="users">Usuarios</a>
-          <a href="#roles" data-view-link="roles">Roles</a>
+          <a class="s-link" href="#users" data-view-link="users"><i class="ti ti-user"></i><span>Usuarios</span></a>
+          <a class="s-link" href="#roles" data-view-link="roles"><i class="ti ti-shield"></i><span>Roles</span></a>
+        </div>
+        <div class="wh-nav-group wh-nav-group--footer">
+          <a class="s-link" href="#settings" data-view-link="settings"><i class="ti ti-settings"></i><span>Configuracion</span></a>
         </div>
       </nav>
     </aside>
