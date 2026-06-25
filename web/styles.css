@@ -5977,3 +5977,24 @@ html[data-theme="dark"] .filters select {
   font-size: 11px;
   color: var(--muted);
 }
+
+/* ===== Bloque A: validacion inline de modales por steps ===== */
+.field-group.field-invalid input,
+.field-group.field-invalid select,
+.field-group.field-invalid textarea {
+  border-color: #dc2626;
+}
+
+.field-group.field-invalid .field-label {
+  color: #dc2626;
+}
+
+.field-shake {
+  animation: fieldShake 300ms ease;
+}
+
+@keyframes fieldShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}

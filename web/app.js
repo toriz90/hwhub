@@ -1390,7 +1390,7 @@ function bindStaticEvents() {
   });
   renderIntegrationFields(integrationProvider.value, definitionDefaults(integrationTemplate(integrationProvider.value)));
   bindEditors();
-  bindBranchModal();
+  bindStepModals();
   bindBottomNav();
   bindConversationActions();
   bindConversationFilters();
@@ -1979,44 +1979,73 @@ async function sendChat(message, channel = "web_widget") {
   return data;
 }
 
-// ---- Modal de Sucursales por steps (reutiliza el form-editor existente) ----
-const branchSteps = ["Identidad", "Contacto", "Horarios", "Confirmar"];
-let branchStep = 0;
+// ---- Sistema generico de modales por steps (reutiliza data-editor + fillForm/formPayload) ----
+function stepPanels(modal) { return [...modal.querySelectorAll("[data-step-panel]")]; }
+function currentStep(modal) { return Number(modal.dataset.step || 0); }
 
-function setBranchStep(n) {
-  branchStep = Math.max(0, Math.min(n, branchSteps.length - 1));
-  for (const panel of $$("#branch-form [data-step-panel]")) {
-    panel.hidden = Number(panel.dataset.stepPanel) !== branchStep;
-  }
-  for (const item of $$("#branch-modal .step-item")) {
+function showStep(modal, n) {
+  const panels = stepPanels(modal);
+  n = Math.max(0, Math.min(n, panels.length - 1));
+  modal.dataset.step = n;
+  for (const p of panels) p.hidden = Number(p.dataset.stepPanel) !== n;
+  for (const item of modal.querySelectorAll(".step-item")) {
     const s = Number(item.dataset.step);
-    item.classList.toggle("is-active", s === branchStep);
-    item.classList.toggle("is-done", s < branchStep);
-    item.classList.toggle("is-pending", s > branchStep);
+    item.classList.toggle("is-active", s === n);
+    item.classList.toggle("is-done", s < n);
+    item.classList.toggle("is-pending", s > n);
   }
-  const last = branchStep === branchSteps.length - 1;
-  $("#branch-back").disabled = branchStep === 0;
-  $("#branch-next").hidden = last;
-  $("#branch-save").hidden = !last;
+  const last = n === panels.length - 1;
+  const back = modal.querySelector(".modal-btn-back");
+  const next = modal.querySelector(".modal-btn-next");
+  const save = modal.querySelector(".modal-btn-save");
+  if (back) back.disabled = n === 0;
+  if (next) next.hidden = last;
+  if (save) save.hidden = !last;
 }
 
-function openBranchModal(item) {
-  const form = $("#branch-form");
+function clearStepErrors(modal) {
+  for (const g of modal.querySelectorAll(".field-invalid")) g.classList.remove("field-invalid", "field-shake");
+}
+
+// Valida campos [data-req] del panel n; marca invalidos + shake. Devuelve true si todo ok.
+function validateStep(modal, n) {
+  const panel = stepPanels(modal)[n];
+  if (!panel) return true;
+  let ok = true;
+  for (const field of panel.querySelectorAll("[data-req]")) {
+    const group = field.closest(".field-group") || field;
+    if (!String(field.value || "").trim()) {
+      ok = false;
+      group.classList.add("field-invalid");
+      group.classList.remove("field-shake");
+      void group.offsetWidth; // reinicia la animacion
+      group.classList.add("field-shake");
+    } else {
+      group.classList.remove("field-invalid", "field-shake");
+    }
+  }
+  return ok;
+}
+
+function openStepModal(collection, item) {
+  const modal = document.querySelector(`.modal-backdrop[data-step-modal="${collection}"]`);
+  if (!modal) return;
+  const form = modal.querySelector("[data-editor]");
+  const title = modal.querySelector("[data-modal-title]");
   if (item) {
-    fillForm("branches", item);
-    $("#branch-modal-title").textContent = "Editar sucursal";
+    fillForm(collection, item);
+    if (title) title.textContent = modal.dataset.titleEdit || "Editar";
   } else {
     form.reset();
-    form.elements.id.value = "";
-    $("#branch-modal-title").textContent = "Nueva sucursal";
+    if (form.elements.id) form.elements.id.value = "";
+    if (title) title.textContent = modal.dataset.titleNew || "Nuevo";
   }
-  setBranchStep(0);
-  $("#branch-modal").hidden = false;
+  clearStepErrors(modal);
+  showStep(modal, 0);
+  modal.hidden = false;
 }
 
-function closeBranchModal() {
-  $("#branch-modal").hidden = true;
-}
+function closeStepModal(modal) { modal.hidden = true; }
 
 function bindBottomNav() {
   const backdrop = $(".more-drawer-backdrop");
@@ -2028,21 +2057,29 @@ function bindBottomNav() {
   });
 }
 
-function bindBranchModal() {
-  $("#branch-new")?.addEventListener("click", () => openBranchModal(null));
-  $("#branch-next")?.addEventListener("click", () => setBranchStep(branchStep + 1));
-  $("#branch-back")?.addEventListener("click", () => setBranchStep(branchStep - 1));
-  // Click en el backdrop (fuera del contenedor) cierra
-  $("#branch-modal")?.addEventListener("click", (event) => {
-    if (event.target === $("#branch-modal")) closeBranchModal();
-  });
-  // Enter avanza de paso en vez de enviar (salvo en el ultimo paso o en textarea)
-  $("#branch-form")?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && event.target.tagName !== "TEXTAREA" && branchStep < branchSteps.length - 1) {
-      event.preventDefault();
-      setBranchStep(branchStep + 1);
-    }
-  });
+function bindStepModals() {
+  for (const btn of $$("[data-open-modal]")) {
+    btn.addEventListener("click", () => openStepModal(btn.dataset.openModal, null));
+  }
+  for (const modal of $$(".modal-backdrop[data-step-modal]")) {
+    modal.querySelector(".modal-btn-next")?.addEventListener("click", () => {
+      const n = currentStep(modal);
+      if (validateStep(modal, n)) showStep(modal, n + 1);
+    });
+    modal.querySelector(".modal-btn-back")?.addEventListener("click", () => {
+      clearStepErrors(modal);
+      showStep(modal, currentStep(modal) - 1);
+    });
+    modal.addEventListener("click", (event) => { if (event.target === modal) closeStepModal(modal); });
+    // Enter avanza de paso (validando) en vez de enviar, salvo en textarea o ultimo paso
+    modal.querySelector("[data-editor]")?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && event.target.tagName !== "TEXTAREA" && currentStep(modal) < stepPanels(modal).length - 1) {
+        event.preventDefault();
+        const n = currentStep(modal);
+        if (validateStep(modal, n)) showStep(modal, n + 1);
+      }
+    });
+  }
 }
 
 function bindEditors() {
@@ -2057,6 +2094,8 @@ function bindEditors() {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const collection = form.dataset.editor;
+      const stepModal = form.closest(".modal-backdrop[data-step-modal]");
+      if (stepModal && !validateStep(stepModal, stepPanels(stepModal).length - 1)) return;
       const note = collection === "agents" ? $("#agent-presence-note") : null;
       const button = form.querySelector('[type="submit"]') || form.querySelector("button");
       const payload = formPayload(form);
@@ -2081,7 +2120,7 @@ function bindEditors() {
           if (note) note.textContent = "Agente guardado correctamente.";
         }
         await refresh();
-        if (collection === "branches") closeBranchModal();
+        if (stepModal) closeStepModal(stepModal);
         notify(`${collectionLabels[collection] || "Registro"} guardado correctamente`, "ok");
       } catch (error) {
         if (note) note.textContent = error.message || "No se pudo guardar el agente.";
@@ -2099,8 +2138,8 @@ function bindRowActions() {
       const collection = button.dataset.edit;
       const item = state.data[collection].find((entry) => String(entry.id) === button.dataset.id);
       if (!item) return;
-      if (collection === "branches") {
-        openBranchModal(item);
+      if (document.querySelector(`.modal-backdrop[data-step-modal="${collection}"]`)) {
+        openStepModal(collection, item);
         return;
       }
       fillForm(collection, item);

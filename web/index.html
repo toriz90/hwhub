@@ -469,16 +469,8 @@
                 <h2>Gestionar agente</h2>
               </div>
             </header>
-            <form class="editor" data-editor="agents">
-              <input type="hidden" name="id">
-              <input name="name" placeholder="Nombre">
-              <input name="role" placeholder="Rol o equipo">
-              <input name="skills" placeholder="Skills separados por coma">
-              <input name="channels" placeholder="Canales separados por coma">
-              <label class="switch-row"><input type="checkbox" name="online"><span></span><em>Activo</em></label>
-              <p id="agent-presence-note" class="form-note"></p>
-              <button>Guardar agente</button>
-            </form>
+            <p class="section-note">Gestiona agentes con el asistente guiado por pasos.</p>
+            <button type="button" data-open-modal="agents">+ Nuevo agente</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -501,16 +493,8 @@
                 <h2>Editar FAQ</h2>
               </div>
             </header>
-            <form class="editor" data-editor="faqs">
-              <input type="hidden" name="id">
-              <input name="question" placeholder="Pregunta">
-              <input name="shortAnswer" placeholder="Respuesta corta">
-              <input name="longAnswer" placeholder="Respuesta larga">
-              <input name="category" placeholder="Categoria">
-              <input name="tags" placeholder="Tags separados por coma">
-              <label class="switch-row"><input type="checkbox" name="published" checked><span></span><em>Publicada</em></label>
-              <button>Guardar FAQ</button>
-            </form>
+            <p class="section-note">Crea o edita FAQs con el asistente guiado por pasos.</p>
+            <button type="button" data-open-modal="faqs">+ Nueva FAQ</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -535,7 +519,7 @@
               </div>
             </header>
             <p class="section-note">Crea o edita sucursales con el asistente guiado por pasos.</p>
-            <button id="branch-new" type="button">+ Nueva sucursal</button>
+            <button type="button" data-open-modal="branches">+ Nueva sucursal</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -565,31 +549,8 @@
                 <h2>Editar contacto</h2>
               </div>
             </header>
-            <form class="editor" data-editor="directoryContacts">
-              <input type="hidden" name="id">
-              <details class="form-section" open>
-                <summary>Identidad</summary>
-                <input name="area" placeholder="Area">
-                <input name="name" placeholder="Nombre visible">
-                <input name="email" placeholder="Email">
-                <input name="whatsapp" placeholder="WhatsApp">
-              </details>
-              <details class="form-section" open>
-                <summary>Operacion</summary>
-                <input name="schedule" placeholder="Horario">
-                <input name="priority" type="number" placeholder="Prioridad">
-                <input name="channels" placeholder="Canales separados por coma">
-                <input name="intents" placeholder="Intenciones separadas por coma">
-                <input name="marketplaces" placeholder="Marketplaces separados por coma">
-                <input name="skills" placeholder="Skills separados por coma">
-              </details>
-              <details class="form-section" open>
-                <summary>Descripcion</summary>
-                <textarea name="description" placeholder="Descripcion interna"></textarea>
-              </details>
-              <label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Activo</em></label>
-              <button>Guardar contacto</button>
-            </form>
+            <p class="section-note">Crea o edita contactos con el asistente guiado por pasos.</p>
+            <button type="button" data-open-modal="directoryContacts">+ Nuevo contacto</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -619,17 +580,8 @@
                 <h2>Editar regla</h2>
               </div>
             </header>
-            <form class="editor" data-editor="routingRules">
-              <input type="hidden" name="id">
-              <input name="name" placeholder="Nombre de regla">
-              <input name="intent" placeholder="Intencion">
-              <input name="requiredSkill" placeholder="Skill requerido">
-              <input name="channel" placeholder="Canal opcional">
-              <input name="priority" type="number" placeholder="Prioridad">
-              <label class="switch-row"><input type="checkbox" name="botAllowed"><span></span><em>Bot permitido</em></label>
-              <input name="fallbackMessage" placeholder="Mensaje fallback">
-              <button>Guardar regla</button>
-            </form>
+            <p class="section-note">Crea o edita reglas de ruteo con el asistente guiado por pasos.</p>
+            <button type="button" data-open-modal="routingRules">+ Nueva regla</button>
           </div>
           <div class="panel list-panel">
             <header>
@@ -739,25 +691,8 @@
                 <h2>Usuarios del back</h2>
               </div>
             </header>
-            <form id="user-form" class="editor">
-              <input type="hidden" name="id">
-              <input name="name" placeholder="Nombre" required>
-              <input name="email" type="email" placeholder="Email" required>
-              <select name="role">
-                <option value="admin">Admin</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="agent">Agente ATC</option>
-                <option value="marketplace">Marketplace</option>
-                <option value="wholesale">Mayoristas</option>
-                <option value="viewer">Solo lectura</option>
-              </select>
-              <select name="agentId" id="user-agent-select">
-                <option value="">Sin agente asociado</option>
-              </select>
-              <input name="password" type="password" placeholder="Password nuevo o inicial">
-              <label class="switch-row"><input type="checkbox" name="isActive" checked><span></span><em>Activo</em></label>
-              <button>Guardar usuario</button>
-            </form>
+            <p class="section-note">Gestiona usuarios del back con el asistente guiado por pasos.</p>
+            <button type="button" data-open-modal="users">+ Nuevo usuario</button>
           </div>
 
           <div class="panel">
@@ -784,11 +719,11 @@
       </form>
     </dialog>
 
-    <div id="branch-modal" class="modal-backdrop" hidden>
+    <div id="branch-modal" class="modal-backdrop" data-step-modal="branches" data-title-new="Nueva sucursal" data-title-edit="Editar sucursal" hidden>
       <form class="modal-container" data-editor="branches" id="branch-form" role="dialog" aria-modal="true" aria-labelledby="branch-modal-title">
         <header class="modal-header">
           <span class="modal-logo">HW</span>
-          <h2 class="modal-title" id="branch-modal-title">Nueva sucursal</h2>
+          <h2 class="modal-title" data-modal-title id="branch-modal-title">Nueva sucursal</h2>
         </header>
         <div class="modal-steps">
           <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Identidad</div></div>
@@ -805,7 +740,7 @@
             <p class="form-section-eyebrow">Paso 1 de 4</p>
             <h3 class="form-section-title">Identidad</h3>
             <div class="field-grid-2">
-              <div class="field-group"><label class="field-label">Nombre</label><input name="name" placeholder="Nombre de la sucursal"></div>
+              <div class="field-group"><label class="field-label">Nombre *</label><input name="name" data-req placeholder="Nombre de la sucursal"></div>
               <div class="field-group"><label class="field-label">Estado</label><input name="state" placeholder="Estado"></div>
               <div class="field-group"><label class="field-label">Municipio / Alcaldia</label><input name="municipality" placeholder="Municipio"></div>
               <div class="field-group"><label class="field-label">Colonia</label><input name="colony" placeholder="Colonia"></div>
@@ -849,6 +784,239 @@
           <button type="button" class="modal-btn modal-btn-back" id="branch-back" disabled>Atras</button>
           <button type="button" class="modal-btn modal-btn-next" id="branch-next">Siguiente</button>
           <button type="submit" class="modal-btn modal-btn-save" id="branch-save" hidden>Guardar sucursal</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="directory-modal" class="modal-backdrop" data-step-modal="directoryContacts" data-title-new="Nuevo contacto" data-title-edit="Editar contacto" hidden>
+      <form class="modal-container" data-editor="directoryContacts" role="dialog" aria-modal="true">
+        <header class="modal-header"><span class="modal-logo">HW</span><h2 class="modal-title" data-modal-title>Nuevo contacto</h2></header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Identidad</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Operacion</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Descripcion</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p><h3 class="form-section-title">Identidad</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Area</label><input name="area" placeholder="Area"></div>
+              <div class="field-group"><label class="field-label">Nombre *</label><input name="name" data-req placeholder="Nombre visible"></div>
+              <div class="field-group"><label class="field-label">Email</label><input name="email" type="email" placeholder="Email"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p><h3 class="form-section-title">Operacion</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">WhatsApp</label><input name="whatsapp" placeholder="WhatsApp"></div>
+              <div class="field-group"><label class="field-label">Canales *</label><input name="channels" data-req placeholder="Canales separados por coma"></div>
+              <div class="field-group"><label class="field-label">Intenciones</label><input name="intents" placeholder="Separadas por coma"></div>
+              <div class="field-group"><label class="field-label">Marketplaces</label><input name="marketplaces" placeholder="Separados por coma"></div>
+              <div class="field-group"><label class="field-label">Skills</label><input name="skills" placeholder="Separados por coma"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p><h3 class="form-section-title">Descripcion</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Horario</label><input name="schedule" placeholder="Horario"></div>
+              <div class="field-group"><label class="field-label">Prioridad</label><input name="priority" type="number" placeholder="Prioridad"></div>
+            </div>
+            <div class="field-group"><label class="field-label">Descripcion interna</label><textarea name="description" placeholder="Descripcion interna"></textarea></div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p><h3 class="form-section-title">Confirmar</h3>
+            <div class="field-group"><label class="switch-row"><input name="active" type="checkbox" checked><span></span><em>Contacto activo</em></label><p class="field-hint">Revisa los datos y guarda.</p></div>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" hidden>Guardar contacto</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="agent-modal" class="modal-backdrop" data-step-modal="agents" data-title-new="Nuevo agente" data-title-edit="Editar agente" hidden>
+      <form class="modal-container" data-editor="agents" role="dialog" aria-modal="true">
+        <header class="modal-header"><span class="modal-logo">HW</span><h2 class="modal-title" data-modal-title>Nuevo agente</h2></header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Identidad</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Canales</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Config</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p><h3 class="form-section-title">Identidad</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Nombre *</label><input name="name" data-req placeholder="Nombre"></div>
+              <div class="field-group"><label class="field-label">Rol o equipo</label><input name="role" placeholder="Rol o equipo"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p><h3 class="form-section-title">Canales y skills</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Canales</label><input name="channels" placeholder="Separados por coma"></div>
+              <div class="field-group"><label class="field-label">Skills</label><input name="skills" placeholder="Separados por coma"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p><h3 class="form-section-title">Config</h3>
+            <div class="field-group"><label class="switch-row"><input type="checkbox" name="online"><span></span><em>Activo</em></label><p id="agent-presence-note" class="field-hint"></p></div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p><h3 class="form-section-title">Confirmar</h3>
+            <p class="field-hint">Revisa los datos de los pasos anteriores y guarda.</p>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" hidden>Guardar agente</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="faq-modal" class="modal-backdrop" data-step-modal="faqs" data-title-new="Nueva FAQ" data-title-edit="Editar FAQ" hidden>
+      <form class="modal-container" data-editor="faqs" role="dialog" aria-modal="true">
+        <header class="modal-header"><span class="modal-logo">HW</span><h2 class="modal-title" data-modal-title>Nueva FAQ</h2></header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Contenido</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Clasificacion</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Config</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p><h3 class="form-section-title">Contenido</h3>
+            <div class="field-group"><label class="field-label">Pregunta *</label><input name="question" data-req placeholder="Pregunta"></div>
+            <div class="field-group"><label class="field-label">Respuesta corta *</label><input name="shortAnswer" data-req placeholder="Respuesta corta"></div>
+            <div class="field-group"><label class="field-label">Respuesta larga</label><textarea name="longAnswer" placeholder="Respuesta larga"></textarea></div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p><h3 class="form-section-title">Clasificacion</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Categoria</label><input name="category" placeholder="Categoria"></div>
+              <div class="field-group"><label class="field-label">Tags</label><input name="tags" placeholder="Separados por coma"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p><h3 class="form-section-title">Config</h3>
+            <div class="field-group"><label class="switch-row"><input type="checkbox" name="published" checked><span></span><em>Publicada</em></label></div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p><h3 class="form-section-title">Confirmar</h3>
+            <p class="field-hint">Revisa los datos y guarda.</p>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" hidden>Guardar FAQ</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="routing-modal" class="modal-backdrop" data-step-modal="routingRules" data-title-new="Nueva regla" data-title-edit="Editar regla" hidden>
+      <form class="modal-container" data-editor="routingRules" role="dialog" aria-modal="true">
+        <header class="modal-header"><span class="modal-logo">HW</span><h2 class="modal-title" data-modal-title>Nueva regla</h2></header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Regla</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Canal</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Fallback</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p><h3 class="form-section-title">Regla</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Nombre *</label><input name="name" data-req placeholder="Nombre de regla"></div>
+              <div class="field-group"><label class="field-label">Intencion *</label><input name="intent" data-req placeholder="Intencion"></div>
+              <div class="field-group"><label class="field-label">Skill requerido</label><input name="requiredSkill" placeholder="Skill requerido"></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p><h3 class="form-section-title">Canal y prioridad</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Canal (opcional)</label><input name="channel" placeholder="Canal"></div>
+              <div class="field-group"><label class="field-label">Prioridad</label><input name="priority" type="number" placeholder="Prioridad"></div>
+            </div>
+            <div class="field-group"><label class="switch-row"><input type="checkbox" name="botAllowed"><span></span><em>Bot permitido</em></label></div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p><h3 class="form-section-title">Fallback</h3>
+            <div class="field-group"><label class="field-label">Mensaje fallback</label><textarea name="fallbackMessage" placeholder="Mensaje fallback"></textarea></div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p><h3 class="form-section-title">Confirmar</h3>
+            <p class="field-hint">Revisa los datos y guarda.</p>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" hidden>Guardar regla</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="user-modal" class="modal-backdrop" data-step-modal="users" data-title-new="Nuevo usuario" data-title-edit="Editar usuario" hidden>
+      <form class="modal-container" data-editor="users" id="user-form" role="dialog" aria-modal="true">
+        <header class="modal-header"><span class="modal-logo">HW</span><h2 class="modal-title" data-modal-title>Nuevo usuario</h2></header>
+        <div class="modal-steps">
+          <div class="step-item is-active" data-step="0"><div class="step-circle">1</div><div class="step-label">Acceso</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="1"><div class="step-circle">2</div><div class="step-label">Seguridad</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="2"><div class="step-circle">3</div><div class="step-label">Config</div></div>
+          <div class="step-line"></div>
+          <div class="step-item is-pending" data-step="3"><div class="step-circle">4</div><div class="step-label">Confirmar</div></div>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id">
+          <section class="form-section" data-step-panel="0">
+            <p class="form-section-eyebrow">Paso 1 de 4</p><h3 class="form-section-title">Acceso</h3>
+            <div class="field-grid-2">
+              <div class="field-group"><label class="field-label">Nombre *</label><input name="name" data-req placeholder="Nombre"></div>
+              <div class="field-group"><label class="field-label">Email *</label><input name="email" type="email" data-req placeholder="Email"></div>
+              <div class="field-group"><label class="field-label">Rol</label><select name="role"><option value="admin">Admin</option><option value="supervisor">Supervisor</option><option value="agent">Agente ATC</option><option value="marketplace">Marketplace</option><option value="wholesale">Mayoristas</option><option value="viewer">Solo lectura</option></select></div>
+              <div class="field-group"><label class="field-label">Agente asociado</label><select name="agentId" id="user-agent-select"><option value="">Sin agente asociado</option></select></div>
+            </div>
+          </section>
+          <section class="form-section" data-step-panel="1" hidden>
+            <p class="form-section-eyebrow">Paso 2 de 4</p><h3 class="form-section-title">Seguridad</h3>
+            <div class="field-group"><label class="field-label">Password</label><input name="password" type="password" placeholder="Password nuevo o inicial"></div>
+          </section>
+          <section class="form-section" data-step-panel="2" hidden>
+            <p class="form-section-eyebrow">Paso 3 de 4</p><h3 class="form-section-title">Config</h3>
+            <div class="field-group"><label class="switch-row"><input type="checkbox" name="isActive" checked><span></span><em>Activo</em></label></div>
+          </section>
+          <section class="form-section" data-step-panel="3" hidden>
+            <p class="form-section-eyebrow">Paso 4 de 4</p><h3 class="form-section-title">Confirmar</h3>
+            <p class="field-hint">Revisa los datos y guarda.</p>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button type="button" class="modal-btn modal-btn-back" disabled>Atras</button>
+          <button type="button" class="modal-btn modal-btn-next">Siguiente</button>
+          <button type="submit" class="modal-btn modal-btn-save" hidden>Guardar usuario</button>
         </footer>
       </form>
     </div>
