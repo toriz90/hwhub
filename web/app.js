@@ -1155,12 +1155,12 @@ async function refresh() {
 
 const SETTINGS_TABS = ["brand", "apis", "access", "notifications"];
 
-// Hashes de modulos que viven (o viviran) como tabs de Configuracion. integrations ya esta
-// en el tab apis; users/roles se reapuntaran a { view: "settings", tab: "access" } al moverlos (paso 3).
+// Hashes de modulos que ahora viven como tabs de Configuracion: integrations -> apis,
+// users/roles -> access. Los bookmarks/enlaces viejos resuelven al tab correcto.
 const MODULE_ALIAS = {
   integrations: { view: "settings", tab: "apis" },
-  users: { view: "users" },
-  roles: { view: "roles" }
+  users: { view: "settings", tab: "access" },
+  roles: { view: "settings", tab: "access" }
 };
 
 function resolveRoute(hash) {
