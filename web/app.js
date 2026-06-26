@@ -140,21 +140,6 @@ const viewMeta = {
     title: "Ruteo",
     subtitle: "Reglas que deciden si responde el bot, se pausa o se canaliza con agentes."
   },
-  integrations: {
-    eyebrow: "Conectores",
-    title: "APIs",
-    subtitle: "Credenciales, pruebas de conexion y estado de integraciones externas."
-  },
-  users: {
-    eyebrow: "Sistema",
-    title: "Usuarios",
-    subtitle: "Cuentas, roles, estado y relacion con agentes del backoffice."
-  },
-  roles: {
-    eyebrow: "Permisos",
-    title: "Roles",
-    subtitle: "Capacidades por rol y pruebas de comportamiento de acceso."
-  },
   settings: {
     eyebrow: "Sistema",
     title: "Configuracion",

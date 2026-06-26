@@ -6032,6 +6032,15 @@ html[data-theme="dark"] .filters select {
   display: none;
 }
 
+/* Modulos movidos a tabs (APIs/Accesos): el panel exterior de Configuracion ya aporta el
+   chrome; se neutraliza el de los .panel internos para evitar panel-dentro-de-panel. */
+.settings-panel .panel {
+  border: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .settings-form {
   display: grid;
   gap: 14px;
