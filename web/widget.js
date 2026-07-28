@@ -249,14 +249,14 @@
         display: grid;
         place-items: center;
         border-radius: 999px;
-        background: var(--hwhub-widget-accent, #f5b301);
-        color: #111;
+        background: var(--hwhub-widget-accent, #2563eb);
+        color: #ffffff;
         font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
       @keyframes hw-pulse {
-        0% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 0 var(--hwhub-widget-accent, #FFD106); }
-        100% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 12px rgb(from var(--hwhub-widget-accent, #FFD106) r g b / 0); }
+        0% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 0 var(--hwhub-widget-accent, #2563eb); }
+        100% { box-shadow: 0 16px 38px rgba(31, 42, 55, 0.24), 0 0 0 12px rgb(from var(--hwhub-widget-accent, #2563eb) r g b / 0); }
       }
 
       .hwhub-widget-button:not(.is-open) {
@@ -269,7 +269,7 @@
 
       .hw-status { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; }
       .hw-status--online { background: rgba(76, 175, 80, 0.15); color: #2e7d32; }
-      .hw-status--reconnecting { background: rgba(255, 165, 0, 0.15); color: #e65100; }
+      .hw-status--reconnecting { background: rgba(255, 165, 0, 0.15); color: #92400e; }
       .hw-status--offline { background: rgba(220, 38, 38, 0.15); color: #b91c1c; }
 
       .hw-quick-chips { display: flex; gap: 6px; padding: 6px 12px; overflow-x: auto; }
@@ -428,8 +428,8 @@
       .hwhub-widget-profile-screen select:focus,
       .hwhub-widget-profile-screen textarea:focus,
       .hwhub-widget-compose textarea:focus {
-        border-color: var(--hwhub-widget-accent, #f5b301);
-        box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.22);
+        border-color: var(--hwhub-widget-accent, #2563eb);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
       }
 
       .hwhub-widget-profile-screen textarea,
@@ -539,9 +539,9 @@
 
       .hwhub-widget-message.bot {
         justify-self: start;
-        background: var(--hwhub-widget-bot, #FFF8E0);
-        color: #664400;
-        border-color: var(--hwhub-widget-accent, #FFD106);
+        background: var(--hwhub-widget-bot, #EFF6FF);
+        color: #1d4ed8;
+        border-color: var(--hwhub-widget-accent, #2563eb);
       }
 
       .hwhub-widget-message.agent {
@@ -565,7 +565,7 @@
       .hwhub-link-list a {
         color: #1f2a37;
         font-weight: 900;
-        text-decoration-color: var(--hwhub-widget-accent, #f5b301);
+        text-decoration-color: var(--hwhub-widget-accent, #2563eb);
       }
 
       .hwhub-message-list {
@@ -607,7 +607,7 @@
       .hwhub-product-empty {
         display: grid;
         place-items: center;
-        background: linear-gradient(135deg, #f5b301, #1f2a37);
+        background: linear-gradient(135deg, #2563eb, #1f2a37);
         color: #fff;
         font-weight: 900;
       }
@@ -709,8 +709,8 @@
     welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
     buttonLabel: "Chat",
     headerColor: "#1f2a37",
-    accentColor: "#f5b301",
-    botBubbleColor: "#FFF8E0",
+    accentColor: "#2563eb",
+    botBubbleColor: "#EFF6FF",
     userBubbleColor: "#ffffff",
     positionHorizontal: "right",
     positionVertical: "bottom"
@@ -830,11 +830,11 @@
       title.textContent = widgetConfig.title || "Honey Whale";
       subtitle.textContent = widgetConfig.subtitle || "";
       const headerColor = widgetConfig.headerColor || "#1f2a37";
-      const accentColor = widgetConfig.accentColor || "#f5b301";
+      const accentColor = widgetConfig.accentColor || "#2563eb";
       panel.style.setProperty("--hwhub-widget-header", headerColor);
       panel.style.setProperty("--hwhub-header-text", widgetConfig.headerTextColor || "#ffffff");
       panel.style.setProperty("--hwhub-widget-accent", accentColor);
-      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#FFF8E0");
+      panel.style.setProperty("--hwhub-widget-bot", widgetConfig.botBubbleColor || "#EFF6FF");
       panel.style.setProperty("--hwhub-widget-user", widgetConfig.userBubbleColor || "#ffffff");
       button.style.setProperty("--hwhub-widget-header", headerColor);
       button.style.setProperty("--hwhub-widget-accent", accentColor);
