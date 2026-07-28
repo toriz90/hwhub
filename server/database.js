@@ -4,24 +4,58 @@ const SESSION_DAYS = 7;
 const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@hwhub.local";
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-password";
 
+// 10 intentos con backoff hasta 15 s dan ~90 s: cubren el initdb de un volumen nuevo, que tarda ~50 s.
+const DB_CONNECT_RETRIES = Number(process.env.DATABASE_CONNECT_RETRIES || 10);
+const DB_CONNECT_DELAY_MS = Number(process.env.DATABASE_CONNECT_DELAY_MS || 1000);
+const DB_CONNECT_MAX_DELAY_MS = 15000;
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Con DATABASE_URL definida solo hay dos finales validos: conectar a PostgreSQL o morir.
+// Degradar a memoria dejaba el contenedor sirviendo datos de RAM como si fueran reales.
 export async function createDataStore(defaultState) {
   if (!process.env.DATABASE_URL) {
-    console.log("HWHub usando almacenamiento en memoria");
+    console.log("HWHub usando almacenamiento en memoria (sin DATABASE_URL)");
     return createMemoryStore(defaultState);
   }
 
+  let Pool;
   try {
-    const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    await pool.query("select 1");
-    await ensureAuthSchema(pool);
-    await seedDatabase(pool, defaultState);
-    console.log("HWHub conectado a PostgreSQL");
-    return createPostgresStore(pool, defaultState);
+    ({ Pool } = await import("pg"));
   } catch (error) {
-    console.warn(`No se pudo conectar a PostgreSQL, usando memoria: ${error.message}`);
-    return createMemoryStore(defaultState);
+    throw new Error(`DATABASE_URL esta definida pero no se pudo cargar el driver pg (${error.message}). HWHub no degrada a memoria por diseño: instala dependencias con npm install.`);
   }
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  let lastError = null;
+  for (let attempt = 1; attempt <= DB_CONNECT_RETRIES; attempt += 1) {
+    try {
+      await pool.query("select 1");
+      await ensureAuthSchema(pool);
+      await seedDatabase(pool, defaultState);
+      console.log(`HWHub conectado a PostgreSQL (intento ${attempt}/${DB_CONNECT_RETRIES})`);
+      // Ya conectados: si la base cae despues, salimos con un mensaje legible en vez de un volcado de pg,
+      // y el reinicio del contenedor vuelve a entrar por los reintentos de arriba.
+      pool.on("error", (error) => {
+        console.error(`HWHub perdio la conexion con PostgreSQL: ${error.message}. Sale para reconectar al reiniciar; no se sirven datos desde memoria.`);
+        process.exit(1);
+      });
+      return createPostgresStore(pool, defaultState);
+    } catch (error) {
+      lastError = error;
+      if (attempt === DB_CONNECT_RETRIES) break;
+      // Backoff creciente: cubre el caso real de arrancar microsegundos antes que PostgreSQL.
+      const waitMs = Math.min(DB_CONNECT_DELAY_MS * 2 ** (attempt - 1), DB_CONNECT_MAX_DELAY_MS);
+      console.warn(`PostgreSQL no responde (intento ${attempt}/${DB_CONNECT_RETRIES}): ${error.message}. Reintento en ${waitMs} ms.`);
+      await delay(waitMs);
+    }
+  }
+  await pool.end().catch(() => {});
+  throw new Error([
+    `DATABASE_URL esta definida pero PostgreSQL no respondio tras ${DB_CONNECT_RETRIES} intentos.`,
+    `Ultimo error: ${lastError?.message || "desconocido"}.`,
+    "HWHub NO degrada a memoria por diseño: servir datos de RAM como si fueran reales causo un incidente de 24 dias.",
+    "Revisa la base y deja que el contenedor reinicie."
+  ].join(" "));
 }
 
 function hashPassword(password) {
@@ -816,6 +850,9 @@ function createMemoryStore(state) {
 export function createPostgresStore(pool, fallbackState) {
   return {
     mode: "postgres",
+    async ping() {
+      await pool.query("select 1");
+    },
     async bootstrap() {
       const [branches, directoryContacts, agents, faqs, routingRules, conversations, integrations] = await Promise.all([
         this.collection("branches"),

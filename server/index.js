@@ -1004,13 +1004,23 @@ const server = createServer(async (req, res) => {
   }
 
   if (url.pathname === "/health") {
+    // El healthcheck del compose solo mira el codigo HTTP: si el almacenamiento no responde, no estamos sanos.
+    let storageOk = true;
+    let storageError = null;
+    try {
+      await store.ping?.();
+    } catch (error) {
+      storageOk = false;
+      storageError = error.message;
+    }
     sendJson(res, {
-      ok: true,
+      ok: storageOk,
       service: "hwhub",
       storage: store.mode,
+      storageError,
       uptime: Math.round(process.uptime()),
       timestamp: new Date().toISOString()
-    });
+    }, storageOk ? 200 : 503);
     return;
   }
 
@@ -1409,7 +1419,12 @@ const server = createServer(async (req, res) => {
   }
 });
 
-store = await createDataStore(state);
+try {
+  store = await createDataStore(state);
+} catch (error) {
+  console.error(`HWHub no puede arrancar: ${error.message}`);
+  process.exit(1);
+}
 
 server.listen(port, () => {
   console.log(`HWHub listo en http://localhost:${port}`);

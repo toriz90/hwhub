@@ -34,6 +34,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      # Cubre los ~90 s de reintentos de conexion a PostgreSQL sin marcar unhealthy antes de tiempo.
+      start_period: 120s
     networks:
       - internal
 
