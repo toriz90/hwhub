@@ -154,8 +154,8 @@ const state = {
     {
       id: "faq-order-status",
       question: "Como puedo revisar el estado de mi pedido?",
-      shortAnswer: "Podemos revisar pedidos de la pagina oficial con el numero de orden o telefono.",
-      longAnswer: "Para pedidos de WooCommerce el chatbot puede consultar el pedido, pago, envio y proceso interno cuando el cliente proporcione datos de identificacion.",
+      shortAnswer: "Podemos revisar pedidos de la pagina oficial con el numero de orden.",
+      longAnswer: "Para pedidos de WooCommerce el chatbot puede consultar el pedido, pago, envio y proceso interno con el numero de orden; el resto de los datos de contacto ya vienen del perfil del cliente.",
       category: "Pedidos",
       tags: ["woocommerce", "pedido", "envio", "estatus"],
       published: true
@@ -189,7 +189,7 @@ const state = {
       intent: "order_status",
       requiredSkill: "woocommerce",
       botAllowed: true,
-      fallbackMessage: "Puedo revisar pedidos de la pagina oficial. Comparte tu numero de pedido o telefono."
+      fallbackMessage: "Puedo revisar pedidos de la pagina oficial. Comparte tu numero de pedido."
     },
     {
       id: "rule-marketplaces-agent",
