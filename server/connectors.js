@@ -119,9 +119,34 @@ function conversationText(text = "", history = []) {
   return [...history.slice(-8).map((message) => message.body), text].filter(Boolean).join("\n");
 }
 
-function extractOrderNumber(text = "") {
-  const match = String(text).match(/(?:#|pedido\s*#?|orden\s*#?)\s*(\d{3,})/i);
-  return match?.[1] || null;
+// Palabras que anclan el numero como pedido: con una de ellas cerca aceptamos cualquier numero de 3+ digitos.
+const ORDER_ANCHOR_WORDS = new Set(["pedido", "pedidos", "orden", "ordenes", "compra"]);
+// Pegadas al numero le cambian el sentido: "pedido de 2024", "hace 400 dias".
+const ORDER_BLOCKING_WORDS = new Set(["de", "del", "hace", "desde", "hasta", "en", "por", "ano", "anos"]);
+// En la vecindad indican que el numero es otro dato del cliente, no su pedido.
+const ORDER_FOREIGN_WORDS = new Set(["telefono", "whatsapp", "celular", "cel", "tel", "guia", "rastreo", "tracking", "serie", "cp", "postal"]);
+
+// Corre sobre historial + mensaje actual, asi que puede haber varios candidatos: gana el ultimo,
+// que es el mas reciente, para que una correccion del cliente pise el numero que dio antes.
+export function extractOrderNumber(text = "") {
+  const value = String(text).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  let found = null;
+  for (const match of value.matchAll(/\d{3,}/g)) {
+    const number = match[0];
+    const before = value.slice(0, match.index);
+    const after = value.slice(match.index + number.length, match.index + number.length + 2);
+    if (/[$€]\s*$/.test(before)) continue; // precio
+    if (/[\d.,:/-]$/.test(before)) continue; // decimal, fecha o parte de un numero mas largo
+    if (/^[.,:/-]\d/.test(after)) continue; // le sigue el resto de una fecha o un decimal
+    const words = before.match(/[a-z0-9#]+/g)?.slice(-4) || [];
+    if (ORDER_BLOCKING_WORDS.has(words[words.length - 1])) continue;
+    if (words.some((word) => ORDER_FOREIGN_WORDS.has(word))) continue;
+    const anchored = words[words.length - 1] === "#" || words.some((word) => ORDER_ANCHOR_WORDS.has(word));
+    // Sin palabra clave el numero se sostiene solo, asi que exigimos forma de folio: un telefono o un anio suelto no lo son.
+    if (!anchored && (number.length > 8 || /^(19|20)\d{2}$/.test(number))) continue;
+    found = number;
+  }
+  return found;
 }
 
 function extractTrackingNumber(text = "") {
