@@ -167,6 +167,13 @@ export async function buildConnectorContext({ text, history = [], store, custome
         } else if (customerProfile?.wooCustomerId || customerProfile?.email) {
           context.wooCustomerAuthRequired = true;
           context.wooCustomerAuthMessage = verifiedCustomer.reason;
+          // El perfil del widget ya trae nombre, correo y telefono: lo unico que falta para identificar el pedido es su numero.
+          context.orderLookup = {
+            missing: ["numero de pedido"],
+            knownName: customerProfile.name || "",
+            knownEmail: customerProfile.email || "",
+            knownPhone: customerProfile.phone || ""
+          };
         }
       }
     } catch (error) {
