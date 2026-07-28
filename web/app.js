@@ -85,7 +85,7 @@ function setButtonBusy(button, busy, label = "Procesando...") {
 
 const rolePermissions = {
   admin: ["*"],
-  supervisor: ["conversation", "faqs", "branches", "directoryContacts", "agents", "routingRules", "integrations"],
+  supervisor: ["conversation", "faqs", "branches", "directoryContacts", "agents", "routingRules", "integrations", "knowledge"],
   agent: ["conversation"],
   marketplace: ["conversation"],
   wholesale: ["conversation"],
@@ -1152,7 +1152,129 @@ async function refresh() {
   render();
 }
 
-const SETTINGS_TABS = ["brand", "apis", "access", "notifications"];
+const SETTINGS_TABS = ["brand", "apis", "access", "knowledge", "notifications"];
+
+// ---- Base de Conocimiento: documentos crudos que el chatbot consulta como contexto ----
+function knowledgeSizeLabel(size = 0) {
+  return size > 1024 ? `${Math.round(size / 1024)} KB` : `${size} B`;
+}
+
+async function renderKnowledge() {
+  const list = $("#knowledge-list");
+  if (!list) return;
+  let documents = [];
+  try {
+    documents = await api("/api/knowledge");
+  } catch (error) {
+    list.innerHTML = `<article class="card"><p class="meta">No se pudo cargar la base de conocimiento: ${esc(error.message)}</p></article>`;
+    return;
+  }
+  list.innerHTML = documents
+    .map((item) => `
+      <article class="card wh-entity-card">
+        <header class="wh-card-head">
+          <div>
+            <strong>${esc(item.title || item.key)}</strong>
+            <p>${esc(item.key)} - ${esc(item.docType)} - ${esc(knowledgeSizeLabel(item.size))} - ${esc(formatDateTime(item.updatedAt))}</p>
+          </div>
+          <span class="wh-state-pill ${item.isActive ? "is-ok" : "is-muted"}">${item.isActive ? "Activo" : "Inactivo"}</span>
+        </header>
+        <div class="row-actions">
+          <button data-edit-knowledge="${esc(item.key)}">Editar</button>
+          <label class="switch-row">
+            <input type="checkbox" data-toggle-knowledge="${esc(item.key)}" ${item.isActive ? "checked" : ""} ${roleCan("knowledge") ? "" : "disabled"}>
+            <span></span><em>${item.isActive ? "Lo usa el bot" : "Ignorado por el bot"}</em>
+          </label>
+        </div>
+      </article>
+    `)
+    .join("") || `<article class="card"><p class="meta">Sin documentos de conocimiento.</p></article>`;
+
+  for (const button of $$("[data-edit-knowledge]")) {
+    button.onclick = () => openKnowledgeDocument(button.dataset.editKnowledge);
+  }
+  for (const input of $$("[data-toggle-knowledge]")) {
+    input.onchange = async () => {
+      try {
+        await api(`/api/knowledge/${encodeURIComponent(input.dataset.toggleKnowledge)}`, {
+          method: "PUT",
+          body: JSON.stringify({ isActive: input.checked })
+        });
+        notify(input.checked ? "Documento activado" : "Documento desactivado", "ok");
+        await renderKnowledge();
+      } catch (error) {
+        input.checked = !input.checked;
+        notify("No se pudo cambiar el estado", "error", error.message);
+      }
+    };
+  }
+}
+
+async function openKnowledgeDocument(key) {
+  const form = $("#knowledge-form");
+  try {
+    const doc = await api(`/api/knowledge/${encodeURIComponent(key)}`);
+    form.hidden = false;
+    form.elements.key.value = doc.key;
+    form.dataset.docType = doc.docType;
+    $("#knowledge-editor-title").textContent = doc.title || doc.key;
+    $("#knowledge-editor-meta").textContent = doc.docType === "json"
+      ? "JSON crudo. Se valida antes de guardar."
+      : "Texto libre (Markdown).";
+    $("#knowledge-content").value = doc.content || "";
+    $("#knowledge-validate").hidden = doc.docType !== "json";
+    $("#knowledge-error").textContent = "";
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (error) {
+    notify("No se pudo abrir el documento", "error", error.message);
+  }
+}
+
+// Devuelve el error de parseo, o "" si el contenido es valido para su tipo.
+function knowledgeParseError() {
+  const form = $("#knowledge-form");
+  if (form.dataset.docType !== "json") return "";
+  try {
+    JSON.parse($("#knowledge-content").value);
+    return "";
+  } catch (error) {
+    return error.message;
+  }
+}
+
+function bindKnowledge() {
+  const form = $("#knowledge-form");
+  if (!form) return;
+  $("#knowledge-validate").onclick = () => {
+    const error = knowledgeParseError();
+    $("#knowledge-error").textContent = error;
+    notify(error ? "JSON invalido" : "JSON valido", error ? "error" : "ok", error);
+  };
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    const error = knowledgeParseError();
+    $("#knowledge-error").textContent = error;
+    if (error) {
+      notify("No se guardo: el JSON tiene errores", "error", error);
+      return;
+    }
+    const button = form.querySelector("button[type=submit]");
+    setButtonBusy(button, true, "Guardando...");
+    try {
+      await api(`/api/knowledge/${encodeURIComponent(form.elements.key.value)}`, {
+        method: "PUT",
+        body: JSON.stringify({ content: $("#knowledge-content").value })
+      });
+      notify("Documento guardado", "ok");
+      await renderKnowledge();
+    } catch (saveError) {
+      $("#knowledge-error").textContent = saveError.message;
+      notify("No se pudo guardar", "error", saveError.message);
+    } finally {
+      setButtonBusy(button, false);
+    }
+  };
+}
 
 // Hashes de modulos que ahora viven como tabs de Configuracion: integrations -> apis,
 // users/roles -> access. Los bookmarks/enlaces viejos resuelven al tab correcto.
@@ -1176,6 +1298,8 @@ function activateSettingsTab(name) {
   const tab = SETTINGS_TABS.includes(name) ? name : "brand";
   for (const t of view.querySelectorAll(".settings-tab")) t.classList.toggle("is-active", t.dataset.settingsTab === tab);
   for (const p of view.querySelectorAll("[data-settings-panel]")) p.hidden = p.dataset.settingsPanel !== tab;
+  // Los documentos no viajan en bootstrap (uno pesa 312 KB): se cargan al abrir el tab.
+  if (tab === "knowledge") renderKnowledge();
 }
 
 function showView(view) {
@@ -1422,6 +1546,7 @@ function bindStaticEvents() {
   bindConversationActions();
   bindConversationFilters();
   bindIntegrations();
+  bindKnowledge();
   bindUsers();
   bindRoleLab();
   bindDashboardShortcuts();

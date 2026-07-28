@@ -589,6 +589,7 @@
               <button class="settings-tab is-active" type="button" data-settings-tab="brand">Marca</button>
               <button class="settings-tab" type="button" data-settings-tab="apis">APIs</button>
               <button class="settings-tab" type="button" data-settings-tab="access">Accesos</button>
+              <button class="settings-tab" type="button" data-settings-tab="knowledge">Base de Conocimiento</button>
               <button class="settings-tab" type="button" data-settings-tab="notifications">Notificaciones</button>
             </div>
 
@@ -717,6 +718,39 @@
                     </div>
                   </header>
                   <div id="role-matrix" class="cards"></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="settings-panel" data-settings-panel="knowledge" hidden>
+              <section class="module-grid" id="knowledge">
+                <div class="panel form-panel">
+                  <header>
+                    <div>
+                      <p class="eyebrow">Contexto del chatbot</p>
+                      <h2>Documentos</h2>
+                    </div>
+                  </header>
+                  <p class="meta">El bot solo consulta los documentos activos. Los precios y el estado de pedidos siguen saliendo de WooCommerce.</p>
+                  <div id="knowledge-list" class="kb-list"></div>
+                </div>
+                <div class="panel">
+                  <header>
+                    <div>
+                      <p class="eyebrow">Edicion en crudo</p>
+                      <h2 id="knowledge-editor-title">Selecciona un documento</h2>
+                    </div>
+                  </header>
+                  <form id="knowledge-form" class="editor" hidden>
+                    <input type="hidden" name="key">
+                    <p class="meta" id="knowledge-editor-meta"></p>
+                    <textarea id="knowledge-content" class="kb-editor" spellcheck="false" rows="20"></textarea>
+                    <p id="knowledge-error" class="form-error"></p>
+                    <div class="wh-confirm-actions">
+                      <button type="button" id="knowledge-validate" class="secondary">Validar JSON</button>
+                      <button type="submit" class="modal-btn modal-btn-save">Guardar documento</button>
+                    </div>
+                  </form>
                 </div>
               </section>
             </div>

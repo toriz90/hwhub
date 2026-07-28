@@ -111,6 +111,7 @@ function buildContext({ text, routed, currentState }) {
     fallbackMessage: rule.fallbackMessage
   }));
   const connectorContext = currentState.connectorContext || {};
+  const knowledgeBlocks = currentState.knowledge?.blocks || [];
   const history = (currentState.conversationHistory || []).slice(-10).map((message) => ({
     sender: message.senderType,
     body: message.body,
@@ -133,7 +134,8 @@ function buildContext({ text, routed, currentState }) {
       directoryContacts: directoryContacts.length,
       order: connectorContext.order?.number || null,
       shipment: connectorContext.shipment?.trackingNumber || null,
-      connectorErrors: connectorContext.errors?.length || 0
+      connectorErrors: connectorContext.errors?.length || 0,
+      knowledgeBlocks: knowledgeBlocks.length
     },
     prompt: [
       settings.prompt || "Eres el asistente de Honey Whale / WhaleHub para atencion a clientes.",
@@ -172,7 +174,14 @@ function buildContext({ text, routed, currentState }) {
       `Directorio: ${JSON.stringify(branches)}`,
       `Directorio de contactos por canalizacion: ${JSON.stringify(directoryContacts)}`,
       `Reglas: ${JSON.stringify(rules)}`,
-      `Contexto externo de APIs: ${JSON.stringify(connectorContext)}`
+      `Contexto externo de APIs: ${JSON.stringify(connectorContext)}`,
+      // Sin documentos activos no se agrega ni una linea: el prompt queda identico al de antes del modulo.
+      ...(knowledgeBlocks.length ? [
+        "La base de conocimiento es material interno verificado de Honey Whale: usala para marca, tono, enlaces del sitio y codigos de falla.",
+        "Precios, stock y estado de pedidos siguen saliendo de WooCommerce, nunca de la base de conocimiento.",
+        "Si un bloque de codigos de falla trae aviso de lista recortada o dice que falta el modelo, no afirmes tener el diagnostico completo.",
+        `Base de conocimiento: ${JSON.stringify(knowledgeBlocks)}`
+      ] : [])
     ].join("\n")
   };
 }

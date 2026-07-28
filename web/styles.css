@@ -127,6 +127,34 @@ button {
   padding: 1.25rem;
 }
 
+/* Base de Conocimiento: edicion en crudo, monoespaciada, dentro del panel de Configuracion. */
+.kb-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.kb-editor {
+  width: 100%;
+  min-height: 22rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+  resize: vertical;
+}
+
+.kb-editor:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
 /* Pantalla neutra mientras se verifica la sesion: solo tokens de marca, sin pistas de login ni de panel. */
 .loading-screen {
   min-height: 100vh;

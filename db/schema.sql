@@ -177,3 +177,13 @@ CREATE TABLE sessions (
   expires_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE knowledge_base (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text UNIQUE NOT NULL,
+  title text NOT NULL DEFAULT '',
+  doc_type text NOT NULL CHECK (doc_type IN ('json', 'text')),
+  content text NOT NULL DEFAULT '',
+  is_active boolean NOT NULL DEFAULT true,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

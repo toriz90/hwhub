@@ -168,6 +168,58 @@ async function ensureAuthSchema(pool) {
       updated_at timestamptz not null default now()
     )
   `);
+  await pool.query(`
+    create table if not exists knowledge_base (
+      id uuid primary key default gen_random_uuid(),
+      key text unique not null,
+      title text not null default '',
+      doc_type text not null check (doc_type in ('json', 'text')),
+      content text not null default '',
+      is_active boolean not null default true,
+      updated_at timestamptz not null default now()
+    )
+  `);
+}
+
+// El contenido se guarda como text y no jsonb: el modulo edita JSON crudo y jsonb reordenaria
+// las claves al guardar, ademas de que la misma columna guarda Markdown. Se valida en la app.
+const KNOWLEDGE_SEEDS = [
+  { key: "brand_kb", title: "Base de marca y tono", docType: "text", file: "kb-conocimiento.md", isActive: true },
+  { key: "fault_codes", title: "Codigos de falla por modelo", docType: "json", file: "kb-fault-codes.json", isActive: true },
+  { key: "site_pages", title: "Paginas del sitio", docType: "json", file: "kb-paginas-sitio.json", isActive: true },
+  // Prompt alterno para comparar y editar. No es contexto y no se inyecta: activarlo aqui no cambia al bot.
+  { key: "system_prompt", title: "Prompt de sistema alterno (no se inyecta aun)", docType: "text", file: "kb-prompt-sistema.md", isActive: false }
+];
+
+async function memoryKnowledge(state) {
+  if (!state.knowledge) {
+    state.knowledge = (await knowledgeSeeds()).map((doc, index) => ({
+      id: `kb-${index + 1}`,
+      key: doc.key,
+      title: doc.title,
+      docType: doc.docType,
+      content: doc.content,
+      isActive: doc.isActive !== false,
+      updatedAt: new Date().toISOString()
+    }));
+  }
+  return state.knowledge;
+}
+
+async function knowledgeSeeds() {
+  const { readFile } = await import("node:fs/promises");
+  const { fileURLToPath } = await import("node:url");
+  const dir = fileURLToPath(new URL("../db/knowledge/", import.meta.url));
+  const docs = [];
+  for (const seed of KNOWLEDGE_SEEDS) {
+    try {
+      docs.push({ ...seed, content: await readFile(`${dir}${seed.file}`, "utf8") });
+    } catch (error) {
+      // Sin el archivo el modulo sigue funcionando: el documento se carga despues desde el backoffice.
+      console.warn(`Base de conocimiento: no se pudo leer ${seed.file} (${error.message}).`);
+    }
+  }
+  return docs;
 }
 
 function csv(value) {
@@ -281,6 +333,18 @@ function contactFromRow(row) {
     skills: row.skills || [],
     priority: row.priority ?? 100,
     active: row.is_active ?? true
+  };
+}
+
+function knowledgeFromRow(row) {
+  return {
+    id: row.id,
+    key: row.key,
+    title: row.title,
+    docType: row.doc_type,
+    isActive: row.is_active,
+    updatedAt: row.updated_at,
+    ...(row.content === undefined ? { size: Number(row.size || 0) } : { content: row.content, size: row.content.length })
   };
 }
 
@@ -537,6 +601,16 @@ async function seedDatabase(pool, defaults) {
       ["Administrador", DEFAULT_ADMIN_EMAIL.toLowerCase(), hashPassword(DEFAULT_ADMIN_PASSWORD)]
     );
   }
+
+  // do nothing y no do update: el seed nunca pisa lo que se haya editado desde el backoffice.
+  for (const doc of await knowledgeSeeds()) {
+    await pool.query(
+      `insert into knowledge_base (key, title, doc_type, content, is_active)
+       values ($1, $2, $3, $4, $5)
+       on conflict (key) do nothing`,
+      [doc.key, doc.title, doc.docType, doc.content, doc.isActive !== false]
+    );
+  }
 }
 
 function createMemoryStore(state) {
@@ -781,6 +855,24 @@ function createMemoryStore(state) {
       state.settings ||= {};
       state.settings[key] = value || {};
       return state.settings[key];
+    },
+    async knowledgeVersions() {
+      return (await memoryKnowledge(state)).map(({ content, ...doc }) => ({ ...doc, size: content.length }));
+    },
+    async knowledgeDocuments() {
+      return this.knowledgeVersions();
+    },
+    async knowledgeDocument(key) {
+      const doc = (await memoryKnowledge(state)).find((item) => item.key === key);
+      return doc ? { ...doc, size: doc.content.length } : null;
+    },
+    async saveKnowledgeDocument(key, payload = {}) {
+      const doc = (await memoryKnowledge(state)).find((item) => item.key === key);
+      if (!doc) return null;
+      if (payload.content !== undefined) doc.content = String(payload.content);
+      if (payload.isActive !== undefined) doc.isActive = Boolean(payload.isActive);
+      doc.updatedAt = new Date().toISOString();
+      return { ...doc, size: doc.content.length };
     },
     async integrationConfig(provider) {
       const item = (state.integrations || []).find((entry) => entry.provider === provider && entry.active !== false);
@@ -1179,6 +1271,36 @@ export function createPostgresStore(pool, fallbackState) {
         [key, value || {}]
       );
       return rows[0]?.value || {};
+    },
+    // Version ligera: la IA la consulta en cada mensaje y solo baja el contenido cuando cambio updated_at.
+    async knowledgeVersions() {
+      const { rows } = await pool.query(
+        "select id, key, title, doc_type, is_active, updated_at, length(content) as size from knowledge_base order by key"
+      );
+      return rows.map(knowledgeFromRow);
+    },
+    async knowledgeDocuments() {
+      return this.knowledgeVersions();
+    },
+    async knowledgeDocument(key) {
+      const { rows } = await pool.query("select * from knowledge_base where key = $1", [key]);
+      return rows[0] ? knowledgeFromRow(rows[0]) : null;
+    },
+    async saveKnowledgeDocument(key, payload = {}) {
+      const { rows } = await pool.query(
+        `update knowledge_base
+         set content = coalesce($2, content),
+             is_active = coalesce($3, is_active),
+             updated_at = now()
+         where key = $1
+         returning *`,
+        [
+          key,
+          payload.content === undefined ? null : String(payload.content),
+          payload.isActive === undefined ? null : Boolean(payload.isActive)
+        ]
+      );
+      return rows[0] ? knowledgeFromRow(rows[0]) : null;
     },
     async integrationConfig(provider) {
       const { rows } = await pool.query(

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { createDataStore } from "./database.js";
 import { generateBotReply } from "./ai.js";
 import { buildConnectorContext, createEasyAppointment, getEasyAppointmentOptions, prevalidateEasyAppointment } from "./connectors.js";
+import { buildKnowledgeContext } from "./knowledge.js";
 import { branchSeeds } from "./branchSeeds.js";
 import { contactSeeds } from "./contactSeeds.js";
 
@@ -263,7 +264,8 @@ const rolePermissions = {
     "directoryContacts:write",
     "agents:write",
     "routingRules:write",
-    "integrations:write"
+    "integrations:write",
+    "knowledge:write"
   ],
   agent: ["conversation:write"],
   marketplace: ["conversation:write"],
@@ -1061,6 +1063,7 @@ const server = createServer(async (req, res) => {
     currentState.connectorContext = connectorContext;
     currentState.conversationHistory = history;
     currentState.chatbotSettings = mergeChatbotSettings(await store.settings?.("chatbot"));
+    currentState.knowledge = await buildKnowledgeContext(store, body.message || "");
     const routed = routeMessage({ text: body.message || "", channel, currentState });
     let ai = { provider: "rules", reply: routed.reply, usedContext: null };
     const manualControl = existingConversation && ["agent_active", "paused", "closed"].includes(savedConversation.status);
@@ -1309,6 +1312,38 @@ const server = createServer(async (req, res) => {
       config
     });
     sendJson(res, result);
+    return;
+  }
+
+  if (url.pathname === "/api/knowledge" && req.method === "GET") {
+    sendJson(res, await store.knowledgeDocuments?.() || []);
+    return;
+  }
+
+  if (url.pathname.match(/^\/api\/knowledge\/[^/]+$/) && req.method === "GET") {
+    const doc = await store.knowledgeDocument?.(url.pathname.split("/")[3]);
+    if (!doc) { sendJson(res, { error: "Documento no encontrado" }, 404); return; }
+    sendJson(res, doc);
+    return;
+  }
+
+  // PUT cubre editar contenido y el toggle de activo: el cuerpo puede traer uno, otro o ambos.
+  if (url.pathname.match(/^\/api\/knowledge\/[^/]+$/) && req.method === "PUT") {
+    requirePermission(req, "knowledge:write");
+    const key = url.pathname.split("/")[3];
+    const current = await store.knowledgeDocument?.(key);
+    if (!current) { sendJson(res, { error: "Documento no encontrado" }, 404); return; }
+    const body = await readBody(req);
+    // Se revalida en el servidor aunque el backoffice ya valide: nunca se guarda JSON roto.
+    if (body.content !== undefined && current.docType === "json") {
+      try {
+        JSON.parse(body.content);
+      } catch (error) {
+        sendJson(res, { error: `JSON invalido: ${error.message}` }, 400);
+        return;
+      }
+    }
+    sendJson(res, await store.saveKnowledgeDocument(key, body));
     return;
   }
 
