@@ -159,8 +159,8 @@
 
   /* ===== SEMANTICOS: lo unico que usan (o deben usar) los componentes.
      El tema oscuro y el white-label redefinen SOLO esta capa. =====
-     Fase 0 conserva el dorado para no alterar la apariencia.
-     Fase 1 (identidad SaaS neutra): basta cambiar estas cuatro lineas
+     El acento del producto es azul electrico: #2563eb en claro, #2f6df0 en oscuro.
+     Para el white-label basta redefinir las cuatro lineas de --accent. */
   --accent: #2563eb;
   --accent-strong: #1d4ed8;
   --accent-subtle: #eff6ff;
