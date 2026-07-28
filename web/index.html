@@ -14,7 +14,33 @@
     <link rel="stylesheet" href="/styles.css?v=20260624-toggles-unified">
   </head>
   <body class="wh-app">
-    <section id="login-screen" class="login-screen">
+    <!-- Estado por defecto del documento: nunca se pinta login ni panel antes de resolver la sesion. -->
+    <section id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+      <span class="brand-mark">HW</span>
+      <div id="loading-progress" class="loading-progress">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <p>Verificando sesion</p>
+      </div>
+      <div id="loading-fallback" class="loading-fallback hidden">
+        <p>No pudimos cargar el panel. Recarga la pagina o revisa tu conexion.</p>
+        <button type="button" id="loading-reload">Recargar</button>
+      </div>
+    </section>
+    <script>
+      // Red de seguridad independiente de app.js: si el bundle no llega a ejecutarse (404, error de parseo),
+      // nadie apagaria el loader. app.js cancela este temporizador en cuanto toma control.
+      window.hwhubLoaderFallback = window.setTimeout(function () {
+        var screen = document.getElementById("loading-screen");
+        if (!screen || screen.classList.contains("hidden")) return;
+        document.getElementById("loading-progress").classList.add("hidden");
+        document.getElementById("loading-fallback").classList.remove("hidden");
+      }, 14000);
+      document.getElementById("loading-reload").addEventListener("click", function () {
+        window.location.reload();
+      });
+    </script>
+
+    <section id="login-screen" class="login-screen hidden">
       <form id="login-form" class="login-card">
         <span class="brand-mark">HW</span>
         <div>

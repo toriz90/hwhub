@@ -5,6 +5,8 @@ const state = {
   selectedConversationId: null,
   role: "viewer",
   user: null,
+  authStatus: "checking", // checking | authenticated | anonymous
+  sessionError: "",
   typing: {},
   conversationDetails: {},
   unread: {}
@@ -415,19 +417,28 @@ async function api(path, options = {}) {
   });
   const text = await response.text();
   const data = text ? JSON.parse(text) : {};
-  if (!response.ok) throw new Error(data.error || `Request failed: ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(data.error || `Request failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
+const SESSION_TIMEOUT_MS = 8000;
+
 async function loadSession() {
+  state.sessionError = "";
   try {
-    const data = await api("/api/session");
+    const data = await api("/api/session", { signal: AbortSignal.timeout(SESSION_TIMEOUT_MS) });
     state.user = data.user;
     state.role = data.user.role;
     return data.user;
-  } catch {
+  } catch (error) {
     state.user = null;
     state.role = "viewer";
+    // Un 401 es simplemente no tener sesion y no necesita explicacion; un timeout o una caida de red si.
+    if (error.status !== 401) state.sessionError = "No pudimos verificar tu sesion. Inicia sesion de nuevo.";
     return null;
   }
 }
@@ -469,10 +480,13 @@ async function loadUsers() {
   return state.users;
 }
 
-function setAuthenticatedUi(isAuthenticated) {
-  $("#login-screen").classList.toggle("hidden", isAuthenticated);
-  $(".sidebar").classList.toggle("hidden", !isAuthenticated);
-  $("main").classList.toggle("hidden", !isAuthenticated);
+// Tres estados explicitos: mientras es "checking" no se pinta ni login ni panel.
+function setAuthUi(status) {
+  state.authStatus = status;
+  $("#loading-screen").classList.toggle("hidden", status !== "checking");
+  $("#login-screen").classList.toggle("hidden", status !== "anonymous");
+  $(".sidebar").classList.toggle("hidden", status !== "authenticated");
+  $("main").classList.toggle("hidden", status !== "authenticated");
   $("#active-user").textContent = state.user ? `${state.user.name} - ${state.user.role}` : "";
 }
 
@@ -1341,7 +1355,7 @@ function bindStaticEvents() {
     try {
       await logout();
       window.location.hash = "#dashboard";
-      setAuthenticatedUi(false);
+      setAuthUi("anonymous");
       notify("Sesion cerrada", "info");
     } catch (error) {
       notify("No se pudo cerrar sesion", "error", error.message);
@@ -2421,16 +2435,18 @@ function bindRealtime() {
 let appStarted = false;
 
 async function startApp() {
-  setAuthenticatedUi(true);
+  // El panel se muestra con datos, no vacio: el loader cubre tambien la carga del bootstrap y del primer login.
+  setAuthUi("checking");
   try {
     await loadBootstrap();
     await loadUsers();
   } catch (error) {
     await logout();
-    setAuthenticatedUi(false);
+    setAuthUi("anonymous");
     $("#login-error").textContent = error.message || "No se pudo cargar el dashboard.";
     return;
   }
+  setAuthUi("authenticated");
   if (!appStarted) {
     bindStaticEvents();
     bindRealtime();
@@ -2440,9 +2456,16 @@ async function startApp() {
 }
 
 async function init() {
+  // app.js tomo control: la red de seguridad inline del HTML ya no hace falta.
+  window.clearTimeout(window.hwhubLoaderFallback);
   bindAuth();
-  setAuthenticatedUi(false);
-  if (await loadSession()) await startApp();
+  setAuthUi("checking");
+  if (await loadSession()) {
+    await startApp();
+    return;
+  }
+  setAuthUi("anonymous");
+  $("#login-error").textContent = state.sessionError;
 }
 
 if (document.readyState === "loading") {
@@ -2452,6 +2475,6 @@ if (document.readyState === "loading") {
 }
 
 function showInitError() {
-  setAuthenticatedUi(false);
+  setAuthUi("anonymous");
   $("#login-error").textContent = "No se pudo iniciar la aplicacion.";
 }
