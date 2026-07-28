@@ -948,8 +948,13 @@
 
   async function loadAppointmentOptions() {
     if (!appointmentOptions) {
-      const response = await fetch(`${api}/api/appointments/options`);
-      appointmentOptions = await response.json();
+      try {
+        const response = await fetch(`${api}/api/appointments/options`);
+        appointmentOptions = await response.json();
+      } catch {
+        setAppointmentStatus("No se pudieron cargar los servicios de la agenda. Intenta de nuevo.", "error");
+        return;
+      }
     }
     const serviceSelect = appointmentForm.querySelector('[data-appointment-field="appointmentServiceId"]');
     const providerSelect = appointmentForm.querySelector('[data-appointment-field="appointmentProviderId"]');
@@ -1209,7 +1214,7 @@
   for (const chip of panel.querySelectorAll(".hw-chip")) {
     chip.addEventListener("click", () => {
       textarea.value = chip.dataset.msg || "";
-      sendMessageToApi(chip.dataset.msg || "");
+      handleSendClick(); // mismo camino que escribir el mensaje: el chip de cita debe abrir el formulario, no mandar texto al bot
     });
   }
 

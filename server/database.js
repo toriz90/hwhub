@@ -813,7 +813,7 @@ function createMemoryStore(state) {
   };
 }
 
-function createPostgresStore(pool, fallbackState) {
+export function createPostgresStore(pool, fallbackState) {
   return {
     mode: "postgres",
     async bootstrap() {
@@ -946,6 +946,9 @@ function createPostgresStore(pool, fallbackState) {
       return conversationFromRow({ ...rows[0], last_message: conversation.lastMessage });
     },
     async conversationById(id) {
+      // Los ids de sesion viejos del widget (conv-<timestamp>, generados en modo memoria) no son uuid y rompen la query.
+      // Devolver null deja que el caller resuelva por visitorId (external_conversation_id) o cree la conversacion.
+      if (!isUuid(id)) return null;
       const { rows } = await pool.query("select * from conversations where id = $1", [id]);
       return rows[0] ? conversationFromRow(rows[0]) : null;
     },

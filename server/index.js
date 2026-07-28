@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1084,7 +1085,7 @@ const server = createServer(async (req, res) => {
     const richContent = richContentFromContext(connectorContext, ai.reply || "");
     if (!savedConversation) {
       savedConversation = await store.createConversation({
-        id: `conv-${Date.now()}`,
+        id: randomUUID(), // el store PG ignora este id; en memoria es el real, y debe ser uuid para no envenenar la sesion del widget
         channel,
         externalConversationId: visitorId,
         customer: mergedProfile.name || "Visitante",
