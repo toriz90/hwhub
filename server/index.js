@@ -40,9 +40,9 @@ const defaultChatbotSettings = {
     subtitle: "Atencion por chatbot y agentes",
     welcome: "Hola, completa tus datos y cuentame en que puedo ayudarte.",
     buttonLabel: "Chat",
-    headerColor: "#1f2a37",
-    accentColor: "#f5b301",
-    botBubbleColor: "#FFF8E0",
+    headerColor: "#18181b",
+    accentColor: "#2563eb",
+    botBubbleColor: "#EFF6FF",
     userBubbleColor: "#ffffff",
     positionHorizontal: "right",
     positionVertical: "bottom"
@@ -55,16 +55,10 @@ function mergeChatbotSettings(value = {}) {
     ...(value || {}),
     widget: { ...defaultChatbotSettings.widget, ...(value?.widget || {}) }
   };
-  const legacyWidgetColors = {
-    headerColor: { "#111b25": "#1f2a37" },
-    accentColor: { "#e84c70": "#f5b301", "#087f7b": "#f5b301" },
-    botBubbleColor: { "#e8f6f4": "#FFF8E0", "#e5f6f3": "#FFF8E0", "#e8f5f3": "#FFF8E0" },
-    userBubbleColor: { "#111b25": "#ffffff", "#1f2a37": "#ffffff" }
-  };
-  for (const [key, replacements] of Object.entries(legacyWidgetColors)) {
-    const current = String(merged.widget[key] || "").toLowerCase();
-    if (replacements[current]) merged.widget[key] = replacements[current];
-  }
+  // Aqui vivia una tabla que reescribia los colores guardados a los de Honey
+  // Whale en cada lectura (accent -> #f5b301, burbuja del bot -> #FFF8E0, etc.).
+  // No normalizaba formato, solo imponia marca, y pisaba lo que el tenant
+  // hubiera elegido. El color guardado se respeta tal cual.
   if (!String(merged.prompt || "").trim()) merged.prompt = defaultChatbotPrompt;
   return {
     ...merged,

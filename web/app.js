@@ -40,7 +40,7 @@ function setTheme(theme, persist = true) {
   if (persist) localStorage.setItem(themeStorageKey, selected);
 }
 
-setTheme(localStorage.getItem(themeStorageKey) || document.documentElement.dataset.theme || "light", false);
+setTheme(localStorage.getItem(themeStorageKey) || document.documentElement.dataset.theme || "dark", false);
 
 function notify(message, type = "ok", detail = "") {
   const region = $("#toast-region");
@@ -1330,7 +1330,7 @@ function bindStaticEvents() {
       setTheme(themeToggle.checked ? "dark" : "light");
       notify(themeToggle.checked ? "Tema oscuro activo" : "Tema claro activo", "info");
     });
-    setTheme(localStorage.getItem(themeStorageKey) || "light", false);
+    setTheme(localStorage.getItem(themeStorageKey) || "dark", false);
   }
 
   $("#chat-form").addEventListener("submit", async (event) => {

@@ -131,6 +131,23 @@
   --warm-160: #fdf2cf;
   --warm-170: #e7e3d8;
 
+  /* neutral: la base del producto. Escala fria y desaturada; la rampa warm
+     queda solo para los restos de la identidad crema que aun no se retiran. */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f4f4f5;
+  --neutral-200: #e4e4e7;
+  --neutral-300: #d4d4d8;
+  --neutral-400: #a1a1aa;
+  --neutral-500: #8b8b93;
+  --neutral-600: #64646d;
+  --neutral-700: #52525b;
+  --neutral-800: #3f3f46;
+  --neutral-850: #27272a;
+  --neutral-900: #18181b;
+  --neutral-950: #111113;
+  --neutral-1000: #0a0a0a;
+
   /* yellow */
   --yellow-10: #f5f5f0;
   --yellow-20: #e0dbd0;
@@ -170,13 +187,13 @@
   /* Color propio de cada marketplace: no es decoracion, identifica al canal. */
   --brand-mercadolibre: var(--yellow-90);
   --brand-amazon: var(--yellow-100);
-  --text-strong: var(--gray-460);
-  --text-hover: var(--gray-340);
-  --text-subtle: var(--gray-170);
-  --surface: var(--gray-10);
-  --surface-sunken: var(--warm-110);
-  --bg: var(--warm-40);
-  --surface-raised: var(--warm-70);
+  --text-strong: var(--neutral-1000);
+  --text-hover: var(--neutral-950);
+  --text-subtle: var(--neutral-600);
+  --surface: var(--neutral-0);
+  --surface-sunken: var(--neutral-100);
+  --bg: var(--neutral-50);
+  --surface-raised: var(--neutral-0);
   --success: var(--green-70);
   --danger: var(--red-60);
   --danger-strong: var(--red-50);
@@ -192,28 +209,46 @@
   --accent-glow: rgba(37, 99, 235, 0.07);
   --row-hover: rgba(37, 99, 235, 0.06);
   --bubble-bot: var(--teal-30);
-  --bubble-agent: var(--warm-140);
-  --neutral-strong: var(--gray-290);
-  --black: var(--gray-460);
-  --white: var(--gray-10);
-  --text: var(--gray-460);
-  --text-muted: var(--gray-190);
-  --border: var(--warm-170);
+  --bubble-agent: var(--neutral-100);
+  --neutral-strong: var(--neutral-850);
+  --black: var(--neutral-1000);
+  --white: var(--neutral-0);
+  --text: var(--neutral-950);
+  --text-muted: var(--neutral-700);
+  --border: var(--neutral-200);
   --topbar-bg: rgba(255, 255, 255, 0.92);
   --accent-hover: #1d4ed8;
   --accent-active: #1e40af;
   --accent-contrast: #ffffff;
-  --border-strong: var(--gray-190);
-  --text-inverse: var(--gray-10);
+  /* --border-strong delimita CONTROLES (campos, interruptor), no tarjetas: la
+     1.4.11 le pide 3:1 contra la superficie, bastante mas que a --border. */
+  --border-strong: var(--neutral-500);
+  --text-inverse: var(--neutral-0);
+  /* Chrome permanentemente oscuro (sidebar, login, cabeceras de preview,
+     burbujas propias). Igual que --black/--white no se invierte con el
+     tema: su contraste se resuelve dentro del propio bloque oscuro. */
+  --chrome-hover: color-mix(in srgb, var(--black) 80%, var(--accent) 20%);
+  --chrome-text-muted: var(--neutral-300);
+  --chrome-text-subtle: var(--neutral-400);
+  --chrome-border: rgba(255, 255, 255, 0.12);
   --success-surface: var(--green-10);
   --success-border: var(--green-50);
   --warning: var(--yellow-50);
-  --warning-surface: var(--warm-60);
+  --warning-surface: #fffbeb;
   --warning-text: var(--yellow-130);
   --danger-surface: var(--red-30);
   --danger-border: var(--red-40);
   --info-surface: var(--blue-30);
   --info-border: var(--blue-130);
+  /* Mismo reparto que --accent/--accent-text: el solido es para FONDOS (lleva
+     blanco encima) y la variante -text es la unica que llega a AA como texto. */
+  --success-text: var(--green-90);
+  --danger-text: var(--red-90);
+  --info-text: var(--blue-150);
+  --teal-text: var(--teal-80);
+  /* --warning solido se queda claro en ambos temas (es una pastilla ambar),
+     asi que el texto que va encima no puede invertirse con el tema. */
+  --warning-contrast: var(--yellow-130);
 
   /* ===== ESPACIADO: escala 4/8 ===== */
   --space-1: 4px;
@@ -392,7 +427,7 @@ button {
   padding: 1.35rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -407,7 +442,7 @@ button {
 
 .form-error {
   min-height: 1.2rem;
-  color: var(--danger-strong);
+  color: var(--danger-text);
   font-size: 0.88rem;
 }
 
@@ -448,7 +483,7 @@ button {
 .brand small,
 .eyebrow {
   display: block;
-  color: var(--gray-160);
+  color: var(--text-subtle);
   font-size: 0.78rem;
 }
 
@@ -514,7 +549,7 @@ h2 {
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--white);
+  background: var(--surface);
   color: var(--text-muted);
   font-size: 0.82rem;
   white-space: nowrap;
@@ -557,14 +592,14 @@ h2 {
 }
 
 .ops-brief {
-  color: var(--gray-10);
+  color: var(--white);
   background:
     linear-gradient(135deg, rgba(37, 99, 235, 0.22), transparent 36%),
-    var(--gray-420);
+    var(--black);
 }
 
 .ops-brief .eyebrow {
-  color: var(--warm-170);
+  color: var(--chrome-text-muted);
 }
 
 .ops-brief h2 {
@@ -594,7 +629,7 @@ h2 {
 .ops-brief-grid span {
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.08);
-  color: var(--warm-100);
+  color: var(--chrome-text-muted);
 }
 
 .ops-status {
@@ -607,7 +642,7 @@ h2 {
 }
 
 .ops-status.warn {
-  background: var(--warm-60);
+  background: var(--warning-surface);
   color: var(--warning-text);
 }
 
@@ -623,9 +658,9 @@ h2 {
 .status-metrics button {
   padding: 1rem;
   text-align: left;
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
   border-radius: 5px;
-  background: var(--white);
+  background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow);
 }
@@ -691,7 +726,7 @@ h2 {
 }
 
 #live-pill {
-  color: var(--success);
+  color: var(--success-text);
   background: rgba(19, 164, 107, 0.1);
   padding: 0.35rem 0.6rem;
   border-radius: 4px;
@@ -710,8 +745,8 @@ h2 {
 .card,
 .rule,
 .faq {
-  border: 1px solid var(--gray-110);
-  background: var(--white);
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 5px;
   padding: 0.85rem;
 }
@@ -766,7 +801,7 @@ h2 {
 
 .status.paused {
   background: var(--warning);
-  color: var(--warning-text);
+  color: var(--warning-contrast);
 }
 
 .status.waiting_for_agent {
@@ -782,7 +817,7 @@ h2 {
   margin: 0.55rem 0 0 0.35rem;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  background: var(--gray-40);
+  background: var(--surface-sunken);
   color: var(--text);
   font-size: 0.72rem;
 }
@@ -823,7 +858,7 @@ h2 {
   min-height: auto;
   padding: 0.65rem 0.75rem;
   background: var(--teal-10);
-  color: var(--neutral-strong);
+  color: var(--text);
   border: 1px solid var(--teal-40);
 }
 
@@ -928,7 +963,7 @@ h2 {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -1103,7 +1138,7 @@ textarea:disabled {
   height: 1.25rem;
   position: relative;
   border-radius: 999px;
-  background: var(--gray-80);
+  background: var(--border-strong);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
   transition: background 0.16s ease;
 }
@@ -1147,7 +1182,7 @@ textarea:disabled {
 
 .row-actions button {
   padding: 0.45rem 0.6rem;
-  background: var(--gray-40);
+  background: var(--surface-sunken);
   color: var(--text);
 }
 
@@ -1165,9 +1200,9 @@ textarea:disabled {
 
 .filters button {
   padding: 8px 12px;
-  background: var(--gray-40);
+  background: var(--surface-sunken);
   color: var(--text);
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
 }
 
 .conversations,
@@ -1277,7 +1312,7 @@ textarea:disabled {
 
 .message.agent {
   margin-left: auto;
-  background: var(--warm-100);
+  background: var(--surface-raised);
   border-color: var(--border);
 }
 
@@ -1313,7 +1348,7 @@ textarea:disabled {
 
 .message.customer::before {
   content: "CLIENTE";
-  color: var(--gray-250);
+  color: var(--neutral-strong);
   background: var(--blue-100);
 }
 
@@ -1344,7 +1379,7 @@ textarea:disabled {
 .hwhub-message-heading {
   padding-bottom: 0.25rem;
   border-bottom: 1px solid rgba(17, 27, 37, 0.13);
-  color: var(--neutral-strong);
+  color: var(--text);
   font-size: 0.92rem;
 }
 
@@ -1378,7 +1413,7 @@ textarea:disabled {
 
 .message-list-content strong,
 .hwhub-message-list strong {
-  color: var(--neutral-strong);
+  color: var(--text);
 }
 
 .message-gap,
@@ -1418,7 +1453,7 @@ textarea:disabled {
   gap: 0.65rem;
   align-items: center;
   padding: 0.55rem;
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.88);
 }
@@ -1452,7 +1487,7 @@ textarea:disabled {
 .product-price,
 .hwhub-product-price {
   margin: 0.25rem 0 0;
-  color: var(--neutral-strong);
+  color: var(--text);
   font-size: 1rem;
   font-weight: 800;
 }
@@ -1468,7 +1503,7 @@ textarea:disabled {
 .product-stock,
 .hwhub-product-stock {
   margin: 0.15rem 0 0;
-  color: var(--success);
+  color: var(--success-text);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -1571,7 +1606,7 @@ textarea:disabled {
 .action-feedback.is-warning {
   color: var(--warning-text);
   border-color: var(--warning);
-  background: var(--warm-60);
+  background: var(--warning-surface);
 }
 
 .action-feedback.is-error {
@@ -1595,18 +1630,18 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid var(--gray-120);
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   padding: 0.72rem 0.8rem;
   color: var(--text);
-  background: var(--white);
+  background: var(--surface-sunken);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: 2px solid var(--accent);
-  border-color: var(--neutral-strong);
+  border-color: var(--border-strong);
 }
 
 textarea {
@@ -1717,9 +1752,9 @@ textarea {
   width: min(520px, calc(100vw - 28px));
   max-height: min(820px, calc(100vh - 120px));
   overflow: hidden;
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
   border-radius: 5px;
-  background: var(--white);
+  background: var(--surface);
   box-shadow: var(--shadow);
   transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
 }
@@ -1781,7 +1816,7 @@ textarea {
   padding: 0.62rem 0.68rem;
   font-size: 0.82rem;
   border-radius: 4px;
-  border-color: var(--gray-120);
+  border-color: var(--border);
 }
 
 .hwhub-widget-profile-screen textarea {
@@ -1810,7 +1845,7 @@ textarea {
 .hwhub-widget-error.is-warning:not(:empty) {
   color: var(--warning-text);
   border-color: var(--warning);
-  background: var(--warm-60);
+  background: var(--warning-surface);
 }
 
 .hwhub-widget-error.is-error:not(:empty) {
@@ -1832,9 +1867,9 @@ textarea {
 }
 
 .hwhub-widget-form-actions button:first-child {
-  background: var(--gray-40);
+  background: var(--surface-sunken);
   color: var(--text);
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
 }
 
 .hwhub-widget-chat-screen {
@@ -1849,7 +1884,7 @@ textarea {
   overflow-y: auto;
   padding: 0.35rem;
   background: var(--blue-50);
-  border: 1px solid var(--gray-110);
+  border: 1px solid var(--border);
   border-radius: 5px;
 }
 
@@ -1911,7 +1946,7 @@ textarea {
   width: 100%;
   min-height: 86px;
   resize: vertical;
-  border: 1px solid var(--gray-120);
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.75rem;
   font: inherit;
@@ -1976,8 +2011,8 @@ button.is-busy::after {
   border: 1px solid rgba(17, 17, 17, 0.12);
   border-left: 5px solid var(--accent);
   border-radius: var(--radius-md);
-  background: var(--gray-10);
-  color: var(--gray-410);
+  background: var(--surface);
+  color: var(--text);
   padding: 0.75rem 0.9rem;
   box-shadow: 0 18px 42px rgba(17, 17, 17, 0.18);
   font-size: 0.9rem;
@@ -2025,7 +2060,7 @@ a:focus-visible {
 .login-screen {
   background:
     radial-gradient(circle at 20% 12%, rgba(37, 99, 235, 0.22), transparent 30%),
-    linear-gradient(135deg, var(--gray-450), var(--gray-400) 56%, var(--gray-350));
+    linear-gradient(135deg, var(--black), var(--neutral-strong) 56%, var(--black));
 }
 
 .login-card {
@@ -2042,7 +2077,7 @@ a:focus-visible {
 
 .brand-mark {
   border: 1px solid rgba(37, 99, 235, 0.45);
-  background: linear-gradient(145deg, var(--gray-410), var(--gray-310) 42%, var(--accent));
+  background: linear-gradient(145deg, var(--black), var(--neutral-strong) 42%, var(--accent));
   color: var(--white);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -2053,7 +2088,7 @@ a:focus-visible {
   gap: 1.4rem;
   background:
     linear-gradient(180deg, rgba(37, 99, 235, 0.12), transparent 34%),
-    var(--gray-430);
+    var(--black);
   border-right: 1px solid rgba(255, 255, 255, 0.10);
 }
 
@@ -2069,7 +2104,7 @@ a:focus-visible {
 
 .brand small,
 .eyebrow {
-  color: var(--gray-180);
+  color: var(--chrome-text-subtle);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -2084,7 +2119,7 @@ a:focus-visible {
   border: 1px solid transparent;
   border-left: 3px solid transparent;
   border-radius: var(--radius-md);
-  color: var(--gray-60);
+  color: var(--chrome-text-muted);
   font-weight: 700;
 }
 
@@ -2093,7 +2128,7 @@ a:focus-visible {
   background: var(--accent);
   color: var(--accent-contrast);
   border-color: rgba(255, 255, 255, 0.16);
-  border-left-color: var(--warm-130);
+  border-left-color: var(--accent);
 }
 
 main {
@@ -2128,7 +2163,7 @@ main {
 
 .top-actions button#simulate-marketplace,
 #logout-button {
-  background: var(--gray-410);
+  background: var(--black);
 }
 
 .role-switch,
@@ -2140,9 +2175,9 @@ main {
 input,
 select,
 textarea {
-  border-color: var(--gray-90);
+  border-color: var(--border-strong);
   border-radius: var(--radius-md);
-  background: var(--white);
+  background: var(--surface-sunken);
 }
 
 input,
@@ -2275,7 +2310,7 @@ textarea {
 
 .metrics span,
 .status-metrics span {
-  color: var(--gray-200);
+  color: var(--text-muted);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -2283,12 +2318,12 @@ textarea {
 
 .metrics strong,
 .status-metrics strong {
-  color: var(--gray-410);
+  color: var(--text);
 }
 
 .status-metrics button:hover:not(:disabled) {
   border-color: var(--accent);
-  background: var(--warm-10);
+  background: var(--surface-sunken);
 }
 
 .conversation-workspace {
@@ -2302,12 +2337,12 @@ textarea {
 }
 
 .conversations {
-  background: var(--gray-20);
+  background: var(--surface);
   padding-right: 0.8rem;
 }
 
 .conversation-detail {
-  background: var(--gray-10);
+  background: var(--surface);
 }
 
 .conversations header,
@@ -2366,9 +2401,9 @@ textarea {
 .row-actions button,
 .form-actions button:first-child,
 .hwhub-widget-form-actions button:first-child {
-  border: 1px solid var(--gray-70);
-  background: var(--gray-40);
-  color: var(--gray-410);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text);
 }
 
 .row-actions button.danger,
@@ -2379,7 +2414,7 @@ button.danger {
 }
 
 .conversation-card {
-  background: var(--gray-10);
+  background: var(--surface);
 }
 
 .conversation-card:hover,
@@ -2400,7 +2435,7 @@ button.danger {
 }
 
 .status.closed {
-  background: var(--gray-240);
+  background: var(--neutral-strong);
 }
 
 .status.paused {
@@ -2417,7 +2452,7 @@ button.danger {
 }
 
 .conversation-context article {
-  background: var(--gray-20);
+  background: var(--surface-sunken);
   border-color: rgba(17, 17, 17, 0.08);
 }
 
@@ -2425,7 +2460,7 @@ button.danger {
   border-color: rgba(17, 17, 17, 0.08);
   background:
     linear-gradient(180deg, rgba(37, 99, 235, 0.04), transparent 30%),
-    var(--gray-30);
+    var(--surface-sunken);
 }
 
 .message {
@@ -2434,8 +2469,8 @@ button.danger {
 }
 
 .message.customer {
-  background: var(--gray-410);
-  color: var(--gray-10);
+  background: var(--black);
+  color: var(--white);
 }
 
 .message.customer small {
@@ -2448,18 +2483,18 @@ button.danger {
 }
 
 .message.bot {
-  background: var(--warm-90);
+  background: var(--surface-sunken);
   border-color: var(--border);
 }
 
 .message.agent {
-  background: var(--gray-10);
+  background: var(--surface);
   border-color: var(--border);
 }
 
 .timeline-event {
   border-left-color: var(--accent);
-  background: var(--gray-20);
+  background: var(--surface-sunken);
 }
 
 .conversation-actions {
@@ -2478,7 +2513,7 @@ button.danger {
   padding: 0.75rem;
   border: 1px solid rgba(17, 17, 17, 0.08);
   border-radius: var(--radius-md);
-  background: var(--gray-20);
+  background: var(--surface-sunken);
 }
 
 .reply-form input {
@@ -2490,7 +2525,7 @@ button.danger {
 .widget-preview-panel,
 .chatbot-test-box,
 .embed-box {
-  background: var(--gray-20);
+  background: var(--surface-sunken);
 }
 
 .editor {
@@ -2498,8 +2533,8 @@ button.danger {
 }
 
 .block-heading > span {
-  background: var(--gray-410);
-  color: var(--accent);
+  background: var(--surface-raised);
+  color: var(--accent-text);
 }
 
 .chatbot-config-header .status {
@@ -2511,7 +2546,7 @@ button.danger {
 }
 
 .widget-preview-header {
-  background: var(--gray-410);
+  background: var(--black);
 }
 
 .widget-preview-button {
@@ -2521,7 +2556,7 @@ button.danger {
 
 .compact-flow div {
   border-color: var(--border);
-  background: var(--warm-90);
+  background: var(--surface-sunken);
 }
 
 .rich-link,
@@ -2831,14 +2866,14 @@ body {
 
 .sidebar a:hover {
   background: color-mix(in srgb, var(--black) 80%, var(--accent) 20%);
-  color: var(--gray-10);
+  color: var(--white);
   border-left-color: color-mix(in srgb, var(--accent) 72%, transparent);
 }
 
 .sidebar a.active {
   background: var(--accent);
   color: var(--accent-contrast);
-  border-left-color: var(--warm-130);
+  border-left-color: var(--accent);
 }
 
 .topbar {
@@ -2850,7 +2885,7 @@ button,
 .top-actions button#simulate-marketplace,
 #logout-button {
   background: var(--black);
-  color: var(--gray-10);
+  color: var(--white);
 }
 
 button:hover:not(:disabled),
@@ -2880,7 +2915,7 @@ button:hover:not(:disabled),
 }
 
 .brand-mark {
-  background: linear-gradient(135deg, var(--gray-10), var(--accent));
+  background: linear-gradient(135deg, var(--white), var(--accent));
   color: var(--black);
 }
 
@@ -2900,7 +2935,7 @@ textarea:focus {
 .conversation-card:hover,
 .conversation-card.selected {
   border-color: var(--accent);
-  background: var(--warm-20);
+  background: var(--accent-subtle);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
@@ -2912,7 +2947,7 @@ textarea:focus {
 
 .hwhub-widget-button {
   background: var(--black);
-  color: var(--gray-10);
+  color: var(--white);
 }
 
 .hwhub-widget-button:hover {
@@ -2929,25 +2964,49 @@ html[data-theme="dark"] {
   color-scheme: dark;
 
   /* Solo semanticos: un componente nuevo sale bien en oscuro sin regla propia. */
+  /* --accent NO se aclara: se usa como fondo y blanco encima solo llega a AA
+     mientras se mantenga en este tono. El azul vivo va en --accent-text. */
   --accent: #2f6df0;
   --accent-hover: #3b82f6;
   --accent-subtle: rgba(47, 109, 240, 0.16);
   --accent-text: #93b4fb;
-  --text-strong: var(--gray-10);
-  --text-subtle: var(--gray-210);
-  --surface: var(--gray-370);
-  --surface-sunken: var(--gray-390);
-  --bg: var(--gray-440);
+  --text-strong: var(--neutral-0);
+  --text: var(--neutral-50);
+  --text-hover: var(--neutral-0);
+  --text-muted: var(--neutral-400);
+  --text-subtle: var(--neutral-500);
+  --surface: var(--neutral-950);
+  --surface-raised: var(--neutral-900);
+  --surface-sunken: var(--neutral-1000);
+  --bg: var(--neutral-1000);
+  --border: var(--neutral-850);
+  --border-strong: var(--neutral-600);
+  /* --black/--white/--neutral-strong son alias de color literal, no superficies:
+     no se invierten por tema porque se usan en pares (fondo oscuro + --white
+     encima, o texto oscuro sobre una pastilla que sigue clara en ambos temas). */
+  --text-inverse: var(--neutral-1000);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 22px rgba(0, 0, 0, 0.38);
   --accent-glow: rgba(47, 109, 240, 0.10);
   --row-hover: rgba(47, 109, 240, 0.12);
   --bubble-bot: var(--teal-100);
-  --bubble-agent: var(--gray-320);
-  --text: var(--gray-10);
-  --text-muted: var(--gray-170);
-  --border: var(--gray-300);
+  --bubble-agent: var(--neutral-850);
   --topbar-bg: rgba(10, 10, 10, 0.92);
+
+  /* Superficies de estado: en oscuro el chip crema deslumbra sobre casi-negro,
+     asi que se invierte a tinte oscuro con el texto claro. */
+  --success-surface: #0c2018;
+  --success-border: #14532d;
+  --warning-surface: #241a05;
+  --warning-text: #fbbf24;
+  --danger-surface: #2a1113;
+  --danger-border: #7f1d1d;
+  --info-surface: #0e1c33;
+  --info-border: #1e3a8a;
+  --success-text: #34d399;
+  --danger-text: #f87171;
+  --info-text: #93b4fb;
+  --teal-text: #2dd4bf;
 }
 
 body {
@@ -3060,7 +3119,7 @@ tbody tr:hover {
 .message.customer,
 .hwhub-widget-message.customer {
   background: var(--black);
-  color: var(--gray-10);
+  color: var(--white);
 }
 
 .toast {
@@ -3120,7 +3179,7 @@ tbody tr:hover {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--gray-10);
+  background: var(--white);
   box-shadow: 0 2px 7px rgba(31, 42, 55, 0.25);
   transition: transform 0.15s ease, background 0.15s ease;
 }
@@ -3141,7 +3200,7 @@ html[data-theme="dark"] .sidebar {
 
 html[data-theme="dark"] .brand-mark {
   background: linear-gradient(135deg, var(--accent), var(--black));
-  color: var(--gray-10);
+  color: var(--white);
 }
 
 html[data-theme="dark"] button.secondary,
@@ -3190,7 +3249,7 @@ body.wh-app {
   width: var(--sidebar-width);
   padding: 1rem;
   gap: 1rem;
-  background: var(--text);
+  background: var(--black);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 12px 0 32px rgba(31, 42, 55, 0.16);
 }
@@ -3206,19 +3265,19 @@ body.wh-app {
   height: 44px;
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  background: linear-gradient(145deg, var(--gray-10), var(--accent));
+  background: linear-gradient(145deg, var(--white), var(--accent));
   color: var(--text);
 }
 
 .wh-brand strong {
   display: block;
-  color: var(--gray-10);
+  color: var(--white);
   font-size: 0.98rem;
   letter-spacing: 0.01em;
 }
 
 .wh-brand small {
-  color: var(--gray-130);
+  color: var(--chrome-text-muted);
   text-transform: none;
   letter-spacing: 0.02em;
 }
@@ -3237,7 +3296,7 @@ body.wh-app {
 
 .wh-nav-group > span {
   padding: 0.2rem 0.75rem;
-  color: var(--gray-140);
+  color: var(--chrome-text-subtle);
   font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -3259,15 +3318,15 @@ body.wh-app {
 }
 
 .wh-sidebar .wh-nav a:hover {
-  background: var(--text-hover);
-  color: var(--gray-10);
+  background: var(--chrome-hover);
+  color: var(--white);
   border-left-color: color-mix(in srgb, var(--accent) 75%, white);
 }
 
 .wh-sidebar .wh-nav a.active {
   background: var(--accent);
   color: var(--accent-contrast);
-  border-left-color: var(--warm-130);
+  border-left-color: var(--accent);
   box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
@@ -3314,7 +3373,7 @@ main.wh-main {
   border: 1px solid color-mix(in srgb, var(--success) 26%, var(--border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 11%, var(--surface));
-  color: var(--success);
+  color: var(--success-text);
   font-size: 0.76rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -3388,8 +3447,8 @@ main.wh-main {
 
 .wh-btn.is-dark,
 .wh-app .btn.is-dark {
-  background: var(--text);
-  color: var(--gray-10);
+  background: var(--black);
+  color: var(--white);
 }
 
 .wh-chip,
@@ -3593,7 +3652,7 @@ main.wh-main {
 
 .wh-conv-avatar.is-whatsapp {
   background: var(--green-60);
-  color: var(--gray-10);
+  color: var(--white);
 }
 
 .wh-conv-avatar.is-mercadolibre {
@@ -3605,8 +3664,8 @@ main.wh-main {
 }
 
 .wh-conv-avatar.is-web {
-  background: var(--gray-260);
-  color: var(--gray-10);
+  background: var(--neutral-strong);
+  color: var(--white);
 }
 
 .wh-conv-main {
@@ -3668,13 +3727,13 @@ main.wh-main {
 
 .wh-conv-tag.status-bot_active {
   border-color: color-mix(in srgb, var(--success) 32%, var(--border));
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .wh-conv-tag.status-agent_active,
 .wh-conv-tag.status-waiting_for_agent {
   border-color: color-mix(in srgb, var(--info) 32%, var(--border));
-  color: var(--info);
+  color: var(--info-text);
 }
 
 .wh-conv-tag.status-paused,
@@ -3760,9 +3819,9 @@ main.wh-main {
 
 .message.msg.me {
   align-self: flex-end;
-  background: var(--text);
-  color: var(--gray-10);
-  border-color: var(--text);
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
 }
 
 .message.msg.bot {
@@ -3965,8 +4024,8 @@ body.wh-app {
   width: var(--sidebar-width);
   padding: 0;
   gap: 0;
-  background: var(--text);
-  border-right: 1px solid var(--gray-320);
+  background: var(--black);
+  border-right: 1px solid var(--chrome-border);
   box-shadow: none;
 }
 
@@ -3988,12 +4047,12 @@ body.wh-app {
 }
 
 .wh-brand strong {
-  color: var(--gray-10);
+  color: var(--white);
   font-size: 15px;
 }
 
 .wh-brand small {
-  color: var(--text-muted);
+  color: var(--chrome-text-subtle);
   font-size: 10px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -4010,7 +4069,7 @@ body.wh-app {
 
 .wh-nav-group > span {
   padding: 14px 12px 6px;
-  color: var(--gray-230);
+  color: var(--chrome-text-subtle);
   font-size: 9.5px;
   letter-spacing: 1.4px;
 }
@@ -4021,14 +4080,14 @@ body.wh-app {
   padding: 9px 12px;
   border: 0;
   border-radius: 9px;
-  color: var(--gray-150);
+  color: var(--chrome-text-muted);
   font-size: 12.5px;
   font-weight: 600;
 }
 
 .wh-sidebar .wh-nav a:hover {
-  background: var(--text-hover);
-  color: var(--gray-10);
+  background: var(--chrome-hover);
+  color: var(--white);
 }
 
 .wh-sidebar .wh-nav a.active {
@@ -4087,7 +4146,7 @@ main.wh-main {
   padding: 4px 10px;
   background: var(--green-20);
   border: 0;
-  color: var(--success);
+  color: var(--success-text);
   font-size: 11px;
   text-transform: none;
 }
@@ -4207,18 +4266,14 @@ html[data-theme="dark"] .wh-live-pill {
   min-height: 78px;
   padding: 13px 16px;
   border: 0;
-  border-bottom: 1px solid var(--warm-150);
+  border-bottom: 1px solid var(--border);
   border-left: 3px solid transparent;
   border-radius: 0;
   box-shadow: none;
 }
 
-html[data-theme="dark"] .conversation-card.wh-conv {
-  border-bottom-color: var(--gray-330);
-}
-
 .conversation-card.wh-conv:hover {
-  background: var(--warm-50);
+  background: var(--surface-sunken);
   box-shadow: none;
 }
 
@@ -4227,14 +4282,6 @@ html[data-theme="dark"] .conversation-card.wh-conv {
   border-left-color: var(--accent);
   background: var(--surface);
   box-shadow: none;
-}
-
-html[data-theme="dark"] .conversation-card.wh-conv:hover {
-  background: var(--gray-380);
-}
-
-html[data-theme="dark"] .conversation-card.wh-conv.selected {
-  background: var(--gray-350);
 }
 
 .wh-conv-avatar {
@@ -4247,10 +4294,6 @@ html[data-theme="dark"] .conversation-card.wh-conv.selected {
 .wh-conv .conversation-card-head strong {
   color: var(--text);
   font-size: 12.5px;
-}
-
-html[data-theme="dark"] .wh-conv .conversation-card-head strong {
-  color: var(--gray-10);
 }
 
 .wh-conv .conversation-card-head span {
@@ -4281,7 +4324,7 @@ html[data-theme="dark"] .wh-conv .conversation-card-head strong {
 .wh-conv-tag.status-bot_active,
 .wh-conv-tag.status-paused {
   background: var(--blue-80);
-  color: var(--gray-220);
+  color: var(--neutral-strong);
 }
 
 .wh-conv-tag.status-agent_active,
@@ -4292,12 +4335,12 @@ html[data-theme="dark"] .wh-conv .conversation-card-head strong {
 
 .wh-conv-tag.status-closed {
   background: var(--green-20);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .wh-conv-tag.is-urgent {
   background: var(--red-20);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .wh-unread-dot {
@@ -4310,12 +4353,7 @@ html[data-theme="dark"] .wh-conv .conversation-card-head strong {
 }
 
 .wh-inbox-thread {
-  background: var(--warm-30);
-}
-
-html[data-theme="dark"] .wh-inbox-thread,
-html[data-theme="dark"] .wh-thread-body {
-  background: var(--gray-390);
+  background: var(--bg);
 }
 
 .wh-thread-header {
@@ -4326,7 +4364,7 @@ html[data-theme="dark"] .wh-thread-body {
 
 .wh-thread-body {
   padding: 22px 18px;
-  background: var(--warm-30);
+  background: var(--bg);
 }
 
 .wh-thread-messages {
@@ -4365,8 +4403,8 @@ html[data-theme="dark"] .wh-thread-body {
 
 .message.msg.me .message-body {
   border-bottom-right-radius: 4px;
-  background: var(--text);
-  color: var(--gray-10);
+  background: var(--black);
+  color: var(--white);
 }
 
 .message.msg.bot .message-body {
@@ -4374,12 +4412,6 @@ html[data-theme="dark"] .wh-thread-body {
   border-bottom-right-radius: 4px;
   background: var(--accent-subtle);
   color: var(--text);
-}
-
-html[data-theme="dark"] .message.msg.them .message-body {
-  border-color: var(--gray-280);
-  background: var(--gray-330);
-  color: var(--gray-50);
 }
 
 html[data-theme="dark"] .message.msg.me .message-body {
@@ -4415,7 +4447,7 @@ html[data-theme="dark"] .message.msg.me .message-body {
 
 .wh-quick-replies button {
   border-color: var(--border);
-  background: var(--warm-120);
+  background: var(--surface-sunken);
   color: var(--text-muted);
 }
 
@@ -4904,9 +4936,9 @@ main.wh-main {
 
 .top-actions button {
   min-height: 38px;
-  border: 1px solid var(--text);
-  background: var(--text);
-  color: var(--gray-10);
+  border: 1px solid var(--black);
+  background: var(--black);
+  color: var(--white);
 }
 
 .top-actions button#simulate-whatsapp {
@@ -4916,8 +4948,8 @@ main.wh-main {
 }
 
 .top-actions button#simulate-marketplace {
-  border-color: var(--text);
-  background: var(--text);
+  border-color: var(--black);
+  background: var(--black);
 }
 
 .wh-live-pill {
@@ -5109,16 +5141,16 @@ main.wh-main {
 .editor button,
 #save-integration,
 #copy-widget-code {
-  border-color: var(--text);
-  background: var(--text);
-  color: var(--gray-10);
+  border-color: var(--black);
+  background: var(--black);
+  color: var(--white);
 }
 
 button.danger,
 .row-actions button.danger {
   border-color: rgba(214, 69, 47, 0.18);
   background: var(--red-20);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .list-panel .cards,
@@ -5222,10 +5254,10 @@ button.danger,
 }
 
 .wh-thread-messages .message.msg.me .message-body {
-  border-color: var(--text);
+  border-color: var(--black);
   border-bottom-right-radius: 5px;
-  background: var(--text);
-  color: var(--gray-10);
+  background: var(--black);
+  color: var(--white);
 }
 
 .wh-thread-messages .message.msg.bot .message-body {
@@ -5259,12 +5291,6 @@ button.danger,
   margin: 0 0 2px;
   background: transparent;
   color: var(--accent-text);
-}
-
-html[data-theme="dark"] .wh-thread-messages .message.msg.them .message-body {
-  border-color: var(--gray-280);
-  background: var(--gray-330);
-  color: var(--gray-50);
 }
 
 html[data-theme="dark"] .wh-thread-messages .message.msg.me .message-body {
@@ -5501,7 +5527,7 @@ html[data-theme="dark"] .filters select {
   }
 
   .wh-sidebar .wh-nav a.active {
-    color: var(--accent);
+    color: var(--accent-text);
     border-top-color: var(--accent);
     background: transparent;
   }
@@ -5636,7 +5662,7 @@ html[data-theme="dark"] .filters select {
   max-width: 540px;
   max-height: 90vh;
   overflow: hidden;
-  background: var(--white);
+  background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
   animation: modalContainerIn 200ms ease;
@@ -5658,7 +5684,7 @@ html[data-theme="dark"] .filters select {
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 0.02em;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .modal-header .modal-title {
@@ -5675,7 +5701,7 @@ html[data-theme="dark"] .filters select {
   gap: 0;
   flex: 0 0 auto;
   padding: 14px 18px;
-  background: var(--white);
+  background: var(--surface);
   border-bottom: 0.5px solid var(--border);
 }
 
@@ -5724,8 +5750,8 @@ html[data-theme="dark"] .filters select {
 }
 
 .step-item.is-active .step-circle {
-  background: var(--black);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 .step-item.is-active .step-label {
@@ -5742,7 +5768,7 @@ html[data-theme="dark"] .filters select {
   content: "\2713";
   font-size: 14px;
   font-weight: 800;
-  color: var(--black);
+  color: var(--accent-contrast);
 }
 
 .step-item.is-done .step-label {
@@ -5790,7 +5816,7 @@ html[data-theme="dark"] .filters select {
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 800;
-  color: var(--black);
+  color: var(--text-strong);
 }
 
 /* ---- Campos ---- */
@@ -5818,7 +5844,7 @@ html[data-theme="dark"] .filters select {
   padding: 9px 12px;
   border: 0.5px solid var(--border);
   border-radius: 8px;
-  background: var(--white);
+  background: var(--surface);
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -5853,7 +5879,7 @@ html[data-theme="dark"] .filters select {
   gap: 8px;
   flex: 0 0 auto;
   padding: 12px 18px;
-  background: var(--white);
+  background: var(--surface);
   border-top: 0.5px solid var(--border);
 }
 
@@ -5873,7 +5899,7 @@ html[data-theme="dark"] .filters select {
 
 .modal-footer .modal-btn-back {
   margin-right: auto;
-  background: var(--white);
+  background: var(--surface-sunken);
   color: var(--text);
   border-color: var(--border);
 }
@@ -5945,7 +5971,7 @@ html[data-theme="dark"] .filters select {
     padding: 9px 12px;
     border: 0;
     border-radius: var(--radius-sm);
-    color: var(--gray-50);
+    color: var(--chrome-text-muted);
     font-size: 13px;
     font-weight: 700;
     text-decoration: none;
@@ -5965,7 +5991,7 @@ html[data-theme="dark"] .filters select {
 
   .wh-sidebar .wh-nav a.s-link:hover {
     background: rgba(255, 255, 255, 0.08);
-    color: var(--gray-10);
+    color: var(--white);
   }
 
   .wh-sidebar .wh-nav a.s-link.active {
@@ -6065,7 +6091,7 @@ html[data-theme="dark"] .filters select {
     gap: 2px;
     border: 0;
     background: transparent;
-    color: var(--gray-100);
+    color: var(--chrome-text-muted);
     font-size: 10px;
     font-weight: 700;
     text-decoration: none;
@@ -6077,7 +6103,7 @@ html[data-theme="dark"] .filters select {
   }
 
   .bottom-nav-item.active {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   .wh-main,
@@ -6139,7 +6165,7 @@ html[data-theme="dark"] .filters select {
 }
 
 .msg-bubble--client {
-  background: var(--gray-10);
+  background: var(--surface);
   border: 0.5px solid var(--border);
   color: var(--text);
   border-radius: 10px 10px 2px 10px;
@@ -6151,14 +6177,14 @@ html[data-theme="dark"] .filters select {
 }
 
 .msg-bubble--agent {
-  background: var(--gray-460);
-  color: var(--gray-10);
+  background: var(--black);
+  color: var(--white);
   border-radius: 10px 10px 10px 2px;
 }
 
 .msg-bubble--agent .msg-avatar {
-  background: var(--gray-270);
-  color: var(--gray-10);
+  background: var(--neutral-strong);
+  color: var(--white);
 }
 
 .msg-bubble--bot {
@@ -6377,7 +6403,7 @@ html[data-theme="dark"] .filters select {
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   background: var(--pv-base);
-  color: var(--gray-10);
+  color: var(--white);
   font-size: 13px;
   font-weight: 700;
 }
@@ -6434,7 +6460,7 @@ html[data-theme="dark"] .filters select {
   padding: 7px 16px;
   border: none;
   border-radius: 7px;
-  background: var(--gray-460);
+  background: var(--black);
   color: var(--accent-contrast);
   font-size: 12px;
   font-weight: 500;
@@ -6469,7 +6495,7 @@ html[data-theme="dark"] .filters select {
   min-height: 56px;
   padding: 12px 16px;
   margin: 0;
-  background: var(--gray-10);
+  background: var(--surface);
   border-bottom: 0.5px solid var(--border);
 }
 
@@ -6481,7 +6507,7 @@ html[data-theme="dark"] .filters select {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--gray-460);
+  color: var(--text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6509,9 +6535,9 @@ html[data-theme="dark"] .filters select {
   white-space: nowrap;
 }
 
-.sse-status.is-online { color: var(--success); }
+.sse-status.is-online { color: var(--success-text); }
 .sse-status.is-reconnecting { color: var(--warning-text); }
-.sse-status.is-down { color: var(--danger-strong); }
+.sse-status.is-down { color: var(--danger-text); }
 
 /* A3: chips de accion rapida */
 .wh-quick-replies {
@@ -6541,7 +6567,7 @@ html[data-theme="dark"] .filters select {
   align-items: center;
   gap: 5px;
   margin-top: 10px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 500;
   font-size: 13px;
   text-decoration: none;
