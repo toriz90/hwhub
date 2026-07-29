@@ -2,8 +2,8 @@
   color-scheme: light;
 
   /* ===== PRIMITIVAS: un paso por color real de la interfaz. Los componentes
-     no deberian consumirlas directamente; existen para que la capa semantica
-     tenga de donde elegir y para que Fase 1 pueda podar la rampa. ===== */
+     NO las consumen: solo la capa semantica de abajo lee de aqui. Si un
+     componente necesita un color que ningun token nombra, el token falta. ===== */
   /* blue */
   --blue-10: #fbfcfd;
   --blue-20: #f8fafc;
@@ -27,54 +27,6 @@
   --blue-200: #17212d;
   --blue-210: #111b25;
   --blue-220: #050b12;
-
-  /* gray */
-  --gray-10: #ffffff;
-  --gray-20: #fbfbfb;
-  --gray-30: #f7f8fa;
-  --gray-40: #eef1f5;
-  --gray-50: #e7e9ed;
-  --gray-60: #dce3ea;
-  --gray-70: #d6dbe3;
-  --gray-80: #cbd5e1;
-  --gray-90: #cfd6df;
-  --gray-100: #cfd3da;
-  --gray-110: #c7d0db;
-  --gray-120: #c2ccd7;
-  --gray-130: #bec7d1;
-  --gray-140: #aeb8c4;
-  --gray-150: #aab0b9;
-  --gray-160: #8fa3b7;
-  --gray-170: #9aa0a8;
-  --gray-180: #8b95a3;
-  --gray-190: #667085;
-  --gray-200: #6b7280;
-  --gray-210: #6c7280;
-  --gray-220: #5a6577;
-  --gray-230: #5b616b;
-  --gray-240: #4b5563;
-  --gray-250: #405164;
-  --gray-260: #3b4252;
-  --gray-270: #333333;
-  --gray-280: #2a3038;
-  --gray-290: #1f2a37;
-  --gray-300: #262b33;
-  --gray-310: #2a2a2a;
-  --gray-320: #23262d;
-  --gray-330: #1c2128;
-  --gray-340: #1c2027;
-  --gray-350: #1a1f26;
-  --gray-360: #151c24;
-  --gray-370: #171b21;
-  --gray-380: #15191f;
-  --gray-390: #12151a;
-  --gray-400: #181818;
-  --gray-410: #111111;
-  --gray-420: #101010;
-  --gray-430: #0b0b0c;
-  --gray-440: #0a0a0a;
-  --gray-450: #050506;
-  --gray-460: #000000;
 
   /* green */
   --green-10: #ecfdf5;
@@ -112,27 +64,8 @@
   --teal-90: #065f5b;
   --teal-100: #173733;
 
-  /* warm */
-  --warm-10: #fffdf7;
-  --warm-20: #fffdf4;
-  --warm-30: #fcfaf3;
-  --warm-40: #fffdf0;
-  --warm-50: #fdfbf4;
-  --warm-60: #fffbeb;
-  --warm-70: #f7f3e8;
-  --warm-80: #fff8e0;
-  --warm-90: #fff8dc;
-  --warm-100: #fff7db;
-  --warm-110: #f6f1e5;
-  --warm-120: #f4f1e8;
-  --warm-130: #fff7d6;
-  --warm-140: #fff6d8;
-  --warm-150: #f0ece0;
-  --warm-160: #fdf2cf;
-  --warm-170: #e7e3d8;
-
-  /* neutral: la base del producto. Escala fria y desaturada; la rampa warm
-     queda solo para los restos de la identidad crema que aun no se retiran. */
+  /* neutral: la base del producto. Escala fria y desaturada; sustituye por
+     completo a la rampa crema de la identidad anterior, ya retirada. */
   --neutral-0: #ffffff;
   --neutral-50: #fafafa;
   --neutral-100: #f4f4f5;
@@ -194,7 +127,10 @@
   --surface-sunken: var(--neutral-100);
   --bg: var(--neutral-50);
   --surface-raised: var(--neutral-0);
-  --success: var(--green-70);
+  /* Como --accent: el solido es para FONDOS y siempre lleva blanco encima, asi
+     que tiene que ser lo bastante oscuro para llegar a AA (green-70 se quedaba
+     en 3.77). El verde vivo para texto va en --success-text. */
+  --success: var(--green-90);
   --danger: var(--red-60);
   --danger-strong: var(--red-50);
   --info: var(--blue-140);
@@ -246,6 +182,10 @@
   --danger-text: var(--red-90);
   --info-text: var(--blue-150);
   --teal-text: var(--teal-80);
+  /* Pastilla neutra (etiqueta de rol, fecha del hilo): no es un estado,
+     asi que no toma color de familia; solo separa del fondo. */
+  --chip-surface: var(--neutral-100);
+  --teal-surface: var(--teal-20);
   /* --warning solido se queda claro en ambos temas (es una pastilla ambar),
      asi que el texto que va encima no puede invertirse con el tema. */
   --warning-contrast: var(--yellow-130);
@@ -489,7 +429,7 @@ button {
 
 .sidebar a {
   display: block;
-  color: var(--blue-90);
+  color: var(--chrome-text-muted);
   text-decoration: none;
   padding: 0.82rem 0.9rem;
   border-radius: 4px;
@@ -637,8 +577,8 @@ h2 {
 }
 
 .ops-status.ok {
-  background: var(--green-10);
-  color: var(--green-90);
+  background: var(--success-surface);
+  color: var(--success-text);
 }
 
 .ops-status.warn {
@@ -647,8 +587,8 @@ h2 {
 }
 
 .ops-status.info {
-  background: var(--blue-30);
-  color: var(--blue-150);
+  background: var(--info-surface);
+  color: var(--info-text);
 }
 
 .metrics article {
@@ -829,7 +769,7 @@ h2 {
 
 .priority.urgent {
   background: rgba(232, 76, 112, 0.14);
-  color: var(--red-80);
+  color: var(--danger-text);
 }
 
 .flow {
@@ -846,7 +786,7 @@ h2 {
   border-radius: 8px;
   padding: 0.8rem;
   color: var(--white);
-  background: linear-gradient(135deg, var(--blue-190), var(--teal-50));
+  background: linear-gradient(135deg, var(--black), var(--teal));
   font-weight: 700;
 }
 
@@ -857,9 +797,9 @@ h2 {
 .compact-flow div {
   min-height: auto;
   padding: 0.65rem 0.75rem;
-  background: var(--teal-10);
+  background: var(--surface-sunken);
   color: var(--text);
-  border: 1px solid var(--teal-40);
+  border: 1px solid var(--border);
 }
 
 .chatbot-config-header {
@@ -892,7 +832,7 @@ h2 {
 .embed-box {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--blue-10);
+  background: var(--surface-sunken);
   padding: 1rem;
 }
 
@@ -985,7 +925,7 @@ h2 {
   align-content: start;
   gap: 0.75rem;
   padding: 1rem;
-  background: var(--blue-40);
+  background: var(--surface-sunken);
 }
 
 .preview-message {
@@ -999,7 +939,7 @@ h2 {
 
 .preview-message.bot {
   justify-self: start;
-  background: var(--green-40);
+  background: var(--bubble-bot);
 }
 
 .preview-message.user {
@@ -1038,7 +978,7 @@ h2 {
   padding: 0.8rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--blue-10);
+  background: var(--surface-sunken);
 }
 
 .editor.is-disabled {
@@ -1187,8 +1127,8 @@ textarea:disabled {
 }
 
 .row-actions button.danger {
-  background: var(--red-30);
-  color: var(--red-90);
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 
 .filters {
@@ -1264,7 +1204,7 @@ textarea:disabled {
   border: 1px solid var(--border);
   border-radius: 7px;
   padding: 0.7rem;
-  background: var(--blue-10);
+  background: var(--surface-sunken);
   min-width: 0;
 }
 
@@ -1292,7 +1232,7 @@ textarea:disabled {
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--blue-20);
+  background: var(--surface-sunken);
 }
 
 .message {
@@ -1300,13 +1240,13 @@ textarea:disabled {
   max-width: 82%;
   padding: 0.7rem 0.8rem;
   border-radius: 8px;
-  background: var(--blue-60);
+  background: var(--surface);
   border: 1px solid transparent;
 }
 
 .message.bot {
   margin-left: auto;
-  background: var(--green-30);
+  background: var(--bubble-bot);
   border-color: rgba(8, 127, 123, 0.24);
 }
 
@@ -1317,8 +1257,8 @@ textarea:disabled {
 }
 
 .message.customer {
-  background: var(--blue-60);
-  border-color: var(--blue-110);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .message.bot::before,
@@ -1336,7 +1276,7 @@ textarea:disabled {
 
 .message.bot::before {
   content: "BOT";
-  color: var(--teal-90);
+  color: var(--teal-text);
   background: rgba(8, 127, 123, 0.12);
 }
 
@@ -1348,14 +1288,14 @@ textarea:disabled {
 
 .message.customer::before {
   content: "CLIENTE";
-  color: var(--neutral-strong);
-  background: var(--blue-100);
+  color: var(--text-muted);
+  background: var(--chip-surface);
 }
 
 .message.system::before {
   content: "SISTEMA";
-  color: var(--red-90);
-  background: var(--red-30);
+  color: var(--danger-text);
+  background: var(--danger-surface);
 }
 
 .message small {
@@ -1423,7 +1363,7 @@ textarea:disabled {
 
 .message a,
 .hwhub-widget-message a {
-  color: var(--blue-170);
+  color: var(--accent-text);
   font-weight: 700;
   text-decoration: none;
 }
@@ -1466,7 +1406,7 @@ textarea:disabled {
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 5px;
-  background: var(--blue-100);
+  background: var(--surface-sunken);
 }
 
 .product-empty,
@@ -1551,7 +1491,7 @@ textarea:disabled {
 .timeline-event {
   border-left: 3px solid var(--teal);
   padding: 0.45rem 0.7rem;
-  background: var(--blue-10);
+  background: var(--surface-sunken);
   border-radius: 0 7px 7px 0;
 }
 
@@ -1588,19 +1528,19 @@ textarea:disabled {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.55rem 0.7rem;
-  background: var(--blue-10);
+  background: var(--surface-sunken);
 }
 
 .action-feedback.is-info {
-  color: var(--blue-150);
-  border-color: var(--blue-130);
-  background: var(--blue-30);
+  color: var(--info-text);
+  border-color: var(--info-border);
+  background: var(--info-surface);
 }
 
 .action-feedback.is-ok {
-  color: var(--green-90);
-  border-color: var(--green-50);
-  background: var(--green-10);
+  color: var(--success-text);
+  border-color: var(--success-border);
+  background: var(--success-surface);
 }
 
 .action-feedback.is-warning {
@@ -1610,9 +1550,9 @@ textarea:disabled {
 }
 
 .action-feedback.is-error {
-  color: var(--red-90);
-  border-color: var(--red-40);
-  background: var(--red-10);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
 }
 
 .reply-form input {
@@ -1653,8 +1593,8 @@ textarea {
   margin-top: 1rem;
   padding: 0.85rem;
   border-radius: 7px;
-  background: var(--teal-20);
-  color: var(--teal-80);
+  background: var(--teal-surface);
+  color: var(--teal-text);
 }
 
 .search {
@@ -1678,7 +1618,7 @@ textarea {
 }
 
 .tag-session {
-  color: var(--green-100);
+  color: var(--success-text);
   border-color: rgba(19, 164, 107, 0.45);
   background: rgba(19, 164, 107, 0.12);
 }
@@ -1691,7 +1631,7 @@ textarea {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: var(--blue-220);
+  background: var(--black);
   color: var(--white);
   box-shadow: 0 18px 42px rgba(5, 11, 18, 0.28);
   transform: translate(var(--hwhub-x-shift, 0), var(--hwhub-y-shift, 0));
@@ -1762,7 +1702,7 @@ textarea {
 .hwhub-widget-panel header {
   padding: 1rem;
   color: var(--white);
-  background: var(--hwhub-widget-header, var(--blue-210));
+  background: var(--hwhub-widget-header, var(--black));
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
@@ -1825,21 +1765,21 @@ textarea {
 
 .hwhub-widget-error {
   min-height: 1rem;
-  color: var(--red-90);
+  color: var(--danger-text);
   font-size: 0.78rem;
 }
 
 .hwhub-widget-error:not(:empty) {
   padding: 0.55rem 0.65rem;
-  border: 1px solid var(--red-40);
+  border: 1px solid var(--danger-border);
   border-radius: 4px;
-  background: var(--red-10);
+  background: var(--danger-surface);
 }
 
 .hwhub-widget-error.is-ok:not(:empty) {
-  color: var(--green-100);
-  border-color: var(--green-50);
-  background: var(--green-10);
+  color: var(--success-text);
+  border-color: var(--success-border);
+  background: var(--success-surface);
 }
 
 .hwhub-widget-error.is-warning:not(:empty) {
@@ -1849,9 +1789,9 @@ textarea {
 }
 
 .hwhub-widget-error.is-error:not(:empty) {
-  color: var(--red-90);
-  border-color: var(--red-40);
-  background: var(--red-10);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
 }
 
 .hwhub-widget-error a {
@@ -1883,7 +1823,7 @@ textarea {
   max-height: 390px;
   overflow-y: auto;
   padding: 0.35rem;
-  background: var(--blue-50);
+  background: var(--surface-sunken);
   border: 1px solid var(--border);
   border-radius: 5px;
 }
@@ -1892,8 +1832,8 @@ textarea {
   justify-self: center;
   padding: 0.22rem 0.55rem;
   border-radius: 4px;
-  background: var(--blue-120);
-  color: var(--neutral-strong);
+  background: var(--chip-surface);
+  color: var(--text-muted);
   font-size: 0.72rem;
   text-transform: capitalize;
 }
@@ -1905,8 +1845,8 @@ textarea {
 
 .hwhub-widget-message.system {
   justify-self: center;
-  color: var(--red-90);
-  background: var(--red-30);
+  color: var(--danger-text);
+  background: var(--danger-surface);
 }
 
 .hwhub-widget-typing {
@@ -2158,7 +2098,7 @@ main {
 }
 
 .top-actions button#simulate-whatsapp {
-  background: var(--teal-70);
+  background: var(--teal);
 }
 
 .top-actions button#simulate-marketplace,
@@ -2408,9 +2348,9 @@ textarea {
 
 .row-actions button.danger,
 button.danger {
-  border-color: var(--red-40);
-  background: var(--red-30);
-  color: var(--red-90);
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
+  color: var(--danger-text);
 }
 
 .conversation-card {
@@ -2425,13 +2365,13 @@ button.danger {
 
 .status {
   border-radius: 999px;
-  background: var(--blue-160);
+  background: var(--info);
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
 .status.bot_active {
-  background: var(--teal-60);
+  background: var(--teal);
 }
 
 .status.closed {
@@ -2554,11 +2494,6 @@ button.danger {
   color: var(--accent-contrast);
 }
 
-.compact-flow div {
-  border-color: var(--border);
-  background: var(--surface-sunken);
-}
-
 .rich-link,
 .hwhub-rich-link,
 .link-list a,
@@ -2568,8 +2503,8 @@ button.danger {
 }
 
 #live-pill {
-  background: var(--green-10);
-  color: var(--green-90);
+  background: var(--success-surface);
+  color: var(--success-text);
   font-weight: 800;
 }
 
@@ -3007,6 +2942,8 @@ html[data-theme="dark"] {
   --danger-text: #f87171;
   --info-text: #93b4fb;
   --teal-text: #2dd4bf;
+  --chip-surface: var(--neutral-850);
+  --teal-surface: var(--teal-100);
 }
 
 body {
@@ -3209,7 +3146,7 @@ html[data-theme="dark"] .row-actions button,
 html[data-theme="dark"] .form-actions button:first-child,
 html[data-theme="dark"] .hwhub-widget-form-actions button:first-child {
   border-color: var(--border);
-  background: var(--blue-180);
+  background: var(--surface-raised);
   color: var(--text);
 }
 
@@ -3220,7 +3157,7 @@ html[data-theme="dark"] .login-screen {
 }
 
 html[data-theme="dark"] .login-card {
-  background: var(--blue-200);
+  background: var(--surface);
 }
 
 /* WhaleHub phase 0 design system shell */
@@ -3312,7 +3249,7 @@ body.wh-app {
   border: 1px solid transparent;
   border-left: 3px solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--blue-70);
+  color: var(--chrome-text-muted);
   font-weight: 800;
   line-height: 1.1;
 }
@@ -3651,7 +3588,7 @@ main.wh-main {
 }
 
 .wh-conv-avatar.is-whatsapp {
-  background: var(--green-60);
+  background: var(--success);
   color: var(--white);
 }
 
@@ -4144,15 +4081,11 @@ main.wh-main {
 .wh-live-pill {
   min-height: 27px;
   padding: 4px 10px;
-  background: var(--green-20);
+  background: var(--success-surface);
   border: 0;
   color: var(--success-text);
   font-size: 11px;
   text-transform: none;
-}
-
-html[data-theme="dark"] .wh-live-pill {
-  background: var(--green-110);
 }
 
 .wh-app .panel,
@@ -4323,8 +4256,8 @@ html[data-theme="dark"] .wh-live-pill {
 
 .wh-conv-tag.status-bot_active,
 .wh-conv-tag.status-paused {
-  background: var(--blue-80);
-  color: var(--neutral-strong);
+  background: var(--chip-surface);
+  color: var(--text-muted);
 }
 
 .wh-conv-tag.status-agent_active,
@@ -4334,12 +4267,12 @@ html[data-theme="dark"] .wh-live-pill {
 }
 
 .wh-conv-tag.status-closed {
-  background: var(--green-20);
+  background: var(--success-surface);
   color: var(--success-text);
 }
 
 .wh-conv-tag.is-urgent {
-  background: var(--red-20);
+  background: var(--danger-surface);
   color: var(--danger-text);
 }
 
@@ -4639,12 +4572,12 @@ html[data-theme="dark"] .message.msg.me .message-body {
 
 .dashboard-api-row.is-ok strong {
   background: rgba(20, 126, 81, 0.14);
-  color: var(--green-80);
+  color: var(--success-text);
 }
 
 .dashboard-api-row.is-warning strong {
   background: rgba(189, 49, 49, 0.12);
-  color: var(--red-70);
+  color: var(--danger-text);
 }
 
 .wh-conv-tag.is-unread {
@@ -4740,7 +4673,7 @@ html[data-theme="dark"] .message.msg.me .message-body {
 
 .wh-state-pill.is-ok {
   background: rgba(20, 126, 81, 0.14);
-  color: var(--green-80);
+  color: var(--success-text);
 }
 
 .wh-state-pill.is-warning {
@@ -5149,7 +5082,7 @@ main.wh-main {
 button.danger,
 .row-actions button.danger {
   border-color: rgba(214, 69, 47, 0.18);
-  background: var(--red-20);
+  background: var(--danger-surface);
   color: var(--danger-text);
 }
 
@@ -6211,11 +6144,11 @@ html[data-theme="dark"] .filters select {
 .field-group.field-invalid input,
 .field-group.field-invalid select,
 .field-group.field-invalid textarea {
-  border-color: var(--red-50);
+  border-color: var(--danger-strong);
 }
 
 .field-group.field-invalid .field-label {
-  color: var(--red-50);
+  color: var(--danger-text);
 }
 
 .field-shake {
