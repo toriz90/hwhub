@@ -1371,7 +1371,13 @@ function activateSettingsTab(name) {
 function showView(view) {
   const selected = view || "dashboard";
   for (const section of $$("[data-view]")) section.classList.toggle("active", section.dataset.view === selected);
-  for (const link of $$("[data-view-link]")) link.classList.toggle("active", link.dataset.viewLink === selected);
+  for (const link of $$("[data-view-link]")) {
+    const activo = link.dataset.viewLink === selected;
+    link.classList.toggle("active", activo);
+    // El estado activo tambien para lectores de pantalla, no solo por color.
+    if (activo) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
   const meta = viewMeta[selected] || viewMeta.dashboard;
   const eyebrow = $("#topbar-eyebrow");
   const title = $("#topbar-title");
@@ -2324,12 +2330,11 @@ function closeStepModal(modal) { modal.hidden = true; }
 
 function bindBottomNav() {
   const backdrop = $(".more-drawer-backdrop");
-  if (!backdrop) return;
-  $('[data-action="open-more-drawer"]')?.addEventListener("click", () => { backdrop.hidden = false; });
-  // Cierra con tap en el backdrop o en cualquier destino del drawer (el link ya cambia de vista via data-view-link)
-  backdrop.addEventListener("click", (event) => {
-    if (event.target === backdrop || event.target.closest(".more-drawer-item")) backdrop.hidden = true;
-  });
+  const disparador = $('[data-action="open-more-drawer"]');
+  if (!backdrop || !disparador) return;
+  // Mismo patron que el menu de desborde de Conversaciones: cierra al elegir un
+  // destino, al tocar el fondo y con Escape, y mantiene aria-expanded.
+  bindMenu(disparador, backdrop);
 }
 
 function updateBrandPreview() {

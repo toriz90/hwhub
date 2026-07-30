@@ -246,6 +246,7 @@
 
   /* Medidas del shell, antes repetidas a mano dentro de calc(). */
   --topbar-height: 65px;
+  --bottom-nav-height: 58px;
   --inbox-list-width: 340px;
   --inbox-context-width: 300px;
   /* Sin uso todavia: aplicarlo hoy limitaria un ancho que ahora es libre, y eso
@@ -2863,6 +2864,8 @@ tbody tr:hover {
 
 .theme-switch input {
   position: absolute;
+  width: 0;
+  height: 0;
   opacity: 0;
   pointer-events: none;
 }
@@ -5645,7 +5648,7 @@ html[data-theme="dark"] .filters select {
     inset: auto 0 0 0;
     z-index: 70;
     display: flex;
-    height: 58px;
+    height: var(--bottom-nav-height);
     background: var(--black);
     border-top: 1px solid var(--border);
   }
@@ -5668,6 +5671,15 @@ html[data-theme="dark"] .filters select {
 
   .bottom-nav-item .ti {
     font-size: 20px;
+  }
+
+  /* El launcher del widget (z-index 2147483000) tapaba el item "Mas" de la barra:
+     medido con elementFromPoint, el centro del boton devolvia .hwhub-widget-button.
+     Se sube por encima de la barra. Lleva `!important` porque widget.js posiciona
+     el boton con estilo EN LINEA (`inset: auto 22px 22px auto`), que gana a
+     cualquier hoja; y `body.wh-app` para no afectar a los sitios cliente. */
+  body.wh-app .hwhub-widget-button {
+    bottom: calc(var(--bottom-nav-height) + var(--space-3)) !important;
   }
 
   .bottom-nav-item.active {
