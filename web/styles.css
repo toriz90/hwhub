@@ -650,8 +650,33 @@ h2 {
 .conversation-card-head {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-3);
-  align-items: start;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.conversation-card-head strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Hora y contador comparten el extremo derecho de la primera linea, en flujo:
+   antes el contador era `position: absolute` sobre la fila de etiquetas. */
+.wh-conv-meta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wh-conv-time {
+  color: var(--text-subtle);
+  font-size: var(--font-size-2xs);
+  white-space: nowrap;
 }
 
 .conversation-card-head span {
@@ -3191,6 +3216,9 @@ html[data-theme="dark"] .login-card {
 
 .wh-conv-main {
   min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  align-content: center;
 }
 
 .wh-conv .conversation-card-head {
@@ -3249,7 +3277,6 @@ html[data-theme="dark"] .login-card {
 }
 
 .wh-unread-dot {
-  position: absolute;
   place-items: center;
 }
 
@@ -3816,10 +3843,10 @@ main.wh-main {
 }
 
 .conversation-card.wh-conv {
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: var(--control-md) minmax(0, 1fr);
   gap: var(--space-3);
-  min-height: 78px;
-  padding: var(--space-3) var(--space-4);
+  min-height: calc(var(--control-md) * 2);
+  padding: var(--space-4);
   border: 0;
   border-bottom: 1px solid var(--border);
   border-left: 3px solid transparent;
@@ -3833,15 +3860,14 @@ main.wh-main {
 }
 
 .conversation-card.wh-conv.selected {
-  padding-left: var(--space-3);
   border-left-color: var(--accent);
-  background: var(--surface);
+  background: var(--accent-subtle);
   box-shadow: none;
 }
 
 .wh-conv-avatar {
-  width: 38px;
-  height: 38px;
+  width: var(--control-md);
+  height: var(--control-md);
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
@@ -3857,14 +3883,14 @@ main.wh-main {
 }
 
 .wh-conv p {
-  margin-top: var(--space-1);
+  margin-top: 0;
   color: var(--text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-xs);
 }
 
 .wh-conv-tags {
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: 0;
 }
 
 .wh-conv-tag {
@@ -3898,11 +3924,6 @@ main.wh-main {
   color: var(--danger-text);
 }
 
-.wh-unread-dot {
-  right: 12px;
-  bottom: 12px;
-  width: 18px;
-}
 
 .wh-inbox-thread {
   background: var(--bg);
@@ -4177,14 +4198,9 @@ html[data-theme="dark"] .message.msg.me .message-body {
   color: var(--danger-text);
 }
 
-.wh-conv-tag.is-unread {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
 .wh-unread-dot {
-  min-width: 20px;
-  height: 20px;
+  min-width: var(--space-5);
+  min-height: var(--space-5);
   padding: 0 var(--space-1);
   border-radius: var(--radius-full);
   display: inline-flex;

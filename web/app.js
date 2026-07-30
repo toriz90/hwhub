@@ -682,25 +682,35 @@ function renderConversationInbox() {
       const avatarClass = channelClass(item.channel, item.marketplace);
       const statusText = item.status === "agent_active" && agent ? `AGENTE - ${agent.name}` : statusShortLabel(item.status);
       const unread = Number(state.unread[item.id] || 0);
-      const tags = [
+      // El canal baja a la fila de etiquetas: la primera linea queda para quien
+      // escribe y cuando. El contador de no leidos ya no se repite como etiqueta:
+      // lo dice la pastilla de la primera linea.
+      const etiquetas = [
         `<span class="wh-conv-tag status-${esc(item.status)}">${esc(statusText)}</span>`,
-        unread ? `<span class="wh-conv-tag is-unread">${esc(unread)} nuevo${unread > 1 ? "s" : ""}</span>` : "",
         item.priority === "urgent" ? `<span class="wh-conv-tag is-urgent">URGENTE</span>` : "",
+        `<span class="wh-conv-tag">${esc(channel)}</span>`,
         item.intent ? `<span class="wh-conv-tag">${esc(item.intent)}</span>` : "",
         item.marketplace && item.marketplace !== "official" ? `<span class="wh-conv-tag">${esc(item.marketplace)}</span>` : ""
-      ].filter(Boolean).join("");
+      ].filter(Boolean);
+      // Tope de tres: estado, urgencia y canal son las que importan de un vistazo;
+      // intencion y marketplace se resumen en "+N" para acotar el alto de la fila.
+      const visiblesTag = etiquetas.slice(0, 3);
+      const sobran = etiquetas.length - visiblesTag.length;
+      if (sobran) visiblesTag.push(`<span class="wh-conv-tag">+${sobran}</span>`);
       return `
         <article class="item conversation-card wh-conv ${state.selectedConversationId === item.id ? "selected" : ""}" data-open-conversation="${esc(item.id)}" role="listitem" tabindex="0">
           <div class="wh-conv-avatar is-${esc(avatarClass)}">${esc(initials(item.customer))}</div>
           <div class="wh-conv-main">
             <div class="conversation-card-head">
               <strong>${esc(item.customer)}</strong>
-              <span>${esc(channel)} - ${esc(formatShortTime(item.updatedAt))}</span>
+              <span class="wh-conv-meta">
+                <span class="wh-conv-time">${esc(formatShortTime(item.updatedAt))}</span>
+                ${unread ? `<strong class="wh-unread-dot" aria-label="${esc(unread)} mensajes nuevos">${esc(unread)}</strong>` : ""}
+              </span>
             </div>
             <p>${esc(item.lastMessage || "Sin mensajes recientes")}</p>
-            <div class="wh-conv-tags">${tags}</div>
+            <div class="wh-conv-tags">${visiblesTag.join("")}</div>
           </div>
-          ${unread ? `<strong class="wh-unread-dot" aria-label="${esc(unread)} mensajes nuevos">${esc(unread)}</strong>` : item.priority === "urgent" ? `<strong class="wh-unread-dot" aria-label="Urgente">!</strong>` : ""}
         </article>
       `;
     })
