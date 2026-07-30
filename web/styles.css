@@ -3814,9 +3814,15 @@ main.wh-main {
   display: none;
 }
 
+/* Medido con Playwright contra produccion: la lista es un grid cuyos tracks de
+   fila se dimensionaban por debajo del contenido (80px de track para 118-134px
+   de contenido). Cada fila se estiraba a ese track corto y su ultima linea -las
+   etiquetas- sobresalia 37.6px por debajo, donde la fila siguiente la tapaba con
+   su fondo. `max-content` dimensiona cada track por su contenido real. */
 .wh-conversation-list {
   gap: 0;
   padding: 0;
+  grid-auto-rows: max-content;
   background: var(--surface);
 }
 
