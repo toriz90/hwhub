@@ -2411,11 +2411,10 @@ button.danger {
     flex-wrap: wrap;
   }
 
-  .metrics,
-  .status-metrics,
   .dashboard-hero,
   .workspace,
   .module-grid,
+  .module-grid--split,
   .conversation-workspace,
   .conversation-shell,
   .grid-two,
@@ -4033,9 +4032,11 @@ html[data-theme="dark"] .message.msg.me .message-body {
 }
 
 /* WhaleHub operational dashboard and controls pass */
+/* Base mayor: son cajas de 260px de alto con listas y barras dentro. */
 .dashboard-insights {
   display: grid;
-  margin-top: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--space-4);
 }
 
 .dashboard-card {
@@ -4485,22 +4486,26 @@ main.wh-main {
 }
 
 .view[data-view="dashboard"].active {
-  display: block;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
 }
 
 .dashboard-hero {
   display: none;
 }
 
+/* Patron P3. El numero de columnas pasa a ser consecuencia del ancho, no un
+   valor escrito a mano por breakpoint. `auto-fit` (no `auto-fill`) para que las
+   cuatro tarjetas repartan el ancho en vez de dejar pistas vacias a la derecha.
+   El margen sobra: la vista es grid con gap. */
 .metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: var(--space-4);
-  margin: 0 0 var(--space-4);
 }
 
 .metrics article,
 .status-metrics button {
-  min-height: 106px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-5);
@@ -4525,15 +4530,22 @@ main.wh-main {
   letter-spacing: -1px;
 }
 
+/* Base menor que los KPI: son siete y tienen que caber en una fila. A 120px el
+   texto "Esperando agente" se partia; 140px le da una linea holgada. */
 .status-metrics {
   display: grid;
-  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+}
+
+/* Alturas distintas a proposito: el KPI es indicador y pesa mas; el atajo es un
+   filtro accionable y va subordinado. Antes eran 106 y 82px, casi iguales. */
+.metrics article {
+  min-height: calc(var(--control-md) * 3);
 }
 
 .status-metrics button {
-  min-height: 82px;
+  min-height: calc(var(--control-md) * 2);
   color: var(--text);
   text-align: left;
 }
@@ -4543,17 +4555,19 @@ main.wh-main {
   transform: translateY(-1px);
 }
 
-.dashboard-insights {
-  grid-template-columns: minmax(360px, 1.2fr) minmax(300px, 0.9fr) minmax(300px, 0.9fr);
-  gap: var(--space-4);
-}
-
+/* Un solo panel por defecto. La variante de dos columnas la declara el markup
+   (`module-grid--split`): antes dependia de que hubiera un `.module-header`
+   justo antes, y al retirar esa barra el selector de adyacencia se rompia. */
 .module-grid,
 .grid-two {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
+}
+
+.module-grid--split {
+  grid-template-columns: 300px minmax(0, 1fr);
 }
 
 .grid-two {
@@ -4565,7 +4579,7 @@ main.wh-main {
 }
 
 .form-panel,
-.module-grid > .panel:first-child,
+.module-grid--split > .panel:first-child,
 .grid-two > .panel:first-child {
   position: sticky;
   top: 0;
@@ -4825,18 +4839,14 @@ html[data-theme="dark"] .filters select {
 }
 
 @media (max-width: 1320px) {
-  .status-metrics {
-    grid-template-columns: repeat(4, minmax(120px, 1fr));
-  }
-
-  .dashboard-insights,
   .module-grid,
+  .module-grid--split,
   .grid-two {
     grid-template-columns: 1fr;
   }
 
   .form-panel,
-  .module-grid > .panel:first-child,
+  .module-grid--split > .panel:first-child,
   .grid-two > .panel:first-child {
     position: static;
   }
@@ -4877,12 +4887,6 @@ html[data-theme="dark"] .filters select {
 }
 
 @media (max-width: 720px) {
-  .metrics,
-  .status-metrics,
-  .dashboard-insights {
-    grid-template-columns: 1fr;
-  }
-
   .wh-topbar.topbar {
     padding: var(--space-4);
   }
@@ -5044,6 +5048,7 @@ html[data-theme="dark"] .filters select {
   }
 
   .module-grid,
+  .module-grid--split,
   .grid-two,
   .conversation-workspace,
   .conversation-workspace.wh-inbox {
@@ -5989,38 +5994,22 @@ html[data-theme="dark"] .filters select {
 }
 
 /* ===== Fix 4: header de modulo con CTA (panel izquierdo eliminado) ===== */
-.module-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
-  border-bottom: 0.5px solid var(--border);
-}
-
-.module-header .page-title {
-  margin: 0;
-  font-size: 18px;
-}
-
+/* Accion primaria del modulo. Vive en la cabecera del panel desde que se
+   retiro la barra `.module-header`, que iba desalineada respecto al panel. */
 .btn-add-primary {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-4);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-4);
   border: none;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   background: var(--black);
   color: var(--accent-contrast);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
-}
-
-/* El modulo queda en 1 columna: ya no hay panel-form a la izquierda */
-.module-header + .module-grid {
-  grid-template-columns: 1fr;
 }
 
 .list-panel .cards {

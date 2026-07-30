@@ -491,9 +491,6 @@
       </div>
 
       <div class="view" data-view="agents">
-        <div class="module-header">
-          <button class="btn-add-primary" data-open-modal="agents">+ Nuevo agente</button>
-        </div>
         <section class="module-grid" id="agents">
           <div class="panel list-panel">
             <header>
@@ -501,6 +498,7 @@
                 <p class="eyebrow">Disponibilidad</p>
                 <h2>Agentes activos</h2>
               </div>
+              <button class="btn-add-primary" data-open-modal="agents">+ Nuevo agente</button>
             </header>
             <div id="agents-list" class="cards"></div>
           </div>
@@ -508,9 +506,6 @@
       </div>
 
       <div class="view" data-view="knowledge">
-        <div class="module-header">
-          <button class="btn-add-primary" data-open-modal="faqs">+ Nueva FAQ</button>
-        </div>
         <section class="module-grid" id="knowledge">
           <div class="panel list-panel">
             <header>
@@ -518,6 +513,7 @@
                 <p class="eyebrow">Buscador</p>
                 <h2>Preguntas frecuentes</h2>
               </div>
+              <button class="btn-add-primary" data-open-modal="faqs">+ Nueva FAQ</button>
             </header>
             <input id="faq-search" class="search" placeholder="Buscar FAQs por categoria, tag o pregunta">
             <div id="faq-list" class="faq-list"></div>
@@ -526,9 +522,6 @@
       </div>
 
       <div class="view" data-view="branches">
-        <div class="module-header">
-          <button class="btn-add-primary" data-open-modal="branches">+ Nueva sucursal</button>
-        </div>
         <section class="module-grid" id="branches">
           <div class="panel list-panel">
             <header>
@@ -536,6 +529,7 @@
                 <p class="eyebrow">Consulta</p>
                 <h2>Sucursales registradas</h2>
               </div>
+              <button class="btn-add-primary" data-open-modal="branches">+ Nueva sucursal</button>
             </header>
             <div class="filters">
               <select id="branch-state-filter">
@@ -550,9 +544,6 @@
       </div>
 
       <div class="view" data-view="directory">
-        <div class="module-header">
-          <button class="btn-add-primary" data-open-modal="directoryContacts">+ Nuevo contacto</button>
-        </div>
         <section class="module-grid" id="directory">
           <div class="panel list-panel">
             <header>
@@ -560,6 +551,7 @@
                 <p class="eyebrow">Ruteo humano</p>
                 <h2>Contactos</h2>
               </div>
+              <button class="btn-add-primary" data-open-modal="directoryContacts">+ Nuevo contacto</button>
             </header>
             <div class="filters">
               <select id="directory-area-filter">
@@ -574,9 +566,6 @@
       </div>
 
       <div class="view" data-view="routing">
-        <div class="module-header">
-          <button class="btn-add-primary" data-open-modal="routingRules">+ Nueva regla</button>
-        </div>
         <section class="module-grid" id="routing">
           <div class="panel list-panel">
             <header>
@@ -584,6 +573,7 @@
                 <p class="eyebrow">Motor de decision</p>
                 <h2>Canalizacion</h2>
               </div>
+              <button class="btn-add-primary" data-open-modal="routingRules">+ Nueva regla</button>
             </header>
             <div id="routing-list" class="rules"></div>
           </div>
@@ -625,7 +615,7 @@
             </div>
 
             <div class="settings-panel" data-settings-panel="apis" hidden>
-              <section class="module-grid" id="integrations">
+              <section class="module-grid module-grid--split" id="integrations">
                 <div class="panel form-panel">
                   <header>
                     <div>
@@ -672,9 +662,6 @@
             <div class="settings-panel" data-settings-panel="access" hidden>
               <p class="form-section-eyebrow">Sistema</p>
               <h3 class="form-section-title">Usuarios</h3>
-              <div class="module-header">
-                <button class="btn-add-primary" data-open-modal="users">+ Nuevo usuario</button>
-              </div>
               <section class="module-grid" id="users">
                 <div class="panel">
                   <header>
@@ -682,6 +669,7 @@
                       <p class="eyebrow">Roles reales</p>
                       <h2>Cuentas activas</h2>
                     </div>
+                    <button class="btn-add-primary" data-open-modal="users">+ Nuevo usuario</button>
                   </header>
                   <div id="users-list" class="cards"></div>
                 </div>
@@ -731,7 +719,7 @@
             </div>
 
             <div class="settings-panel" data-settings-panel="knowledge" hidden>
-              <section class="module-grid" id="knowledge">
+              <section class="module-grid module-grid--split" id="knowledge">
                 <div class="panel form-panel">
                   <header>
                     <div>
