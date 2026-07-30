@@ -642,11 +642,6 @@ h2 {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.conversation-card:hover,
-.conversation-card.selected {
-  transform: translateY(-1px);
-}
-
 .conversation-card-head {
   display: flex;
   justify-content: space-between;
@@ -2218,12 +2213,6 @@ button.danger {
   background: var(--surface);
 }
 
-.conversation-card:hover,
-.conversation-card.selected {
-  border-color: var(--accent);
-  box-shadow: 0 18px 38px rgba(17, 17, 17, 0.1);
-}
-
 .status {
   border-radius: var(--radius-full);
   background: var(--info);
@@ -2649,9 +2638,7 @@ textarea:focus {
   background: var(--accent);
 }
 
-.status-metrics button:hover:not(:disabled),
-.conversation-card:hover,
-.conversation-card.selected {
+.status-metrics button:hover:not(:disabled) {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
@@ -2848,9 +2835,7 @@ tbody tr:hover {
   background: var(--surface);
 }
 
-.status-metrics button:hover:not(:disabled),
-.conversation-card:hover,
-.conversation-card.selected {
+.status-metrics button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 9%, var(--surface));
 }
 
@@ -3180,13 +3165,6 @@ html[data-theme="dark"] .login-card {
   position: relative;
   display: grid;
   cursor: pointer;
-}
-
-.conversation-card.wh-conv:hover,
-.conversation-card.wh-conv.selected {
-  border-left-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .wh-conv-avatar {
@@ -3854,6 +3832,14 @@ main.wh-main {
   box-shadow: none;
 }
 
+/* Hover y seleccionada difieren de la fila base SOLO en fondo y color de borde:
+   ninguna toca la caja ni el flujo, asi que el contenido no se mueve ni se
+   solapa al seleccionar. Habia cinco generaciones apiladas; una levantaba la
+   fila con `transform: translateY(-1px)`, que la promovia a su propio contexto
+   de apilado, y dos le colgaban halos de 3px.
+   El fondo se compone con `color-mix` sobre --surface en vez de usar
+   --accent-subtle, que en tema oscuro es un rgba al 16 %: translucido sobre una
+   fila apilada por encima, transparentaba lo que hubiera debajo. */
 .conversation-card.wh-conv:hover {
   background: var(--surface-sunken);
   box-shadow: none;
@@ -3861,7 +3847,7 @@ main.wh-main {
 
 .conversation-card.wh-conv.selected {
   border-left-color: var(--accent);
-  background: var(--accent-subtle);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   box-shadow: none;
 }
 
