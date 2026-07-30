@@ -649,7 +649,7 @@ h2 {
   align-items: center;
 }
 
-.conversation-card-head strong {
+.conversation-card-head > strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3207,14 +3207,14 @@ html[data-theme="dark"] .login-card {
   margin: 0;
 }
 
-.wh-conv .conversation-card-head strong {
+.wh-conv .conversation-card-head > strong {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.wh-conv .conversation-card-head span {
+.wh-conv .conversation-card-head > span {
   white-space: nowrap;
 }
 
@@ -3858,12 +3858,12 @@ main.wh-main {
   font-size: 13px;
 }
 
-.wh-conv .conversation-card-head strong {
+.wh-conv .conversation-card-head > strong {
   color: var(--text);
   font-size: 12.5px;
 }
 
-.wh-conv .conversation-card-head span {
+.wh-conv .conversation-card-head > span {
   color: var(--text-muted);
   font-size: 10.5px;
 }
@@ -4185,7 +4185,9 @@ html[data-theme="dark"] .message.msg.me .message-body {
   color: var(--danger-text);
 }
 
-.wh-unread-dot {
+.wh-conv .wh-unread-dot {
+  /* `.item strong` le colaba un margin-bottom que lo descuadraba de la hora. */
+  margin: 0;
   min-width: var(--space-5);
   min-height: var(--space-5);
   padding: 0 var(--space-1);
