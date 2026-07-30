@@ -471,8 +471,8 @@ h2 {
 
 .user-pill {
   max-width: 220px;
-  padding: var(--space-3) var(--space-3);
-  border: 1px solid var(--border);
+  padding: 0 var(--space-2);
+  border: 0;
   color: var(--text-muted);
   font-size: 0.82rem;
   white-space: nowrap;
@@ -2840,12 +2840,13 @@ tbody tr:hover {
 }
 
 .theme-switch {
-  min-height: var(--control-lg);
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  column-gap: var(--space-3);
+  min-height: var(--control-sm);
+  /* Era `inline-grid` de dos columnas: con un tercer item en flujo se abria una
+     segunda fila y el control media 54.7px, mas que el area util del topbar
+     (33px). En flex se queda en una linea pase lo que pase. */
+  display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -3587,8 +3588,8 @@ main.wh-main {
 .wh-topbar.topbar {
   min-height: var(--topbar-height);
   margin: 0;
-  padding: var(--space-4) var(--space-6);
-  gap: var(--space-4);
+  padding: var(--space-4) var(--space-7);
+  gap: var(--space-6);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   backdrop-filter: none;
@@ -3623,7 +3624,7 @@ main.wh-main {
 }
 
 .topbar-group + .topbar-group {
-  padding-left: var(--space-4);
+  padding-left: var(--space-5);
   border-left: 1px solid var(--border);
 }
 
@@ -3635,7 +3636,7 @@ main.wh-main {
 }
 
 .wh-live-pill {
-  min-height: 27px;
+  min-height: var(--control-sm);
   padding: var(--space-1) var(--space-3);
   background: var(--success-surface);
   border: 0;
@@ -4436,10 +4437,10 @@ main.wh-main {
 }
 
 .theme-switch {
-  min-height: var(--control-md);
+  min-height: var(--control-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
+  padding: 0 var(--space-2);
   background: var(--surface);
   color: var(--text-muted);
   font-size: 10.5px;
@@ -4447,14 +4448,16 @@ main.wh-main {
 }
 
 .user-pill {
-  min-height: var(--control-md);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  border-color: var(--border);
+  min-height: var(--control-sm);
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0;
+  background: transparent;
 }
 
 .top-actions button {
-  min-height: var(--control-md);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-3);
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--white);
@@ -4847,7 +4850,6 @@ html[data-theme="dark"] .wh-thread-messages .message.msg.me .message-body {
 }
 
 html[data-theme="dark"] .theme-switch,
-html[data-theme="dark"] .user-pill,
 html[data-theme="dark"] .editor input,
 html[data-theme="dark"] .editor textarea,
 html[data-theme="dark"] .editor select,
