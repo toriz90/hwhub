@@ -1,81 +1,147 @@
 # DESIGN.md — Referencia única de diseño · WhaleHub
 
-Fuente de verdad. Todo color/medida/componente del front sale de aquí. Si algo en `styles.css` no coincide, el bug está en el CSS.
+Fuente de verdad. Todo color, medida y componente del front sale de aquí. Si algo en `styles.css` no coincide, el bug está en el CSS.
+
+Estado: sistema de color cerrado en las Fases 0-3; escalas de layout cerradas en la Fase 4. Los patrones de composición por pantalla (P1-P8) y su calendario viven en [`layout-audit.md`](layout-audit.md) y se aplican en las Fases 5-8.
 
 ---
 
-## 1. Tokens de diseño
+## 0. Regla única
 
-Definidos una sola vez en `:root` (light) y sobrescritos en `html[data-theme="dark"]`. Usar **siempre** la variable, nunca el hex literal.
+**Los componentes no llevan valores literales.** Ni color, ni espaciado, ni altura de control, ni radio. Solo `var(--token)`.
 
-### Color — marca (fijos, no cambian por tema)
-| Token | Hex | Uso |
-|-------|-----|-----|
-| `--gold` | `#FFD106` | Primario. **Solo fondo** (ver §2). |
-| `--amber` | `#FFA506` | Secundario/acento, hover de gold. **Solo fondo/borde.** |
-| `--black` | `#000000` | Chrome oscuro fijo (sidebar, botones primarios) — no flipa con el tema. |
-| `--white` | `#ffffff` | Texto sobre fondos oscuros/gold. |
+Dos capas de tokens, y los componentes solo tocan la segunda:
 
-### Color — tema (light → dark)
-| Token | Light | Dark | Uso |
-|-------|-------|------|-----|
-| `--bg` | `#FFFDF0` | `#0a0a0a` | Fondo de app |
-| `--surface` | `#ffffff` | `#171b21` | Tarjetas/paneles |
-| `--surface-soft` | `#f6f1e5` | `#12151a` | Paneles secundarios |
-| `--ink` | `#000000` | `#ffffff` | Texto principal |
-| `--muted` | `#667085` | `#9aa0a8` | Texto secundario (AA ✅) |
-| `--line` | `#e7e3d8` | `#262b33` | Bordes/divisores |
+| Capa | Qué es | Ejemplo | Quién la usa |
+|---|---|---|---|
+| **Primitivas** (90) | Un paso por color real de la interfaz, agrupadas por matiz | `--neutral-850`, `--blue-140` | Solo los semánticos. **Nunca** un componente. |
+| **Semánticos** (97) | El rol que cumple el valor | `--surface`, `--accent`, `--space-4` | Todo el CSS de componentes. |
 
-### Color — estado (semánticos, no de marca)
-| Token | Hex | Uso |
-|-------|-----|-----|
-| `--green` | `#059669` | OK/éxito — **solo fondo o texto grande/bold** (3.8:1) |
-| `--red` / `--rose` | `#d6452f` / `#dc2626` | Error/destructivo |
-| `--blue` | `#2f6df0` | Info/links |
+Verificación: `check-tokens.py` aplana el layout y falla si aparece un literal de espaciado, altura de control o radio fuera de `:root`, o una declaración con `var()` sin definir.
 
-> ⚠️ **Deprecado/no usar:** `--wh-muted-2 #9aa0a8` como texto en light (2.6:1, falla AA). Migrar a `--muted`.
+---
+
+## 1. Color
+
+Base **neutra fría** con un único acento **azul**. La identidad crema/dorada (`--gold #FFD106`, `--bg #FFFDF0`, `--ink`, `--muted`, `--line`) se retiró en las Fases 0-3: esos tokens ya no existen. El amarillo sobrevive solo como color de canal de marketplace y como estado de aviso.
+
+### Tema
+
+`:root` define el tema **claro**; `html[data-theme="dark"]` lo sobrescribe. El atributo lo pone `app.js` vía `document.documentElement.dataset.theme`, y **el valor por defecto es `dark`** (`app.js:43`), persistido en `localStorage` bajo `hwhub-theme`. Cualquier token nuevo se declara en las dos capas o no cambia con el tema.
+
+| Token | Claro | Oscuro | Uso |
+|---|---|---|---|
+| `--bg` | `#fafafa` | `#0a0a0a` | Fondo de app |
+| `--surface` | `#ffffff` | `#111113` | Tarjetas y paneles |
+| `--surface-sunken` | `#f4f4f5` | `#0a0a0a` | Fondo hundido (cabeceras de tabla, filtros) |
+| `--surface-raised` | `#ffffff` | `#18181b` | Elevado (modales, dropdowns) |
+| `--text` | `#111113` | `#fafafa` | Texto normal |
+| `--text-strong` | `#0a0a0a` | `#ffffff` | Títulos y énfasis |
+| `--text-muted` | `#52525b` | `#a1a1aa` | Texto secundario (AA ✅ en ambos) |
+| `--text-subtle` | `#64646d` | `#8b8b93` | Meta, timestamps |
+| `--border` | `#e4e4e7` | `#27272a` | Bordes y divisores |
+| `--border-strong` | `#8b8b93` | `#64646d` | Borde de control enfocable |
+
+### Acento
+
+| Token | Claro | Oscuro | Uso |
+|---|---|---|---|
+| `--accent` | `#2563eb` | `#2f6df0` | Acción primaria, estado activo |
+| `--accent-strong` | `#1d4ed8` | — | **Solo fondo**, por eso no se aclara en oscuro |
+| `--accent-hover` / `--accent-active` | `#1d4ed8` / `#1e40af` | — | Estados del acento |
+| `--accent-contrast` | `#ffffff` | `#ffffff` | Texto **sobre** el acento sólido |
+| `--accent-text` | `#1d4ed8` | — | Acento **como** texto sobre fondo claro |
+| `--accent-subtle` | `#eff6ff` | — | Tinte de fondo |
+
+Regla: sobre acento sólido, siempre `--accent-contrast`. El acento como texto usa `--accent-text`, nunca `--accent`.
+
+### Estado
+
+Cada estado tiene tres tokens: sólido (fondo), superficie (tinte) y texto. No mezclar el sólido como color de texto.
+
+| Estado | Sólido | Superficie | Texto (claro → oscuro) |
+|---|---|---|---|
+| Éxito | `--success` | `--success-surface` / `--success-border` | `--success-text` `#047857` → `#34d399` |
+| Error | `--danger`, `--danger-strong` | `--danger-surface` / `--danger-border` | `--danger-text` `#991b1b` → `#f87171` |
+| Aviso | `--warning` | `--warning-surface` | `--warning-text` `#92400e` → `#fbbf24` |
+| Info | `--info` | `--info-surface` / `--info-border` | `--info-text` `#1d4ed8` → `#93b4fb` |
+| Neutro | `--chip-surface` | — | `--text-muted` |
+
+### Chrome y canal
+
+`--chrome-hover`, `--chrome-text-muted`, `--chrome-text-subtle`, `--chrome-border`: superficie oscura fija (sidebar), no cambia con el tema.
+
+`--brand-mercadolibre` `#ffe600` y `--brand-amazon` `#ff9900` **identifican al canal**, no decoran. Único uso legítimo del amarillo como color de marca.
+
+`--bubble-bot` (teal) y `--bubble-agent` (neutro) distinguen autor en el hilo.
+
+---
+
+## 2. Escalas de layout
+
+### Espaciado — base 4/8
+
+| Token | px | | Token | px |
+|---|---|---|---|---|
+| `--space-1` | 4 | | `--space-6` | 24 |
+| `--space-2` | 8 | | `--space-7` | 28 |
+| `--space-3` | 12 | | `--space-8` | 32 |
+| `--space-4` | 16 | | `--space-10` | 40 |
+| `--space-5` | 20 | | `--space-12` | 48 |
+
+No existen `--space-9` ni `--space-11`: la escala se abre a partir de 32px. Un valor nuevo se redondea al paso más cercano y, **en empate (6, 10, 14, 18, 22…), hacia arriba**.
+
+Excepciones admitidas, y son las únicas: `0`, valores por debajo de 2px (no hay paso que los represente) y por encima de 48px (medidas de shell, no de ritmo).
+
+### Altura de control
+
+| Token | px | Uso |
+|---|---|---|
+| `--control-sm` | 32 | Chips, acciones dentro de tarjeta, filtros densos |
+| `--control-md` | 40 | Input, select y botón por defecto |
+| `--control-lg` | 48 | CTA principal, controles del topbar |
+
+Sustituyen a los 30/34/38/39/40/42/46/48 que había repartidos por pantalla. **Un cuadrado decorativo no es un control**: avatares y marca (`width == height`) conservan su medida propia, porque tocar solo el alto los deforma.
+
+### Radio
+
+| Token | px | Uso |
+|---|---|---|
+| `--radius-xs` | 6 | Chips, badges |
+| `--radius-sm` | 9 | Controles |
+| `--radius-md` | 14 | Tarjetas y paneles |
+| `--radius-lg` | 18 | Modales |
+| `--radius-full` | 999 | Pastillas y toggles |
+
+`--radius-full` es el token de pastilla; no se añadió un `--radius-pill` porque ya existía. `50%` sigue siendo literal: es un círculo, no un paso de escala.
+
+### Shell
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--topbar-height` | 65px | Alto del topbar; `calc(100vh - var(--topbar-height))` en Conversaciones |
+| `--sidebar-width` | 200px | Ancho de la sidebar fija y `margin-left` del contenido |
+| `--inbox-list-width` | 340px | Columna de bandeja |
+| `--inbox-context-width` | 300px | Columna de contexto |
+| `--content-max-width` | 1440px | **Sin uso todavía**: lo consume el patrón P1 en la Fase 5 |
 
 ### Tipografía
-| Token | Valor |
-|-------|-------|
-| `--font-ui` | `"Plus Jakarta Sans", system-ui, …` |
-| `--font-display` | `"Fraunces", Georgia, serif` (solo h1/títulos) |
-| Escala | `11px` meta · `13px` body · `14px` énfasis · `18px` h3 · `24px` h2 · `32px` h1 |
-| Pesos | `400` normal · `600` medio · `800` fuerte/labels · `750` display |
 
-### Espaciado (escala única, base 4)
-`4 · 8 · 12 · 16 · 24 · 32 · 48px`. Nada fuera de esta escala. Padding de componentes en §3.
+| Token | Valor | | Token | Valor |
+|---|---|---|---|---|
+| `--font-sans` | Plus Jakarta Sans, system-ui | | `--font-size-md` | 0.9rem |
+| `--font-display` | Fraunces, Georgia, serif | | `--font-size-base` | 1rem |
+| `--font-mono` | ui-monospace, SF Mono, Menlo | | `--font-size-lg` | 1.15rem |
+| `--font-size-2xs` | 0.68rem | | `--font-size-xl` | 1.4rem |
+| `--font-size-xs` | 0.72rem | | `--font-size-2xl` | 1.75rem |
+| `--font-size-sm` | 0.82rem | | | |
 
-### Radios
-| Token | Valor | Uso |
-|-------|-------|-----|
-| `--radius-sm` | `9px` | Inputs, botones, badges cuadrados |
-| `--radius` | `14px` | Cards, paneles, modales |
-| pill | `999px` | Toggles, tags, status pills |
+Pesos: `--font-weight-regular` 400 · `medium` 500 · `semibold` 600 · `bold` 700 · `black` 800.
+Interlineado: `--line-height-tight` 1.2 · `--line-height-normal` 1.5.
 
 ### Sombras
-| Token | Uso |
-|-------|-----|
-| `--shadow-soft` | Cards en reposo |
-| `--shadow` | Elevación/hover, modales, dropdowns |
 
----
-
-## 2. Reglas de uso: gold vs amber
-
-**Gold `#FFD106` es brillante → casi blanco en luminancia.**
-
-| Situación | Permitido |
-|-----------|-----------|
-| Gold como **fondo** + texto `--black` encima | ✅ (14.4:1) |
-| Gold como **color de texto** sobre claro | ❌ (1.5:1) — usar `--ink` |
-| Texto **blanco sobre gold** | ❌ (1.5:1) — usar negro |
-| Gold como texto sobre **dark** (`#0a0a0a`) | ✅ (13.6:1) — único caso de gold-texto |
-| Gold en **bordes/acentos** (border-left, focus ring) | ✅ |
-
-**Amber `#FFA506`:** acento secundario, hover del gold, bordes. Mismas reglas que gold (no como texto sobre claro). Diferenciador visual: gold = acción primaria/marca; amber = énfasis secundario/hover.
-
-Regla mnemónica: **gold/amber pintan, no escriben** (salvo sobre negro).
+`--shadow-sm` y `--shadow` (hoy con el mismo valor: `0 1px 2px` + `0 8px 24px`, ambas casi planas). Elevación por superficie y borde, no por sombra.
 
 ---
 
@@ -83,97 +149,115 @@ Regla mnemónica: **gold/amber pintan, no escriben** (salvo sobre negro).
 
 Valores canónicos. Donde el CSS tenga duplicados conflictivos, este es el correcto.
 
-### Botón
-| Variante | Fondo | Texto | Borde | Radio | Padding |
-|----------|-------|-------|-------|-------|---------|
-| Primario | `--black` | `--white` | — | `--radius-sm` | `8px 12px` |
-| Acción/CTA | `--gold` | `--black` | — | `--radius-sm` | `8px 12px` |
-| Secundario | `--surface` | `--ink` | `1px --line` | `--radius-sm` | `8px 12px` |
-| Destructivo | `--red` | `--white` | — | `--radius-sm` | `8px 12px` |
-| Compacto (row-actions) | igual variante | — | — | `--radius-sm` | `6px 10px` |
+Las **alturas y los radios** de esta tabla ya están aplicados (Fase 4). Los **paddings** son el destino: hoy cada componente usa su paso de la escala, pero la unificación por rol la cierran las Fases 5-8.
 
-Hover: oscurecer fondo (gold→amber). Foco: **una sola convención** → `box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent)`. Altura mínima táctil **44px** en móvil.
+| Componente | Alto | Radio | Padding | Notas |
+|---|---|---|---|---|
+| Input / select | `--control-md` | `--radius-sm` | `0 var(--space-3)` | Borde `1px --border-strong`; foco por `--accent` |
+| Textarea | por `rows`, mínimo 88px | `--radius-sm` | `var(--space-3)` | Mismo radio y borde que input |
+| Botón | `--control-md` | `--radius-sm` | `0 var(--space-4)` | Sin ancho fijo |
+| Botón denso (tarjeta/filtro) | `--control-sm` | `--radius-sm` | `0 var(--space-3)` | |
+| Chip / pastilla | `--control-sm` | `--radius-full` | `0 var(--space-3)` | |
+| Tarjeta | — | `--radius-md` | `var(--space-4)` | Fondo `--surface`, borde `1px --border` |
+| Panel | — | `--radius-md` | `var(--space-5)` | |
+| Cabecera de panel | — | — | `padding-bottom: var(--space-4)` | Borde inferior + `margin-bottom: var(--space-4)` |
+| Modal | — | `--radius-lg` | `var(--space-5)` | Fondo `--surface-raised` |
 
-### Card / Panel
-- Fondo `--surface` · borde `1px --line` · radio `--radius` · sombra `--shadow-soft` · padding `16px` (`clamp(12px,1.6vw,20px)`).
-- Una sola definición de `.panel`. Nada de 5px/7px/12px sueltos.
+### Botón, por variante
 
-### Badge / Pill / Tag
-- Radio `999px` · padding `4px 9px` · font `11px/800`.
-- Estado: fondo tinte claro + texto oscuro del mismo matiz (AA ≥4.5): OK `#047857`/verde-soft, warning `#92400e`/amber-soft, error `#991b1b`/red-soft, info `#1d4ed8`/blue-soft.
-- Tags neutros: fondo `--surface-soft`, texto `--muted`.
+| Variante | Fondo | Texto |
+|---|---|---|
+| Primario | `--accent` | `--accent-contrast` |
+| Secundario | `--surface` | `--text` + borde `1px --border` |
+| Destructivo | `--danger` | `--text-inverse` |
 
-### Input / Select / Textarea
-- Fondo `--surface` · texto `--ink` · borde `1px --line` · radio `--radius-sm` · padding `10px 12px`.
-- Foco: `border-color: --gold` + `box-shadow: 0 0 0 3px color-mix(--gold 22%, transparent)`. **Sin** mezclar outline+border.
-- Ancho `100%` dentro de `.editor`.
+Hover del primario: `--accent-hover`. Activo: `--accent-active`. Foco visible siempre, en cualquier variante.
+
+### Campo de color
+
+Patrón `.color-pair`: swatch + hex editable. **Nunca** un `input[type=color]` suelto, que hereda el input genérico y se pinta como barra a todo lo ancho.
+
+```html
+<div class="color-pair">
+  <input type="color" name="…"><input type="text" data-hex aria-label="… en hexadecimal">
+</div>
+```
+
+El `name` vive en el input de color: el hex es otra forma de escribir el mismo valor, no un campo aparte. Lo sincronizan `syncColorPairs` / `bindColorPairs` (`app.js`), compartidos por Marca y Chatbot.
+
+### Grupo de campos
+
+`.field-group` > `.field-label` + control, con `gap: var(--space-1)`. El `<label>` envolviendo el control no permite controlar el espacio etiqueta→campo; el patrón correcto es este.
 
 ### Toggle (`.switch-row`) — único toggle del sistema
+
 ```html
-<label class="switch-row">
-  <input type="checkbox"><span></span><em>Etiqueta</em>
-</label>
+<label class="switch-row"><input type="checkbox"><span></span><em>Etiqueta</em></label>
 ```
-- Riel `2.35rem×1.25rem` pill · OFF `--line` · ON `--gold`.
-- Perilla `::after` **siempre `--white`** (base y `:checked`); en `:checked` solo `translateX`.
-- `<span>` y `<em>` obligatorios (el CSS estiliza el span como riel). Sin ellos no renderiza.
-- Prohibido: `.check`/`.check-row` (eliminados), perilla con fondo oscuro.
 
-### Tabla / Matriz
-- Header `--surface-soft`, texto `--muted/800`. Filas: borde inferior `1px --line`, hover `--table-hover`.
-- Padding celda `8px 12px` · texto `13px`.
-- **Móvil (<768px):** no scroll horizontal — colapsar a lista de cards (una card por fila, label:valor apilado).
+- Riel pill · OFF `--border` · ON `--accent`.
+- Perilla `::after` **siempre** `--white`, en base y en `:checked`; en `:checked` solo `translateX`.
+- `<span>` y `<em>` son obligatorios: el CSS estiliza el span como riel. Sin ellos no renderiza.
+- Prohibido: `.check` / `.check-row` (eliminados), perilla con fondo oscuro.
 
----
+### Tabla
 
-## 4. Reglas de layout
+Cabecera `--surface-sunken` con texto `--text-muted`. Filas con borde inferior `1px --border` y hover `--row-hover`. Padding de celda `var(--space-2) var(--space-3)`.
 
-**Mobile-first:** base = 1 columna apilada; multicolumna es enhancement vía `@media (min-width: …)`.
-
-### Desktop (≥1024px)
-- **Sidebar** fija izquierda, `--sidebar-width: 240px`, `position: fixed`, fondo `--black`.
-- **Contenido** `margin-left: 240px`, padding `22px 28px`.
-- Módulos form+lista: 2 columnas (`min-width:900px`). Conversaciones: 3 col (lista/thread/contexto) en `≥1100px`, 2 col `≥820px`.
-- App-shell `height:100vh; overflow:hidden`; scroll interno por vista.
-
-### Mobile (<768px)
-- **Sidebar oculta** → **bottom nav fija** (4-5 destinos primarios: Dashboard, Conversaciones, Agentes, Chatbot, Más). `position: fixed; bottom: 0`, alto 56px, fondo `--surface`, item activo en `--gold`.
-- Contenido: 1 columna, `margin-left:0`, `padding-bottom: 64px` (para no tapar con bottom nav).
-- App-shell libera scroll: `height:auto; overflow-y:auto`.
-- **Conversaciones:** navegación por vistas (lista → thread → contexto como push views), nunca 3 paneles. Contexto accesible vía botón/drawer.
-- **Formularios largos:** secciones colapsables (acordeón), no scroll infinito.
-- Topbar: solo título + 1 acción (menú overflow para el resto). Controles "Simular…" fuera del topbar.
-- Touch targets ≥44px.
-
-### Tablet (768–1023px)
-- Sidebar colapsada a iconos o barra superior; contenido 1-2 col según módulo.
+**Móvil (<768px):** sin scroll horizontal — colapsar a lista de tarjetas, una por fila, con label:valor apilado.
 
 ---
 
-## 5. Reglas de contraste (WCAG AA: 4.5:1 normal · 3:1 grande/bold)
+## 4. Layout
 
-### ✅ Combinaciones permitidas
-| Texto | Fondo | Ratio |
-|-------|-------|-------|
-| `--ink` `#000` | `--bg` / `--surface` | 20–21:1 |
-| `--black` | `--gold` | 14.4:1 |
-| `--white` | `--black` / sidebar | 19:1 |
-| `--muted` `#667085` | `--surface` `#fff` | 4.97:1 |
-| `--gold` | `--bg` dark `#0a0a0a` | 13.6:1 |
-| badge texto oscuro | su tinte claro | ≥4.5:1 |
+**Mobile-first:** la base es una columna apilada; el multicolumna es enhancement por `@media (min-width: …)`.
 
-### ❌ Combinaciones prohibidas
-| Texto | Fondo | Ratio | Usar en su lugar |
-|-------|-------|-------|------------------|
-| `--gold` / `--amber` | claro (`#fff`/cream) | 1.5–2.0:1 | `--ink` |
-| `--white` | `--gold` / `--amber` | 1.5–2.0:1 | `--black` |
-| `--wh-muted-2` `#9aa0a8` | claro | 2.6:1 | `--muted` |
-| `--muted` `#667085` | `--surface-soft` | 4.41:1 | subir a `#5b6472` o fondo `--surface` |
-| `--green` `#059669` (texto normal) | `#fff` | 3.77:1 | `#047857` o solo bold/grande |
-| `--wh-muted-2` `#6c7280` dark (texto normal) | dark | 3.6–4.1:1 | `--muted` dark `#9aa0a8` |
+### Desktop
+
+- **Sidebar** fija a la izquierda, `--sidebar-width`, sobre superficie de chrome oscura.
+- **Contenido** con `margin-left: var(--sidebar-width)` y padding de página `var(--space-5) var(--space-7) var(--space-10)`.
+- Módulos form + lista a dos columnas. Conversaciones a tres (bandeja / hilo / contexto).
+- App shell `height: 100vh` con scroll interno por vista.
+
+### Móvil (<768px)
+
+- Sidebar oculta → **bottom nav** fija con los destinos primarios; el contenido reserva su alto abajo.
+- Una columna, `margin-left: 0`.
+- **Conversaciones:** navegación por vistas (lista → hilo → contexto como push views), nunca tres paneles a la vez.
+- Formularios largos: secciones colapsables, no scroll infinito.
+- Topbar: título + una acción; el resto a overflow.
+- Objetivos táctiles ≥44px, por encima de `--control-md`.
+
+Los patrones canónicos de composición (shell de página, grid de tarjetas por `auto-fill`, área de dos columnas, app shell de tres, formulario y grupo de acciones) están especificados en [`layout-audit.md` §2.4](layout-audit.md) y se adoptan en las Fases 5-8.
+
+---
+
+## 5. Contraste (WCAG AA: 4.5:1 normal · 3:1 grande o bold)
+
+El acento azul sí funciona como texto, a diferencia del dorado que sustituyó. Aun así, cada rol tiene su token: el sólido pinta, el `-text` escribe.
+
+### Permitido
+
+| Texto | Fondo |
+|---|---|
+| `--text` / `--text-strong` | `--bg`, `--surface`, `--surface-raised` |
+| `--text-muted` | `--surface` (AA en claro y en oscuro) |
+| `--accent-contrast` | `--accent`, `--accent-strong` |
+| `--accent-text` | `--surface`, `--accent-subtle` |
+| `--success-text` / `--danger-text` / `--warning-text` / `--info-text` | su `-surface` correspondiente |
+
+### Prohibido
+
+| Texto | Fondo | Usar en su lugar |
+|---|---|---|
+| `--accent` como texto | claro | `--accent-text` |
+| Sólido de estado (`--success`, `--danger`, `--warning`) como texto | cualquiera | su token `-text` |
+| `--text-subtle` | `--surface-sunken` | `--text-muted` |
+| Amarillo de canal (`--brand-*`) como texto | cualquiera | es color de identidad, solo fondo o icono |
+| Cualquier hex literal | cualquiera | el token semántico del rol |
 
 ### Regla rápida
-- Texto sobre gold/amber → **siempre negro**.
-- Gold/amber como texto → **solo sobre negro**.
-- Texto secundario → `--muted` (nunca `--wh-muted-2`).
-- Verde de estado → fondo, o texto bold/grande; para texto normal usar `#047857`.
+
+- Sólido → fondo. `-text` → texto. `-surface` → tinte.
+- Todo par nuevo texto/fondo se declara en claro **y** en oscuro.
+- Si hay que elegir entre bajar el contraste o cambiar el token, se cambia el token.
