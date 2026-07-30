@@ -687,11 +687,22 @@ function renderConversations() {
   return renderConversationInbox();
 }
 
-function renderChipList(items = [], className = "") {
-  return (items || [])
+// Los chips envuelven a segunda linea; pasado el limite se resumen en un "+N"
+// cuyo title lista los que no se ven, para que el dato siga alcanzable. Antes se
+// recortaban contra el borde de la tarjeta ("walm...") y los que sobraban se
+// perdian en silencio.
+function renderChipList(items = [], className = "", limite = 4) {
+  const lista = (items || [])
     .filter((item) => item !== null && item !== undefined && String(item).trim())
-    .map((item) => `<span class="tag ${esc(className)}">${esc(item)}</span>`)
-    .join("");
+    .map((item) => String(item));
+  const chips = lista
+    .slice(0, limite)
+    .map((item) => `<span class="tag ${esc(className)}">${esc(item)}</span>`);
+  const ocultos = lista.slice(limite);
+  if (ocultos.length) {
+    chips.push(`<span class="tag tag-more" title="${esc(ocultos.join(", "))}">+${ocultos.length}</span>`);
+  }
+  return chips.join("");
 }
 
 function renderAdminCollections() {
@@ -834,7 +845,7 @@ function renderBranches() {
           ${branch.whatsapp ? `<span>WhatsApp: <b>${esc(branch.whatsapp)}</b></span>` : ""}
           <span>Horario: <b>${esc(branch.weekdayHours || branch.hours || "sin horario")}</b></span>
         </div>
-        <div class="wh-chip-row">${renderChipList((branch.services || []).slice(0, 3))}</div>
+        <div class="wh-chip-row">${renderChipList(branch.services)}</div>
         <div class="row-actions">
           <button data-edit="branches" data-id="${esc(branch.id)}">Editar</button>
           <button data-delete="branches" data-id="${esc(branch.id)}">Eliminar</button>

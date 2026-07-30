@@ -1054,17 +1054,6 @@ textarea:disabled {
   margin-top: var(--space-3);
 }
 
-.row-actions button {
-  padding: var(--space-2) var(--space-2);
-  background: var(--surface-sunken);
-  color: var(--text);
-}
-
-.row-actions button.danger {
-  background: var(--danger-surface);
-  color: var(--danger-text);
-}
-
 .filters {
   display: grid;
   grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(180px, 1.2fr) auto;
@@ -2185,7 +2174,6 @@ textarea {
 }
 
 .filters button,
-.row-actions button,
 .form-actions button:first-child,
 .hwhub-widget-form-actions button:first-child {
   border: 1px solid var(--border);
@@ -4175,12 +4163,6 @@ html[data-theme="dark"] .message.msg.me .message-body {
 }
 
 /* WhaleHub module cards pass */
-.wh-entity-card {
-  display: grid;
-  border-color: var(--border);
-  background: var(--surface);
-}
-
 .wh-card-head {
   display: flex;
   align-items: flex-start;
@@ -4228,7 +4210,6 @@ html[data-theme="dark"] .message.msg.me .message-body {
   align-items: center;
   justify-content: center;
   min-height: 24px;
-  max-width: 140px;
   border-radius: var(--radius-full);
   padding: var(--space-1) var(--space-2);
   background: var(--accent-subtle);
@@ -4236,7 +4217,10 @@ html[data-theme="dark"] .message.msg.me .message-body {
   font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
-  white-space: nowrap;
+  /* Estado y categoria son datos clave: sin `max-width` ni `nowrap`, el texto
+     envuelve dentro de la pastilla en vez de recortarse (Directorio la usa para
+     el area, que puede ser larga). */
+  text-align: center;
 }
 
 .wh-state-pill.is-ok {
@@ -4475,9 +4459,15 @@ main.wh-main {
   50% { opacity: 0.35; }
 }
 
+/* Patron P1: todas las vistas salvo Conversaciones, que es app-shell (P6).
+   `margin-inline: auto` centra el contenido en el espacio libre; sin el, el
+   limite dejaria la pagina pegada a la izquierda con el vacio a un lado. */
 .view.active:not([data-view="conversations"]) {
   flex: 1 1 auto;
   overflow-y: auto;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  width: 100%;
   padding: var(--space-6) var(--space-7) var(--space-10);
 }
 
@@ -4632,7 +4622,7 @@ main.wh-main {
   min-height: var(--control-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   background: var(--surface);
   color: var(--text);
   font-size: 11.5px;
@@ -4649,7 +4639,7 @@ main.wh-main {
 
 button.danger,
 .row-actions button.danger {
-  border-color: rgba(214, 69, 47, 0.18);
+  border-color: var(--danger-border);
   background: var(--danger-surface);
   color: var(--danger-text);
 }
@@ -4661,13 +4651,14 @@ button.danger,
 #users-list.cards,
 #integrations-list.cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--space-4);
 }
 
-#integrations-list.cards,
-#users-list.cards {
-  grid-template-columns: 1fr;
+/* Integraciones vive en el modulo de dos columnas, con la mitad del ancho:
+   ahi una sola columna de tarjeta es lo correcto. */
+#integrations-list.cards {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .wh-inbox .filters {
@@ -5730,29 +5721,47 @@ html[data-theme="dark"] .filters select {
 }
 
 /* ===== Bloque B: cards compactas + grid universal ===== */
+/* Patron P3. Una sola base para todos los grids de tarjeta: 280px es lo que
+   necesita el contenido mas ancho (titulo + pastilla de estado en la cabecera,
+   "WhatsApp: +52 55 ..." en los datos, y los dos botones de accion). Antes
+   habia tres bases distintas: 250px aqui, 220px en Directorio y 280px en
+   `.list-panel .cards`. Se quita el `overflow: hidden`, que recortaba la
+   tarjeta contra el borde del grid. */
 #agents-list,
 #branches-list,
 #directory-list,
 #faq-list,
 #routing-list,
 #users-list {
-  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   align-content: start;
   max-width: 100%;
-  overflow: hidden;
 }
 
+/* Patron base de tarjeta de entidad. Lo emiten los seis renderers (Agentes,
+   Ruteo, FAQs, Sucursales, Directorio, Usuarios); las variantes por pantalla
+   solo anaden, no redefinen. Antes estaba partido en dos bloques separados por
+   1500 lineas. */
 .wh-entity-card {
+  display: grid;
+  border-color: var(--border);
+  background: var(--surface);
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   min-width: 0;
-  overflow: hidden;
-  word-break: break-word;
+  /* `align-content: start` evita que las filas se estiren, y es lo que permite
+     que la barra de acciones se pegue abajo con `margin-top: auto`. */
+  align-content: start;
+  /* Antes: `overflow: hidden` + `word-break: break-word`, que recortaba la
+     tarjeta y partia palabras por la mitad ("Mercad o Libre"). `anywhere` corta
+     solo cuando una palabra sola no cabe; con espacios, parte por el espacio. */
+  overflow-wrap: anywhere;
 }
 
+/* Texto largo secundario: recorte limpio a 3 lineas, con elipsis del clamp. */
 .wh-entity-card .wh-card-summary {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -5765,28 +5774,36 @@ html[data-theme="dark"] .filters select {
   min-width: 0;
 }
 
-.wh-entity-card .wh-card-head strong {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
+/* Dato clave: el titulo va SIEMPRE completo y la tarjeta crece si hace falta.
+   Antes se recortaba a dos lineas (y a una en Sucursales), asi que "Centro de
+   servicios Izazaga" se perdia. */
 .wh-entity-card .wh-card-head p {
   font-size: 11px;
   color: var(--text-muted);
 }
 
+/* Los chips envuelven a segunda linea en vez de cortarse contra el borde. */
 .wh-entity-card .wh-chip-row {
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .wh-entity-card .wh-chip-row .tag {
   flex: 0 0 auto;
+  margin: 0;
 }
 
+/* Resumen de los chips que no caben. El title lleva la lista completa. */
+.tag-more {
+  background: var(--chip-surface);
+  color: var(--text-muted);
+  cursor: help;
+}
+
+/* Pegada al fondo de la tarjeta: las barras de accion de una misma fila quedan
+   alineadas entre si aunque las tarjetas tengan distinto alto. */
 .wh-entity-card .row-actions {
+  margin-top: auto;
+  padding-top: var(--space-2);
   justify-content: flex-end;
 }
 
@@ -5995,15 +6012,6 @@ html[data-theme="dark"] .filters select {
 
 .list-panel .cards {
   margin-top: 0;
-}
-
-#directory-list {
-  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
-}
-
-/* Sucursales: nombre a 1 linea (Directorio mantiene 2 lineas del clamp global) */
-.branch-card .wh-card-head strong {
-  -webkit-line-clamp: 1;
 }
 
 /* ===== Bloque A: panel de conversaciones ===== */
