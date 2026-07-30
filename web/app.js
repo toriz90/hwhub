@@ -911,10 +911,12 @@ function renderIntegrations() {
       <article class="card wh-entity-card integration-card">
         <header class="wh-card-head">
           <div>
-            <strong>${esc(item.name)}</strong>
+            <div class="wh-title-row">
+              <strong>${esc(item.name)}</strong>
+              <span class="wh-state-pill ${item.lastCheckStatus === "ok" ? "is-ok" : item.lastCheckStatus ? "is-warning" : "is-muted"}">${esc(item.lastCheckStatus || (item.active ? "Activa" : "Inactiva"))}</span>
+            </div>
             <p>${esc(item.provider)} - ${esc(formatDateTime(item.lastCheckedAt))}</p>
           </div>
-          <span class="wh-state-pill ${item.lastCheckStatus === "ok" ? "is-ok" : item.lastCheckStatus ? "is-warning" : "is-muted"}">${esc(item.lastCheckStatus || (item.active ? "Activa" : "Inactiva"))}</span>
         </header>
         ${item.lastCheckMessage ? `<p class="wh-card-summary">${esc(item.lastCheckMessage)}</p>` : ""}
         <div class="wh-chip-row">${Object.entries(item.config || {}).map(([key, value]) => `<span class="tag">${esc(key)}: ${esc(value)}</span>`).join("")}</div>
@@ -1056,8 +1058,9 @@ function renderUsers() {
 }
 
 function applyRoleUi() {
-  $("#active-role").value = state.role;
-  $("#active-role").disabled = true;
+  // El rol lo muestra la pastilla de usuario del topbar (`#active-user`), que ya
+  // pinta "Nombre - rol". El selector que habia aqui estaba siempre disabled y
+  // nada escribia state.role desde el: duplicaba el dato y parecia accionable.
   const canAdmin = roleCan("faqs") || roleCan("branches") || roleCan("directoryContacts") || roleCan("agents") || roleCan("routingRules");
   for (const form of $$("[data-editor]")) {
     const collection = form.dataset.editor;

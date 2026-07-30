@@ -375,11 +375,19 @@ button {
   }
 }
 
+/* Login en una sola definicion. Tenia tres repartidas por la hoja, radio fuera
+   del sistema (--radius-sm, cuando es un panel) y una sombra propia de 70px de
+   difusion que no existia en ningun otro sitio. */
 .login-card {
   width: min(430px, 100%);
   display: grid;
   gap: var(--space-4);
   padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
 
 .login-card .brand-mark {
@@ -628,16 +636,6 @@ h2 {
 .faq-list {
   display: grid;
   gap: var(--space-3);
-}
-
-.item,
-.card,
-.rule,
-.faq {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: var(--radius-xs);
-  padding: var(--space-3);
 }
 
 .conversation-card {
@@ -931,10 +929,6 @@ h2 {
   opacity: 0.58;
 }
 
-.role-switch {
-  min-width: 170px;
-}
-
 button:disabled,
 input:disabled,
 select:disabled,
@@ -1067,15 +1061,16 @@ textarea:disabled {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(180px, 1.2fr) auto;
   gap: var(--space-2);
 }
 
 .filters button {
-  padding: var(--space-2) var(--space-3);
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
   background: var(--surface-sunken);
   color: var(--text);
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .conversations,
@@ -1844,7 +1839,7 @@ button.is-busy::after {
 
 .toast {
   pointer-events: auto;
-  border: 1px solid rgba(17, 17, 17, 0.12);
+  border: 1px solid var(--border);
   border-left: 5px solid var(--accent);
   border-radius: var(--radius-md);
   color: var(--text);
@@ -1896,13 +1891,6 @@ a:focus-visible {
   background:
     radial-gradient(circle at 20% 12%, rgba(37, 99, 235, 0.22), transparent 30%),
     linear-gradient(135deg, var(--black), var(--neutral-strong) 56%, var(--black));
-}
-
-.login-card {
-  border: 1px solid rgba(37, 99, 235, 0.34);
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
 }
 
 .login-card button {
@@ -1968,7 +1956,6 @@ a:focus-visible {
   background: var(--black);
 }
 
-.role-switch,
 .user-pill {
   min-height: var(--control-lg);
 }
@@ -2043,9 +2030,16 @@ textarea {
   min-width: 0;
 }
 
+/* Los tres controles comparten alto y linea base. `align-items: stretch` (el
+   valor por defecto, explicito aqui porque antes era `end`) los iguala, y se
+   anula el margen que el buscador necesita cuando va suelto fuera de la barra. */
 .list-panel .filters {
   grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr) auto;
-  align-items: end;
+  align-items: stretch;
+}
+
+.filters .search {
+  margin-bottom: 0;
 }
 
 .list-panel .card,
@@ -2071,12 +2065,8 @@ textarea {
 .chatbot-block,
 .widget-preview-panel,
 .chatbot-test-box,
-.embed-box,
-.item,
-.card,
-.rule,
-.faq {
-  border: 1px solid rgba(17, 17, 17, 0.1);
+.embed-box {
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
@@ -2088,7 +2078,7 @@ textarea {
 
 .panel header {
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  border-bottom: 1px solid var(--border);
 }
 
 .metrics article,
@@ -2745,18 +2735,29 @@ p,
 .widget-preview-panel,
 .chatbot-test-box,
 .embed-box,
-.item,
-.card,
-.rule,
-.faq,
 .conversation-card,
 .conversation-detail,
 .conversations,
-.login-card,
 .toast {
   border-color: var(--border);
   background: var(--surface);
   color: var(--text);
+}
+
+/* Patron unico de tarjeta suelta. Estaba repartido en tres generaciones a 600,
+   2000 y 2700 lineas de distancia: la primera aportaba solo el `padding` y sus
+   otras tres declaraciones estaban muertas. Estos son los valores que ya
+   ganaban, en un solo bloque y en la posicion de la ultima generacion. */
+.item,
+.card,
+.rule,
+.faq {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .editor,
@@ -3597,9 +3598,23 @@ main.wh-main {
   display: none;
 }
 
+/* Dos grupos por funcion: estado del sistema (Live + tema) y cuenta (usuario +
+   Salir). Antes eran cinco controles seguidos sin jerarquia, con el rol repetido
+   en un desplegable inerte y en la pastilla de usuario. */
 .top-actions {
   align-items: center;
+  gap: var(--space-4);
+}
+
+.topbar-group {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.topbar-group + .topbar-group {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
 }
 
 .top-actions button,
@@ -4404,7 +4419,6 @@ main.wh-main {
   margin-left: auto;
 }
 
-.role-switch,
 .theme-switch {
   min-height: var(--control-md);
   border: 1px solid var(--border);
@@ -4414,16 +4428,6 @@ main.wh-main {
   color: var(--text-muted);
   font-size: 10.5px;
   font-weight: 700;
-}
-
-.role-switch select {
-  min-width: 116px;
-  min-height: 20px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 11.5px;
 }
 
 .user-pill {
@@ -4826,7 +4830,6 @@ html[data-theme="dark"] .wh-thread-messages .message.msg.me .message-body {
   }
 }
 
-html[data-theme="dark"] .role-switch,
 html[data-theme="dark"] .theme-switch,
 html[data-theme="dark"] .user-pill,
 html[data-theme="dark"] .editor input,
@@ -5099,7 +5102,6 @@ html[data-theme="dark"] .filters select {
   /* Controles poco frecuentes en movil: rol + tema fuera; Simular* son dev tools.
      Scope .wh-topbar = especificidad (0,2,0)/(1,1,0): gana a .theme-switch{display:inline-grid}
      y a las reglas base por encima del orden de fuente. */
-  .wh-topbar .role-switch,
   .wh-topbar .theme-switch,
   .wh-topbar #simulate-whatsapp,
   .wh-topbar #simulate-marketplace {
@@ -5194,7 +5196,7 @@ html[data-theme="dark"] .filters select {
   font-weight: 800;
   font-size: 15px;
   letter-spacing: 0.02em;
-  color: var(--accent-text);
+  color: var(--white);
 }
 
 .modal-header .modal-title {
@@ -5212,7 +5214,7 @@ html[data-theme="dark"] .filters select {
   flex: 0 0 auto;
   padding: var(--space-4) var(--space-5);
   background: var(--surface);
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-steps .step-item {
@@ -5352,7 +5354,7 @@ html[data-theme="dark"] .filters select {
 .modal-body .field-group textarea {
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 0.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
@@ -5388,9 +5390,9 @@ html[data-theme="dark"] .filters select {
   align-items: center;
   gap: var(--space-2);
   flex: 0 0 auto;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-4) var(--space-5);
   background: var(--surface);
-  border-top: 0.5px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 
 .modal-footer .modal-btn {
@@ -5805,6 +5807,16 @@ html[data-theme="dark"] .filters select {
   flex-wrap: wrap;
 }
 
+/* Estado pegado al titulo. En la cabecera de tarjeta el estado se va a la
+   esquina derecha (`space-between`), y en una tarjeta ancha como la de APIs
+   quedaba lejisimo del nombre al que se refiere. */
+.wh-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .wh-entity-card .wh-chip-row .tag {
   flex: 0 0 auto;
   margin: 0;
@@ -5885,7 +5897,7 @@ html[data-theme="dark"] .filters select {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 0.5px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--surface-sunken) center / cover no-repeat;
 }
 
@@ -5946,7 +5958,7 @@ html[data-theme="dark"] .filters select {
   display: grid;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 0.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg);
 }
@@ -6018,17 +6030,6 @@ html[data-theme="dark"] .filters select {
 
 /* ===== Bloque A: panel de conversaciones ===== */
 /* A1: cabecera del hilo */
-.wh-inbox-thread .wh-thread-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: 56px;
-  padding: var(--space-3) var(--space-4);
-  margin: 0;
-  background: var(--surface);
-  border-bottom: 0.5px solid var(--border);
-}
-
 .wh-inbox-thread .wh-thread-header #conversation-thread-heading {
   min-width: 0;
 }
