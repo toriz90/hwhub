@@ -5396,7 +5396,8 @@ html[data-theme="dark"] .filters select {
 }
 
 .modal-footer .modal-btn {
-  padding: var(--space-2) var(--space-4);
+  min-height: var(--control-md);
+  padding: 0 var(--space-4);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-size: 13px;
