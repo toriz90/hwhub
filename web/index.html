@@ -260,6 +260,11 @@
                 <button id="clear-conversation-filters" class="wh-filter-clear" type="button" hidden>Limpiar filtros</button>
               </div>
             </div>
+            <div class="settings-tabs wh-inbox-tabs" role="tablist" aria-label="Vista de la bandeja">
+              <button class="settings-tab" type="button" role="tab" data-inbox-tab="mine" aria-selected="false">Mios <span class="wh-tab-count" data-inbox-count="mine">0</span></button>
+              <button class="settings-tab" type="button" role="tab" data-inbox-tab="unassigned" aria-selected="false">Sin asignar <span class="wh-tab-count" data-inbox-count="unassigned">0</span></button>
+              <button class="settings-tab is-active" type="button" role="tab" data-inbox-tab="all" aria-selected="true">Todos <span class="wh-tab-count" data-inbox-count="all">0</span></button>
+            </div>
             <div id="conversation-list" class="list wh-conversation-list" role="list"></div>
           </div>
 

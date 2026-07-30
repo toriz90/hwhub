@@ -13,6 +13,7 @@ const state = {
 };
 
 const filters = {
+  inboxTab: "all",
   status: "",
   channel: "",
   priority: "",
@@ -610,6 +611,39 @@ function renderDashboardInsights(appState) {
   }).join("") || `<article class="wh-empty-state compact"><strong>Sin APIs</strong><p>Configura integraciones para ver su estado aqui.</p></article>`;
 }
 
+// Vistas de la bandeja. "Mios" usa el agentId del usuario de sesion, que ya viene
+// en el payload de /session; "Sin asignar" es lo que alguien tiene que tomar:
+// sin agente asignado o esperando agente.
+function inboxTabMatches(item, tab = filters.inboxTab) {
+  if (tab === "mine") return Boolean(state.user?.agentId) && item.assignedAgentId === state.user.agentId;
+  if (tab === "unassigned") return !item.assignedAgentId || item.status === "waiting_for_agent";
+  return true;
+}
+
+// Los contadores se calculan sobre la lista ya filtrada por busqueda, estado,
+// canal y prioridad: el numero de cada pestana es exactamente lo que se vera al
+// pulsarla, no un total absoluto que no cuadraria.
+function updateInboxTabCounts(conversations) {
+  for (const tab of ["mine", "unassigned", "all"]) {
+    const badge = $(`[data-inbox-count="${tab}"]`);
+    if (badge) badge.textContent = String(conversations.filter((item) => inboxTabMatches(item, tab)).length);
+  }
+}
+
+function bindInboxTabs() {
+  for (const button of $$("[data-inbox-tab]")) {
+    button.addEventListener("click", () => {
+      filters.inboxTab = button.dataset.inboxTab;
+      for (const tab of $$("[data-inbox-tab]")) {
+        const activa = tab === button;
+        tab.classList.toggle("is-active", activa);
+        tab.setAttribute("aria-selected", String(activa));
+      }
+      render();
+    });
+  }
+}
+
 function renderConversationInbox() {
   const appState = state.data;
   const conversations = appState.conversations.filter((item) => {
@@ -634,11 +668,14 @@ function renderConversationInbox() {
     );
   }).sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
 
+  const visibles = conversations.filter((item) => inboxTabMatches(item));
+  updateInboxTabCounts(conversations);
+
   const count = $("#conversation-count");
-  if (count) count.textContent = String(conversations.length);
+  if (count) count.textContent = String(visibles.length);
   updateConversationFilterCount();
 
-  $("#conversation-list").innerHTML = conversations
+  $("#conversation-list").innerHTML = visibles
     .map((item) => {
       const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
       const channel = channelLabel(item.channel);
@@ -1711,6 +1748,7 @@ function updateConversationFilterCount() {
 }
 
 function bindConversationFilters() {
+  bindInboxTabs();
   const toggle = $("#conversation-filters-toggle");
   const panel = $("#conversation-filter-panel");
   toggle?.addEventListener("click", () => {
