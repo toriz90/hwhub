@@ -3617,6 +3617,14 @@ main.wh-main {
   gap: var(--space-4);
 }
 
+/* La marca vive en el sidebar, que a <=767px se convierte en bottom nav y la
+   oculta (`.wh-brand.brand { display: none }`), asi que el topbar movil se
+   quedaba sin identidad. Esta copia compacta solo aparece ahi; en escritorio
+   sobra porque el sidebar ya la muestra. */
+.wh-topbar-brand {
+  display: none;
+}
+
 .topbar-group {
   display: flex;
   align-items: center;
@@ -4421,7 +4429,7 @@ main.wh-main {
   align-items: center;
 }
 
-.wh-topbar > div:first-child {
+.wh-topbar > div:not(.top-actions) {
   min-width: 240px;
 }
 
@@ -5094,14 +5102,34 @@ html[data-theme="dark"] .filters select {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    height: 48px;
+    /* El alto lo fija `flex: 0 0 var(--topbar-height)` del bloque base, porque el
+       topbar es item flex de main: el `height: 48px` que habia aqui nunca tuvo
+       efecto. Lo que importa es no envolver: con `wrap`, marca y acciones caian
+       a una segunda linea dentro de una caja que no crecia, y se solapaban. */
+    flex-wrap: nowrap;
     min-height: 0;
     padding: 0 var(--space-3);
     margin-bottom: var(--space-2);
   }
 
-  .wh-topbar > div:first-child {
+  /* El titulo de seccion. `div:first-child` dejo de casar al anteponer la marca
+     en el markup; se identifica por lo que NO es, que no depende del orden. */
+  .wh-topbar > div:not(.top-actions) {
     display: none;
+  }
+
+  .wh-topbar .topbar-group + .topbar-group {
+    padding-left: var(--space-3);
+  }
+
+  .wh-topbar-brand {
+    flex: 0 0 auto;
+    display: grid;
+    width: var(--control-sm);
+    height: var(--control-sm);
+    min-width: var(--control-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
   }
 
   .wh-topbar .top-actions {
@@ -5109,7 +5137,14 @@ html[data-theme="dark"] .filters select {
     flex-direction: row;
     align-items: center;
     gap: var(--space-2);
-    width: 100%;
+    /* `width: 100%` hacia que arrancaran en el borde izquierdo y se montaran
+       sobre la marca; con `flex` ocupan solo el espacio que queda tras ella.
+       Y sin `nowrap` se partian en dos lineas a 360px: Live arriba, usuario y
+       Salir debajo. El que cede ancho es el nombre, que ya lleva elipsis. */
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    width: auto;
     margin: 0;
   }
 
@@ -5132,6 +5167,8 @@ html[data-theme="dark"] .filters select {
 
   #active-user.user-pill {
     margin-left: auto;
+    /* Es informacion: cede ancho antes que la marca o las acciones. */
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
