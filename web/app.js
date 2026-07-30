@@ -634,6 +634,10 @@ function renderConversationInbox() {
     );
   }).sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0));
 
+  const count = $("#conversation-count");
+  if (count) count.textContent = String(conversations.length);
+  updateConversationFilterCount();
+
   $("#conversation-list").innerHTML = conversations
     .map((item) => {
       const agent = appState.agents.find((entry) => entry.id === item.assignedAgentId);
@@ -1646,7 +1650,61 @@ function bindDashboardShortcuts() {
   }
 }
 
+// Primer menu de desborde del proyecto: no existia patron de dropdown, asi que
+// esta es la pieza a reutilizar. Cierra al elegir, al pulsar fuera y con Escape.
+function bindMenu(trigger, panel) {
+  if (!trigger || !panel) return;
+  const close = () => {
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  };
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const abrir = panel.hidden;
+    panel.hidden = !abrir;
+    trigger.setAttribute("aria-expanded", String(abrir));
+  });
+  panel.addEventListener("click", close);
+  document.addEventListener("click", (event) => {
+    if (!panel.hidden && !panel.contains(event.target) && !trigger.contains(event.target)) close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !panel.hidden) {
+      close();
+      trigger.focus();
+    }
+  });
+}
+
+// El buscador vive siempre visible; estado/canal/prioridad se colapsan. El
+// contador es lo que evita filtrar a ciegas con el panel cerrado.
+const conversationFilterKeys = ["status", "channel", "priority", "slaState"];
+
+function updateConversationFilterCount() {
+  const activos = conversationFilterKeys.filter((key) => filters[key]).length;
+  const badge = $("#conversation-filter-count");
+  const toggle = $("#conversation-filters-toggle");
+  const clear = $("#clear-conversation-filters");
+  if (badge) {
+    badge.hidden = !activos;
+    badge.textContent = String(activos);
+  }
+  if (toggle) {
+    toggle.classList.toggle("is-filtered", Boolean(activos));
+    toggle.setAttribute("aria-label", activos ? `Filtros (${activos} activos)` : "Filtros");
+  }
+  if (clear) clear.hidden = !activos && !filters.search;
+}
+
 function bindConversationFilters() {
+  const toggle = $("#conversation-filters-toggle");
+  const panel = $("#conversation-filter-panel");
+  toggle?.addEventListener("click", () => {
+    const abrir = panel.hidden;
+    panel.hidden = !abrir;
+    toggle.setAttribute("aria-expanded", String(abrir));
+  });
+  bindMenu($("#quick-replies-trigger"), $("#quick-replies-menu"));
   $("#conversation-status-filter").addEventListener("change", (event) => {
     filters.status = event.target.value;
     render();
@@ -1675,6 +1733,8 @@ function bindConversationFilters() {
     $("#conversation-priority-filter").value = "";
     $("#conversation-search").value = "";
     render();
+    // El propio boton se oculta al no quedar nada que limpiar: devuelve el foco.
+    $("#conversation-filters-toggle")?.focus();
     notify("Filtros de conversaciones limpiados", "info");
   });
 }

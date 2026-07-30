@@ -1412,7 +1412,6 @@ textarea:disabled {
   border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 
-.conversation-actions,
 .reply-form {
   display: flex;
   gap: var(--space-2);
@@ -1420,11 +1419,8 @@ textarea:disabled {
   flex-wrap: wrap;
 }
 
-.conversation-actions button {
-  padding: var(--space-2) var(--space-3);
-}
-
-.conversation-actions button.is-loading {
+.wh-state-actions button.is-loading,
+.wh-action-danger.is-loading {
   opacity: 0.82;
 }
 
@@ -2288,11 +2284,6 @@ button.danger {
   background: var(--surface-sunken);
 }
 
-.conversation-actions {
-  padding-top: var(--space-3);
-  border-top: 1px solid rgba(17, 17, 17, 0.08);
-}
-
 .reply-form input {
   min-height: var(--control-lg);
 }
@@ -2461,7 +2452,6 @@ button.danger {
     max-height: 56vh;
   }
 
-  .conversation-actions button,
   .reply-form button {
     flex: 1 1 140px;
   }
@@ -2530,17 +2520,15 @@ button.danger {
     grid-template-columns: 1fr;
   }
 
-  .conversation-actions,
   .reply-form,
   .form-actions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .conversation-actions button,
   .reply-form button,
   .form-actions button,
-  .filters button {
+  .filters button:not(.wh-filter-toggle) {
     width: 100%;
   }
 
@@ -2613,7 +2601,6 @@ button:hover:not(:disabled),
 
 .login-card button,
 .top-actions button#simulate-whatsapp,
-.conversation-actions button.is-active-action,
 .widget-preview-button,
 .rich-link,
 .hwhub-rich-link,
@@ -2625,7 +2612,6 @@ button:hover:not(:disabled),
 
 .login-card button:hover:not(:disabled),
 .top-actions button#simulate-whatsapp:hover:not(:disabled),
-.conversation-actions button.is-active-action:hover:not(:disabled),
 .widget-preview-button:hover:not(:disabled) {
   background: var(--accent-strong);
   color: var(--accent-contrast);
@@ -3270,13 +3256,6 @@ html[data-theme="dark"] .login-card {
   min-width: 0;
 }
 
-.wh-thread-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
 .wh-thread-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -3344,21 +3323,80 @@ html[data-theme="dark"] .login-card {
   flex: 0 0 auto;
 }
 
-.conversation-actions,
-.wh-quick-replies {
+/* Patron P8. Una sola fila: grupo segmentado de estado + accion destructiva
+   separada + desborde. Antes eran siete botones sueltos en dos filas, todos del
+   mismo peso y de siete anchos distintos. */
+.wh-thread-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 
-.conversation-actions button,
-.wh-quick-replies button {
-  min-height: var(--control-sm);
-  padding: var(--space-2) var(--space-3);
+.wh-state-actions {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
 }
 
-.wh-quick-replies {
-  margin-top: var(--space-2);
+/* `flex: 1 1 0` reparte el ancho a partes iguales: los botones del grupo miden
+   lo mismo aunque su texto no. */
+.wh-state-actions button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  /* Con `min-width: 0` el texto partiria en dos lineas y creceria el alto del
+     grupo; en la columna estrecha se recorta en lugar de romper la fila. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wh-state-actions button[hidden] {
+  display: none;
+}
+
+.wh-state-actions button + button {
+  border-left: 1px solid var(--border);
+}
+
+.wh-state-actions button:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+
+/* Accion primaria de entrada al chat. */
+.wh-state-actions button[data-conversation-action="take"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: var(--font-weight-semibold);
+}
+
+.wh-state-actions button[data-conversation-action="take"]:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.wh-action-danger {
+  flex: 0 0 auto;
+  min-height: var(--control-md);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--danger-text);
+}
+
+.wh-action-danger:hover:not(:disabled) {
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
 }
 
 .reply-form {
@@ -3623,56 +3661,132 @@ main.wh-main {
   border-right: 0;
 }
 
+/* Patron P6: las tres columnas comparten una sola banda de cabecera, a la misma
+   altura que el topbar, para que las lineas horizontales coincidan. */
 .wh-inbox-col-head,
 .wh-thread-header {
-  min-height: auto;
-  padding: var(--space-4) var(--space-4);
+  min-height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
   border-bottom: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
 }
 
 .wh-inbox-col-head h2,
 .wh-thread-header h2 {
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   color: var(--text-strong);
 }
 
 .wh-inbox-col-head .section-note,
 .wh-thread-header .section-note {
   margin-top: var(--space-1);
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
+}
+
+.wh-col-count {
+  margin-left: var(--space-1);
+  color: var(--text-subtle);
+  font-weight: var(--font-weight-medium);
 }
 
 .wh-inbox .filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+}
+
+/* El buscador queda siempre visible; el resto de filtros vive en el panel
+   colapsable. Antes el buscador iba a `flex: 1 1 100%` y empujaba los tres
+   selects y el boton a envolver: tres filas de cromo antes del primer chat. */
+.wh-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wh-filter-bar input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wh-filter-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.wh-filter-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.wh-filter-toggle[aria-expanded="true"],
+.wh-filter-toggle.is-filtered {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.wh-filter-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--space-4);
+  min-height: var(--space-4);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.wh-filter-count[hidden] {
+  display: none;
+}
+
+.wh-filter-panel {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.wh-filter-panel[hidden] {
+  display: none;
 }
 
 .wh-inbox .filters select,
 .wh-inbox .filters input {
   min-height: var(--control-sm);
   border-radius: var(--radius-sm);
-  font-size: 11.5px;
-}
-
-.wh-inbox .filters input {
-  flex: 1 1 100%;
-  order: -1;
+  font-size: var(--font-size-xs);
 }
 
 .wh-inbox .filters button {
   min-height: var(--control-sm);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-xs);
+}
+
+.wh-filter-clear[hidden] {
+  display: none;
 }
 
 .wh-conversation-list {
@@ -3774,13 +3888,10 @@ main.wh-main {
   background: var(--bg);
 }
 
-.wh-thread-header {
-  min-height: var(--topbar-height);
-  padding: var(--space-3) var(--space-5);
-}
-
+/* P6: mismo padding interior que la bandeja (tarjetas) y que el contexto. Antes
+   eran 16 / 18 / 0px horizontales en la misma fila visual. */
 .wh-thread-body {
-  padding: var(--space-6) var(--space-5);
+  padding: var(--space-4);
   background: var(--bg);
 }
 
@@ -3851,19 +3962,9 @@ html[data-theme="dark"] .message.msg.me .message-body {
 }
 
 .wh-thread-composer {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4);
   border-top: 1px solid var(--border);
   background: var(--surface);
-}
-
-.conversation-actions button,
-.wh-quick-replies button {
-  border-radius: var(--radius-lg);
-  font-size: 11px;
-}
-
-.wh-quick-replies button {
-  border-color: var(--border);
 }
 
 .reply-form {
@@ -3913,7 +4014,7 @@ html[data-theme="dark"] .message.msg.me .message-body {
   border: 0;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4);
   background: transparent;
 }
 
@@ -4582,18 +4683,20 @@ button.danger,
   grid-template-columns: var(--inbox-list-width) minmax(0, 1fr) var(--inbox-context-width);
 }
 
-.wh-thread-header {
-  background: var(--surface);
-}
-
 .message.msg .message-body {
   box-shadow: var(--shadow-sm);
 }
 
-.conversation-actions button.is-active-action {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
+/* El estado en el que YA esta la conversacion. Antes se pintaba con el acento
+   solido, que reservamos para la accion a ejecutar; aqui informa, no invita. */
+.wh-state-actions button.is-active-action {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.wh-state-actions button.is-active-action:hover:not(:disabled) {
+  background: var(--accent-subtle);
 }
 
 /* Conversation bubble polish */
@@ -5956,29 +6059,70 @@ html[data-theme="dark"] .filters select {
 .sse-status.is-reconnecting { color: var(--warning-text); }
 .sse-status.is-down { color: var(--danger-text); }
 
-/* A3: chips de accion rapida */
-.wh-quick-replies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+/* Menu de desborde. Primer dropdown del proyecto: no habia patron previo, asi
+   que este es el que deben reutilizar los siguientes. Abre hacia arriba porque
+   vive en el composer, al fondo de la columna. */
+.wh-menu {
+  position: relative;
+  flex: 0 0 auto;
 }
 
-.wh-quick-replies button {
-  padding: var(--space-1) var(--space-3);
-  font-size: 10px;
-  font-weight: 600;
-  background: var(--surface-sunken);
-  border: 0.5px solid var(--border);
-  border-radius: var(--radius-full);
+.wh-menu-trigger {
+  min-width: var(--control-md);
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.wh-menu-trigger:hover:not(:disabled) {
+  border-color: var(--border-strong);
   color: var(--text);
-  cursor: pointer;
 }
 
-.wh-quick-replies button:hover {
-  background: var(--surface-sunken);
+.wh-menu-trigger[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
 }
 
-/* ===== Bloque B: link al entorno de pruebas ===== */
+.wh-menu-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  z-index: 30;
+  display: grid;
+  gap: var(--space-1);
+  width: max-content;
+  max-width: calc(100vw - var(--space-8));
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.wh-menu-panel[hidden] {
+  display: none;
+}
+
+.wh-menu-panel button {
+  min-height: var(--control-md);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--font-size-xs);
+  text-align: left;
+}
+
+.wh-menu-panel button:hover:not(:disabled) {
+  background: var(--row-hover);
+  color: var(--text-strong);
+}
+
 .test-env-link {
   display: inline-flex;
   align-items: center;
