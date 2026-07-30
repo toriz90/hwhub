@@ -6302,19 +6302,38 @@ html[data-theme="dark"] .filters select {
   align-items: center;
 }
 
+/* El swatch no fija alto: se estira al del campo hex para que el par quede a
+   ras. Con alto fijo quedaba 10px mas bajo que su propio input. */
 .color-pair input[type="color"] {
   flex: 0 0 auto;
-  width: 36px;
-  height: 32px;
+  align-self: stretch;
+  width: 44px;
   padding: 0;
-  border: 0.5px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: none;
+}
+
+/* El color nativo se pinta en un recuadro interior con marco propio; sin esto
+   el swatch se lee como caja con una muestra dentro, no como muestra. */
+.color-pair input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 3px;
+}
+
+.color-pair input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 3px);
+}
+
+.color-pair input[type="color"]::-moz-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 3px);
 }
 
 .color-pair input[type="text"] {
   flex: 1 1 auto;
   min-width: 0;
+  text-transform: uppercase;
 }
 
 .brand-preview {

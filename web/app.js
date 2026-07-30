@@ -1102,6 +1102,7 @@ function renderChatbotSettings() {
   for (const key of ["title", "subtitle", "buttonLabel", "welcome", "headerColor", "headerTextColor", "accentColor", "botBubbleColor", "userBubbleColor", "positionHorizontal", "positionVertical"]) {
     if (form.elements[key]) form.elements[key].value = widget[key] || defaults[key] || "";
   }
+  syncColorPairs(form);
   updateWidgetEmbedCode();
   updateWidgetPreview();
 }
@@ -1385,6 +1386,7 @@ function bindStaticEvents() {
   });
   $("#chatbot-settings-form").addEventListener("input", updateWidgetPreview);
   $("#chatbot-settings-form").addEventListener("change", updateWidgetPreview);
+  bindColorPairs($("#chatbot-settings-form"), updateWidgetPreview);
   $("#simulate-whatsapp").addEventListener("click", async () => {
     const button = $("#simulate-whatsapp");
     setButtonBusy(button, true, "Simulando...");
@@ -2229,6 +2231,32 @@ async function saveSettingsForm(name, selector) {
   }
 }
 
+// El par swatch + hex lo usan Marca y Chatbot. El name vive en el input de
+// color, asi que lo que se guarda no cambia: el hex es solo otra forma de
+// escribir el mismo valor.
+function syncColorPairs(root) {
+  for (const pair of root?.querySelectorAll(".color-pair") || []) {
+    const color = pair.querySelector('input[type="color"]');
+    const hex = pair.querySelector("[data-hex]");
+    if (color && hex) hex.value = color.value;
+  }
+}
+
+function bindColorPairs(root, onChange) {
+  for (const pair of root?.querySelectorAll(".color-pair") || []) {
+    const color = pair.querySelector('input[type="color"]');
+    const hex = pair.querySelector("[data-hex]");
+    if (!color || !hex) continue;
+    hex.value = color.value;
+    color.addEventListener("input", () => { hex.value = color.value; onChange?.(); });
+    hex.addEventListener("input", () => {
+      if (!/^#[0-9a-fA-F]{6}$/.test(hex.value)) return;
+      color.value = hex.value;
+      onChange?.();
+    });
+  }
+}
+
 async function loadBrandForm() {
   const form = $("#brand-form");
   if (!form) return;
@@ -2240,11 +2268,7 @@ async function loadBrandForm() {
     const field = form.elements[key];
     if (field) field.value = brand[key];
   }
-  for (const pair of form.querySelectorAll(".color-pair")) {
-    const color = pair.querySelector('input[type="color"]');
-    const hex = pair.querySelector("[data-hex]");
-    if (color && hex) hex.value = color.value;
-  }
+  syncColorPairs(form);
   updateBrandPreview();
 }
 
@@ -2258,16 +2282,7 @@ function bindSettings() {
       history.replaceState(null, "", `#settings/${name}`);
     });
   }
-  for (const pair of view.querySelectorAll(".color-pair")) {
-    const color = pair.querySelector('input[type="color"]');
-    const hex = pair.querySelector("[data-hex]");
-    if (!color || !hex) continue;
-    hex.value = color.value;
-    color.addEventListener("input", () => { hex.value = color.value; updateBrandPreview(); });
-    hex.addEventListener("input", () => {
-      if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) { color.value = hex.value; updateBrandPreview(); }
-    });
-  }
+  bindColorPairs(view, updateBrandPreview);
   $("#brand-logo")?.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
     const preview = $("#brand-logo-preview");
